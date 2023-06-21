@@ -27,6 +27,7 @@ declare -r workdir='/var/tmp/arkane-root'
 declare -r configs_dir='./bttrfs/'
 declare -r variant="$configs_dir/variants/$1"
 declare -r type=$(cat $variant/type)
+declare -r output_target='./output.img'
 
 ## Common functions
 #
@@ -67,6 +68,8 @@ done
 	printf '\e[31m<#>\e[0m The requested variant does not exist\n' &&
 	exit 1
 
+## Variants
+#
 # Build archlinux type image
 if [[ $type -eq 'archlinux' ]]; then
 
@@ -117,7 +120,7 @@ if [[ $type -eq 'archlinux' ]]; then
 
 	# Write subvolume to image
 	printf "\e[34m-->\e[0m Writing image...\n"
-	btrfs send -f ./output.img $workdir
+	btrfs send -f $output_target $workdir
 
 	cleanup_and_quit
 fi
