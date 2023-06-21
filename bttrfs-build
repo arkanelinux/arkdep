@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+# Print manual if no parameters provided or invalid amount of parameters is provided
+if [[ ! -n $1 || -n $2 ]]; then
+	cat <<- END
+	Usage: bttrfs-build [variant]
+	Variants:
+	  archlinux		Plain Arch Linux TTY image
+	  arkanelinux		Arkane Linux GNOME image
+	  debian		Plain Debian TTY image
+
+	Variants are loaded based on their directory names, the ones listed here
+	 are included by default. For information on the exact configuration of
+	 these variants or to create your own see /etc/bttrfs/variants.
+	END
+	exit 0
+fi
+
+## Set common variables
+#
+declare -r workdir='/var/tmp/arkane-root'
+declare -r configs_dir='./bttrfs/'
+declare -r variant="$configs_dir/variants/$1"
+declare -r type=$(cat $variant/type)
+
+## Common functions
+#
+# Cleanup and quit if error
+cleanup_and_quit () {
+
+	# If any paramters are passed we will assume it to be an error
+	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\n" >&2
+
+	# Remove temporary btrfs volumes
+	[[ ! -n $BTTRFS_NO_CLEANUP ]] && btrfs subvolume delete $workdir 2> /dev/null
+
+	# Quit program if argument provided to function
+	[[ -n $1 ]] && exit 1
+
+	# Otherwise just quit, there is no error
+	exit 0
+
+}
+
+## Error checking
+#
+# Quit if not root
+[[ ! $EUID -eq 0 ]] &&
+	printf '\e[31m<#>\e[0m This program has to be run as root\n' &&
+	exit 1
+
+# Check if all dependencies are installed, quit if not
+for prog in btrfs pacstrap; do
+	if ! command -v $prog > /dev/null; then
+		printf "\e[31m<#>\e[0m Failed to locate $prog, ensure it is installed\n"
+		exit 1
+	fi
+done
+
+# Check if requested variant exists
+[[ ! -d $variant ]] &&
+	printf '\e[31m<#>\e[0m The requested variant does not exist\n' &&
+	exit 1
+
+# Build archlinux type image
+if [[ $type -eq 'archlinux' ]]; then
+
+	# Ensure base.list exists, if not error and quit
+	[[ ! -e $variant/base.list ]] &&
+		printf "\e[31m<#>\e[0m The required file 'base.list' is not preset in $(readlink -m $variant)\n" &&
+		exit 1
+
+	# Check if optional packages.list file exists, if not notify and continue
+	[[ ! -e $variant/packages.list ]] &&
+		printf "\e[34m-->\e[0m The optional file 'packages.list' is not preset in $(readlink -m $variant), running without it\n" &&
+		skip_secondary_package_installation=1
+
+	printf '\e[34m-->\e[0m Started Arch linux image build\n'
+
+	# Create temporary Btrfs subvolume
+	printf "\e[34m-->\e[0m Creating temporary Btrfs subvolume at $workdir\n"
+	btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $workdir"
+
+	# Read base package list and install base system
+	readarray base_packages < $variant/base.list
+	printf "\e[34m-->\e[0m Installing base packages\n"
+	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+
+	# Read package list and install secondary system components, skip if not used
+	if [[ ! -n skip_secondary_package_installation ]]; then
+		printf '\e[34m-->\e[0m Installing secondary packages...\n'
+		readarray packages < $variant/packages.list
+		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
+	fi
+
+	# If rootfs directory exists in variant copy it to the temporary subvolume
+	if [[ -d $variant/rootfs ]]; then
+		cp -rv $variant/rootfs/* $workdir/
+	fi
+
+	# Remove subvolumes created by systemd
+	[[ -d $workdir/var/lib/portables ]] &&
+		printf "\e[34m-->\e[0m Removing systemd subvolume var/lib/portables\n" &&
+		btrfs subvolume delete $workdir/var/lib/portables
+	[[ -d $workdir/var/lib/machines ]] &&
+		printf "\e[34m-->\e[0m Removing systemd subvolume var/lib/machines\n" &&
+		btrfs subvolume delete $workdir/var/lib/machines
+
+	# Make subvolume read-only
+	printf "\e[34m-->\e[0m Adding read-only property to subvolume\n"
+	btrfs property set -ts $workdir ro true
+
+	# Write subvolume to image
+	printf "\e[34m-->\e[0m Writing image...\n"
+	btrfs send -f ./output.img $workdir
+
+	cleanup_and_quit
+fi
