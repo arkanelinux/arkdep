@@ -86,8 +86,8 @@ if [[ $type -eq 'archlinux' ]]; then
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
 
 	# Create temporary Btrfs subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolume at $(readlink $workdir)\e[0m\n"
-	btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink $workdir)"
+	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolume at $(readlink -m $workdir)\e[0m\n"
+	btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir)"
 
 	# Read base package list and install base system
 	readarray base_packages < $variant/base.list
