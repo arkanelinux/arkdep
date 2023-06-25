@@ -114,6 +114,10 @@ if [[ $type -eq 'archlinux' ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n" &&
 		btrfs subvolume delete $workdir/var/lib/machines
 
+	# Clear pacman cache
+	rm -rf $workdir/var/cache/pacman/pkg/*
+	rm -rf $workdir/var/lib/pacman/local/*
+
 	# Make subvolume read-only
 	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolume\e[0m\n"
 	btrfs property set -ts $workdir ro true
