@@ -23,11 +23,11 @@ fi
 
 ## Set common variables
 #
-declare -r workdir='/var/tmp/arkane-root'
+declare -r workdir='/var/tmp/rootfs'
 declare -r configs_dir='./bttrfs/'
 declare -r variant="$configs_dir/variants/$1"
 declare -r type=$(cat $variant/type)
-declare -r output_target='./output.img'
+declare -r output_target="$(pwd)/"
 
 ## Common functions
 #
@@ -37,8 +37,14 @@ cleanup_and_quit () {
 	# If any paramters are passed we will assume it to be an error
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
+	btrfs property set -ts $workdir ro false
+	btrfs property set -ts $workdir/etc ro false
+	btrfs property set -ts $workdir/var ro false
+
 	# Remove temporary btrfs volumes
-	[[ ! -n $BTTRFS_NO_CLEANUP ]] && btrfs subvolume delete $workdir 2> /dev/null
+	[[ ! -n $BTTRFS_NO_CLEANUP ]] && btrfs subvolume delete $workdir/etc \
+		$workdir/var \
+		$workdir 2> /dev/null
 
 	# Quit program if argument provided to function
 	[[ -n $1 ]] && exit 1
@@ -86,8 +92,10 @@ if [[ $type == 'archlinux' ]]; then
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
 
 	# Create temporary Btrfs subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolume at $(readlink -m $workdir)\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $(readlink -m $workdir)\e[0m\n"
 	btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir)"
+	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/etc)"
+	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/var)"
 
 	# Read base package list and install base system
 	readarray base_packages < $variant/base.list
@@ -119,12 +127,16 @@ if [[ $type == 'archlinux' ]]; then
 	rm -rf $workdir/var/lib/pacman/local/*
 
 	# Make subvolume read-only
-	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolume\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n"
 	btrfs property set -ts $workdir ro true
+	btrfs property set -ts $workdir/etc ro true
+	btrfs property set -ts $workdir/var ro true
 
 	# Write subvolume to image
-	printf "\e[1;34m-->\e[0m\e[1m Writing image...\e[0m\n"
-	btrfs send -f $output_target $workdir
+	printf "\e[1;34m-->\e[0m\e[1m Creating images...\e[0m\n"
+	btrfs send -f $output_target/rootfs.img $workdir
+	btrfs send -f $output_target/etc.img $workdir/etc
+	btrfs send -f $output_target/var.img $workdir/var
 
 	cleanup_and_quit
 fi
