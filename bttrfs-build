@@ -71,7 +71,7 @@ done
 ## Variants
 #
 # Build archlinux type image
-if [[ $type -eq 'archlinux' ]]; then
+if [[ $type == 'archlinux' ]]; then
 
 	# Ensure base.list exists, if not error and quit
 	[[ ! -e $variant/base.list ]] &&
