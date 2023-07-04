@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+# Print manual if no parameters provided or invalid amount of parameters is provided
+if [[ ! -n $1 || -n $2 ]]; then
+	cat <<- END
+	Usage: bttrfs-deploy [action]
+	Actions:
+	  update		Update existing deployments
+	  init			Initialize bttrfs on a new system
+	  teardown		Remove all bttrfs-deploy related files and folders
+	END
+	exit 0
+fi
+
+## Set common variables
+#
+declare -r bttrfs_dir='/bttrfs/'
+declare -r bttrfs_deployment_dir="$bttrfs_dir/deployments"
+
+## Common functions
+#
+# Cleanup and quit if error
+cleanup_and_quit () {
+
+	# If any paramters are passed we will assume it to be an error
+	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
+
+	# Remove temporary btrfs volumes
+	# ONLY IF CUSTOM DEFINED?
+	#[[ ! -n $BTTRFS_NO_CLEANUP || ! -n $subvol_created ]] &&
+	#	btrfs subvolume delete $workdir 2> /dev/null
+
+	# Quit program if argument provided to function
+	[[ -n $1 ]] && exit 1
+
+	# Otherwise just quit, there is no error
+	exit 0
+
+}
+
+## Error checking
+#
+# Quit if not root
+[[ ! $EUID -eq 0 ]] &&
+	printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
+	exit 1
+
+# Check if all dependencies are installed, quit if not
+for prog in btrfs; do
+	if ! command -v $prog > /dev/null; then
+		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
+		exit 1
+	fi
+done
+
+## Core functions
+#
+# Initialize the system for bttrfs
+init () {
+
+	printf '\e[1;34m-->\e[0m\e[1m Initializing bttrfs\e[0m\n'
+
+	[[ -d $bttrfs_dir ]] && cleanup_and_quit "$bttrfs_dir already exists"
+
+	# Create the /bttrfs subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $bttrfs_dir) subvolume\e[0m\n"
+	btrfs subvolume create $bttrfs_dir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $bttrfs_dir)"
+
+	# Create directory structure
+	printf "\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n"
+	mkdir -pv $bttrfs_dir/deployments \
+		$bttrfs_dir/deployments/primary_a \
+		$bttrfs_dir/deployments/primary_b \
+		$bttrfs_dir/shared ||
+		cleanup_and_quit "Failed to create /bttrfs and related directories"
+
+	# Write default config file
+	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
+	cat <<- END > $bttrfs_dir/config
+	# Primary filesystem operating system
+	primary_os='arkanelinux'
+
+	# Do not copy custom root filesystem to new deployments
+	custom_rootfs=0
+
+	# Do not install additional packages defined customize
+	custom_packages=0
+	END
+
+	exit 0
+}
+
+teardown () {
+
+	cat <<- END
+	WARNING: Removing bttrfs may leave your system in an unbootable state and you
+	may have to manually reconfigure your bootloader etc.. Only proceed if you know
+	what you are doing!
+
+	The following changes will be made to your system;
+	- All subvolumes under $bttrfs_dir will be deleted
+
+	END
+
+	read -p 'Type "I KNOW WHAT I AM GOING" in uppercase to confirm that you know what you are doing: ' input_confirm
+
+
+	if [[ $input_confirm == 'I KNOW WHAT I AM DOING' ]]; then
+
+		printf '\e[1;34m-->\e[0m\e[1m Tearing down bttrfs\e[0m\n'
+
+		# Quit with error if $bttrfs_dir does not exist
+		if [[ ! -d $bttrfs_dir ]]; then
+			printf "\e[1;31m<#>\e[0m $(readlink -m $bttrfs_dir) does not exist, there is nothing to tear down"
+			exit 1
+		fi
+
+		# Remove all nested subvolumes in $bttrfs_dir
+		for volume in $(btrfs subvolume list $bttrfs_dir | grep -oE '[^ ]+$'); do
+			btrfs property set -f -ts $(readlink -m $bttrfs_dir/$volume) ro false
+			btrfs subvolume delete $(readlink -m $bttrfs_dir/$volume)
+		done
+
+		# Remove $bttrfs_dir itself
+		btrfs property set -f -ts $(readlink -m $bttrfs_dir) ro false
+		btrfs subvolume delete $(readlink -m $bttrfs_dir)
+
+	else
+		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
+	fi
+
+	exit 0
+
+}
+
+# Check for updates and apply
+update_deployments () {
+
+	# Check os-name/version, if higher pull and deploy
+	asd
+}
+
+# Check if A or B root fs is currently active
+check_currently_active_rootfs () {
+asd
+}
+
+# If $1 is init run init
+[[ $1 == 'init' ]] && init
+[[ $1 == 'teardown' ]] && teardown
