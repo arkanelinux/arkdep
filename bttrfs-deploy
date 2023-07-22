@@ -8,11 +8,13 @@
 # Print manual if no parameters provided or invalid amount of parameters is provided
 if [[ ! -n $1 || -n $2 ]]; then
 	cat <<- END
-	Usage: bttrfs-deploy [action]
+	Usage: bttrfs-deploy <action> [target]
 	Actions:
-	  update		Update existing deployments
+	  update		Check for updates, optionally provide a target, if no target provided it defaults to primary
+	  deploy		Deploy a new or update an existing deployment
 	  init			Initialize bttrfs on a new system
 	  teardown		Remove all bttrfs-deploy related files and folders
+	  get-available		List available packages in repo
 	END
 	exit 0
 fi
@@ -21,6 +23,9 @@ fi
 #
 declare -r bttrfs_dir='/bttrfs/'
 declare -r bttrfs_deployment_dir="$bttrfs_dir/deployments"
+# FIXME: Automatically filter trailing /
+declare -r repo_url='https://repo.arkanelinux.org/bttrfs-test'
+declare -r repo_default_image='arkanelinux'
 
 ## Common functions
 #
@@ -51,7 +56,7 @@ cleanup_and_quit () {
 	exit 1
 
 # Check if all dependencies are installed, quit if not
-for prog in btrfs; do
+for prog in btrfs wget; do
 	if ! command -v $prog > /dev/null; then
 		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
 		exit 1
@@ -73,10 +78,12 @@ init () {
 
 	# Create directory structure
 	printf "\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n"
-	mkdir -pv $bttrfs_dir/deployments \
-		$bttrfs_dir/deployments/primary_a \
-		$bttrfs_dir/deployments/primary_b \
-		$bttrfs_dir/shared ||
+	mkdir -pv $(readlink -m $bttrfs_dir/deployments) \
+		$(readlink -m $bttrfs_dir/deployments/primary_a) \
+		$(readlink -m $bttrfs_dir/deployments/primary_b) \
+		$(readlink -m $bttrfs_dir/data) \
+		$(readlink -m $bttrfs_dir/cache) \
+		$(readlink -m $bttrfs_dir/shared) ||
 		cleanup_and_quit "Failed to create /bttrfs and related directories"
 
 	# Write default config file
@@ -138,18 +145,73 @@ teardown () {
 
 }
 
-# Check for updates and apply
-update_deployments () {
+# List all available packages defined in the repo's list file
+get_available () {
 
-	# Check os-name/version, if higher pull and deploy
-	asd
+	printf "\e[1;34m-->\e[0m\e[1m Downloading list file from $repo_url\e[0m\n"
+	curl -sf "${repo_url}/list" || cleanup_and_quit 'Failed to download repo file'
+
 }
 
-# Check if A or B root fs is currently active
-check_currently_active_rootfs () {
-asd
+# Deploy a new or update an existing deployment
+deploy () {
+
+	# Load defaults from config file
+	source $bttrfs_dir/config
+
+	# target and version are optional, if not defined default to primary latest
+	[[ -n $2 ]] && declare -r deploy_target=$2 || declare -r deploy_target="$primary_os"
+	[[ -n $3 ]] && declare -r deploy_version=$3 || declare -r deploy_version='latest'
+
+	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
+
+	# If latest is requested grab latest file
+	[[ $deploy_version == 'latest' ]] &&
+		declare latest_data=$(curl -sf "${repo_url}/${deploy_target}/${deploy_version}") &&
+		# Split latest_version at the delimiter, creating an array with data.1=package ver, data.2=compression method
+		readarray -d : -t data <<< "$latest_data"
+		# A carriage feed is inserted for some reason, lets remove it
+		data[2]=${data[2]//[$'\t\r\n']}
+
+	# Check if requested version is already downloaded
+	if [[ -e $(readlink -m $bttrfs_dir/cache/${data[0]}.tar.${data[1]}) ]]; then
+
+		printf "\e[1;34m-->\e[0m\e[1m ${data[0]} already in cache, skipping download\e[0m\n"
+
+	else
+
+		# Download the tarball
+		wget -P $(readlink -m $bttrfs_dir/cache/) "${repo_url}/${repo_default_image}/${data[0]}.tar.${data[1]}" ||
+			(printf "\e[1;31m<#>\e[0m Failed to download tarball\e[0m\n"; exit 1)
+
+	fi
+
+	printf "\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n"
+	sha1sum "$(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]})" |
+		grep "${data[3]}" ||
+		(printf "\e[1;31m<#>\e[0m Checksum does not match repo file, got $chksum\e[0m\n"; exit 1)
+
+	# Extract the root image
+	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
+	[[ ! -e $(readlink -m $bttrfs_dir/cache/${data[0]}.img) ]] &&
+	(tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}.img" ||
+	(printf "\e[1;31m<#>\e[0m Failed extracting root image from tarball\e[0m\n"; exit 1))
+
+	# Write the root image
+	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img) $(readlink -m ${bttrfs_dir}/deployments/primary_a/)
+
+	#printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
+	#printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
+
+	# Remove uncompressed img files to save space
+	#printf "\e[1;34m-->\e[0m\e[1m Cleaning up extracted images\e[0m\n"
+	#rm ${bttrfs_dir}/
+
 }
 
 # If $1 is init run init
 [[ $1 == 'init' ]] && init
 [[ $1 == 'teardown' ]] && teardown
+[[ $1 == 'update' ]] && check_for_updates
+[[ $1 == 'get-available' ]] && get_available
+[[ $1 == 'deploy' ]] && deploy
