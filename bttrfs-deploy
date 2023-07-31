@@ -26,6 +26,7 @@ declare -r bttrfs_deployment_dir="$bttrfs_dir/deployments"
 # FIXME: Automatically filter trailing /
 declare -r repo_url='https://repo.arkanelinux.org/bttrfs-test'
 declare -r repo_default_image='arkanelinux'
+declare -r os_name='arkane'
 
 ## Common functions
 #
@@ -68,13 +69,16 @@ done
 # Initialize the system for bttrfs
 init () {
 
+	# Ensure systemd-boot is installed before continuing, for it is the only thing we support
+	bootctl is-installed || cleanup_and_quit 'systemd-boot seems to not be installed'
+
 	printf '\e[1;34m-->\e[0m\e[1m Initializing bttrfs\e[0m\n'
 
 	[[ -d $bttrfs_dir ]] && cleanup_and_quit "$bttrfs_dir already exists"
 
 	# Create the /bttrfs subvolume
 	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $bttrfs_dir) subvolume\e[0m\n"
-	btrfs subvolume create $bttrfs_dir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $bttrfs_dir)"
+	btrfs subvolume create $bttrfs_dir || cleanup_and_quit "Failed to create btrfs subvolume"
 
 	# Create directory structure
 	printf "\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n"
@@ -86,20 +90,46 @@ init () {
 		$(readlink -m $bttrfs_dir/shared) ||
 		cleanup_and_quit "Failed to create /bttrfs and related directories"
 
+	# Add home shared subvolume and make writable
+	btrfs subvolume create $(readlink -m ${bttrfs_dir}/shared/home) || cleanup_and_quit "Failed to create home subvolume"
+	btrfs property set -f -ts $(readlink -m  ${bttrfs_dir}/shared/home)
+
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
 	cat <<- END > $bttrfs_dir/config
 	# Primary filesystem operating system
-	primary_os='arkanelinux'
+	primary_os='${repo_default_image}'
 
-	# Do not copy custom root filesystem to new deployments
-	custom_rootfs=0
+	# Write /bttrfs/overlay overlay to root or etc
+	enable_overlay=0
 
 	# Do not install additional packages defined customize
 	custom_packages=0
 	END
 
+	# Write bootloader entries
+	# TODO: Just loop this
+	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader entries\e[0m\n"
+	cat <<- END > /boot/loader/entries/${os_name}-primary-a.conf
+	title Arkane GNU/Linux - Primary A
+	linux /vmlinuz-linux
+	initrd /amd-ucode.img
+	initrd /intel-ucode.img
+	initrd /initramfs-linux.img
+	options root="LABEL=arkane_root" rootflags=subvol=bttrfs/deployments/primary_a/rootfs rw
+	END
+
+	cat <<- END > /boot/loader/entries/${os_name}-primary-b.conf
+	title Arkane GNU/Linux - Primary B
+	linux /vmlinuz-linux
+	initrd /amd-ucode.img
+	initrd /intel-ucode.img
+	initrd /initramfs-linux.img
+	options root="LABEL=arkane_root" rootflags=subvol=bttrfs/deployments/primary_b/rootfs rw
+	END
+
 	exit 0
+
 }
 
 teardown () {
@@ -136,6 +166,9 @@ teardown () {
 		# Remove $bttrfs_dir itself
 		btrfs property set -f -ts $(readlink -m $bttrfs_dir) ro false
 		btrfs subvolume delete $(readlink -m $bttrfs_dir)
+
+		# Remove bootloader files
+		rm -v /boot/loader/entries/${os_name}-*
 
 	else
 		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
@@ -189,23 +222,60 @@ deploy () {
 	printf "\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n"
 	sha1sum "$(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]})" |
 		grep "${data[3]}" ||
-		(printf "\e[1;31m<#>\e[0m Checksum does not match repo file, got $chksum\e[0m\n"; exit 1)
+		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
-	# Extract the root image
+	# TODO: Just for loop this?
+	# TODO: Add a bunch of control flow to check if stuff already exists and if a or b needs to be targeted
+	#
+	# Extract the root image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
-	[[ ! -e $(readlink -m $bttrfs_dir/cache/${data[0]}.img) ]] &&
-	(tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}.img" ||
-	(printf "\e[1;31m<#>\e[0m Failed extracting root image from tarball\e[0m\n"; exit 1))
+	[[ ! -e $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img) ]] &&
+	tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}.img" ||
+		cleanup_and_quit 'Failed to extract root'
 
 	# Write the root image
-	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img) $(readlink -m ${bttrfs_dir}/deployments/primary_a/)
+	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img) $(readlink -m ${bttrfs_dir}/deployments/primary_a/) ||
+		cleanup_and_quit 'Failed to receive root'
 
-	#printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
-	#printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
+	# Cleanup root image
+	rm $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img)
 
-	# Remove uncompressed img files to save space
-	#printf "\e[1;34m-->\e[0m\e[1m Cleaning up extracted images\e[0m\n"
-	#rm ${bttrfs_dir}/
+	# Ensure /var exists for mounting
+	mkdir $(readlink -m ${bttrfs_dir}/)
+
+	# Extract the etc image if not yet extracted
+	printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
+	[[ ! -e $(readlink -m ${bttrfs_dir}/cache/${data[0]}-etc.img) ]] &&
+	tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}-etc.img" ||
+		cleanup_and_quit 'failed to extract etc'
+
+	# Write the etc image, we have to unlock rootfs temporarily to do this
+	btrfs property set -f -ts $(readlink -m ${bttrfs_dir}/deployments/primary_a/rootfs) ro false ||
+		cleanup_and_quit 'Failed to unlock root to write etc'
+	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}-etc.img) $(readlink -m ${bttrfs_dir}/deployments/primary_a/rootfs/) ||
+		cleanup_and_quit 'Failed to receive etc'
+	btrfs property set -f -ts $(readlink -m ${bttrfs_dir}/deployments/primary_a/rootfs) ro true ||
+		cleanup_and_quit 'Failed to lock root'
+
+	# Cleanup etc image
+	rm $(readlink -m ${bttrfs_dir}/cache/${data[0]}-etc.img)
+
+	# Overlay customizations to etc
+	# TODO: overlay here if enabled in config file
+
+	# Extract the var image if not yet extracted
+	printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
+	[[ ! -e $(readlink -m ${bttrfs_dir}/cache/${data[0]}-var.img) ]] &&
+	tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}-var.img" ||
+		cleanup_and_quit 'failed to extract etc'
+
+	# Write the var image
+	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}-var.img) $(readlink -m ${bttrfs_dir}/shared/) ||
+		cleanup_and_quit 'Failed to receive var'
+
+	# Make var writable
+	btrfs property set -f -ts $(readlink -m ${bttrfs_dir}/shared/var) ro false ||
+		cleanup_and_quit 'Failed to unlock var'
 
 }
 
