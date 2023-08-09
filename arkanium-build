@@ -24,9 +24,9 @@ fi
 ## Set common variables
 #
 declare -r workdir='/var/tmp/rootfs'
-declare -r configs_dir='./arkanium/'
-declare -r variant="$configs_dir/variants/$1"
-declare -r type=$(cat .arkanium-build.d/$variant/type)
+declare -r configs_dir="./arkanium-build.d/"
+declare -r variant="$1"
+declare -r type="$(cat $(readlink -m $configs_dir/$variant/type))"
 declare -r output_target="$(pwd)/"
 
 ## Common functions
