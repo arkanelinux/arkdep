@@ -8,7 +8,7 @@
 # Print manual if no parameters provided or invalid amount of parameters is provided
 if [[ ! -n $1 || -n $2 ]]; then
 	cat <<- END
-	Usage: bttrfs-build [variant]
+	Usage: arkanium-build [variant]
 	Variants:
 	  archlinux		Plain Arch Linux TTY image
 	  arkanelinux		Arkane Linux GNOME image
@@ -16,7 +16,7 @@ if [[ ! -n $1 || -n $2 ]]; then
 
 	Variants are loaded based on their directory names, the ones listed here
 	 are included by default. For information on the exact configuration of
-	 these variants or to create your own see /etc/bttrfs/variants.
+	 these variants or to create your own see /etc/arkanium/variants.
 	END
 	exit 0
 fi
@@ -24,9 +24,9 @@ fi
 ## Set common variables
 #
 declare -r workdir='/var/tmp/rootfs'
-declare -r configs_dir='./bttrfs/'
+declare -r configs_dir='./arkanium/'
 declare -r variant="$configs_dir/variants/$1"
-declare -r type=$(cat $variant/type)
+declare -r type=$(cat .arkanium-build.d/$variant/type)
 declare -r output_target="$(pwd)/"
 
 ## Common functions
@@ -42,7 +42,7 @@ cleanup_and_quit () {
 	btrfs property set -ts $workdir/var ro false
 
 	# Remove temporary btrfs volumes
-	[[ ! -n $BTTRFS_NO_CLEANUP ]] && btrfs subvolume delete $workdir/etc \
+	[[ ! -n $arkanium_NO_CLEANUP ]] && btrfs subvolume delete $workdir/etc \
 		$workdir/var \
 		$workdir 2> /dev/null
 
@@ -70,7 +70,7 @@ for prog in btrfs pacstrap; do
 done
 
 # Check if requested variant exists
-[[ ! -d $variant ]] &&
+[[ ! -d arkanium-build.d/$variant ]] &&
 	printf '\e[1;31m<#>\e[0m\e[1m The requested variant does not exist\e[0m\n' &&
 	exit 1
 
@@ -80,13 +80,13 @@ done
 if [[ $type == 'archlinux' ]]; then
 
 	# Ensure base.list exists, if not error and quit
-	[[ ! -e $variant/base.list ]] &&
-		printf "\e[1;31m<#>\e[0m\e[1m The required file 'base.list' is not preset in $(readlink -m $variant)\e[0m\n" &&
+	[[ ! -e arkanium-build.d/$variant/base.list ]] &&
+		printf "\e[1;31m<#>\e[0m\e[1m The required file 'base.list' is not preset in arkanium-build.d/$(readlink -m $variant)\e[0m\n" &&
 		exit 1
 
 	# Check if optional packages.list file exists, if not notify and continue
-	[[ ! -e $variant/packages.list ]] &&
-		printf "\e[1;34m-->\e[0m\e[1m The optional file 'packages.list' is not preset in $(readlink -m $variant), running without it\e[0m\n" &&
+	[[ ! -e arkanium-build.d/$variant/packages.list ]] &&
+		printf "\e[1;34m-->\e[0m\e[1m The optional file 'packages.list' is not preset in arkanium-build.d/$(readlink -m $variant), running without it\e[0m\n" &&
 		skip_secondary_package_installation=1
 
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
@@ -98,21 +98,35 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/var)"
 
 	# Read base package list and install base system
-	readarray base_packages < $variant/base.list
+	readarray base_packages < arkanium-build.d/$variant/base.list
 	printf "\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n"
 	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 
 	# Read package list and install secondary system components, skip if not used
 	if [[ ! -n skip_secondary_package_installation ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages...\e[0m\n'
-		readarray packages < $variant/packages.list
+		readarray packages < arkanium-build.d/$variant/packages.list
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 	fi
 
-	# If rootfs directory exists in variant copy it to the temporary subvolume
-	if [[ -d $variant/rootfs ]]; then
-		cp -rv $variant/rootfs/* $workdir/
+	# If overlay directory exists in variant copy it to the temporary subvolume
+	if [[ -d arkanium-build.d/$variant/overlay ]]; then
+		cp -rv arkanium-build.d/$variant/overlay/* $workdir/
 	fi
+
+	# Enable systemd services if requested
+	if [[ -e arkanium-build.d/$variant/systemd.services ]]; then
+
+		readarray services < "arkanium-build.d/$variant/systemd.services"
+
+		for service in services; do
+			arch-chroot $workdir systemctl enable $service
+		done
+
+	fi
+
+	# Clear pacman cache
+	arch-chroot $workdir pacman --noconfirm -Scc
 
 	# Remove subvolumes created by systemd
 	[[ -d $workdir/var/lib/portables ]] &&

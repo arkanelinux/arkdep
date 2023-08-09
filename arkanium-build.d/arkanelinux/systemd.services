@@ -1,0 +1,8 @@
+NetworkManager.service
+apparmor.service
+bluetooth.service
+cups.service
+fstrim.timer
+gdm.service
+paccache.timer
+systemd-boot-update.service

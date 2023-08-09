@@ -8,12 +8,12 @@
 # Print manual if no parameters provided or invalid amount of parameters is provided
 if [[ ! -n $1 || -n $2 ]]; then
 	cat <<- END
-	Usage: bttrfs-deploy <action> [target]
+	Usage: arkanium-deploy <action> [target]
 	Actions:
 	  update		Check for updates, optionally provide a target, if no target provided it defaults to primary
 	  deploy		Deploy a new or update an existing deployment
-	  init			Initialize bttrfs on a new system
-	  teardown		Remove all bttrfs-deploy related files and folders
+	  init			Initialize Arkanium on a new system
+	  teardown		Remove all Arkanium-deploy related files and folders
 	  get-available		List available packages in repo
 	END
 	exit 0
@@ -21,10 +21,10 @@ fi
 
 ## Set common variables
 #
-declare -r bttrfs_dir='/bttrfs/'
-declare -r bttrfs_deployment_dir="$bttrfs_dir/deployments"
+declare -r arkanium_dir='/arkanium/'
+declare -r arkanium_deployment_dir="$arkanium_dir/deployments"
 # FIXME: Automatically filter trailing /
-declare -r repo_url='https://repo.arkanelinux.org/bttrfs-test'
+declare -r repo_url='https://repo.arkanelinux.org/arkanium-test'
 declare -r repo_default_image='arkanelinux'
 declare -r os_name='arkane'
 
@@ -38,7 +38,7 @@ cleanup_and_quit () {
 
 	# Remove temporary btrfs volumes
 	# ONLY IF CUSTOM DEFINED?
-	#[[ ! -n $BTTRFS_NO_CLEANUP || ! -n $subvol_created ]] &&
+	#[[ ! -n $arkanium_NO_CLEANUP || ! -n $subvol_created ]] &&
 	#	btrfs subvolume delete $workdir 2> /dev/null
 
 	# Quit program if argument provided to function
@@ -66,41 +66,41 @@ done
 
 ## Core functions
 #
-# Initialize the system for bttrfs
+# Initialize the system for arkanium
 init () {
 
 	# Ensure systemd-boot is installed before continuing, for it is the only thing we support
 	bootctl is-installed || cleanup_and_quit 'systemd-boot seems to not be installed'
 
-	printf '\e[1;34m-->\e[0m\e[1m Initializing bttrfs\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m Initializing arkanium\e[0m\n'
 
-	[[ -d $bttrfs_dir ]] && cleanup_and_quit "$bttrfs_dir already exists"
+	[[ -d $arkanium_dir ]] && cleanup_and_quit "$arkanium_dir already exists"
 
-	# Create the /bttrfs subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $bttrfs_dir) subvolume\e[0m\n"
-	btrfs subvolume create $bttrfs_dir || cleanup_and_quit "Failed to create btrfs subvolume"
+	# Create the /arkanium subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $arkanium_dir) subvolume\e[0m\n"
+	btrfs subvolume create $arkanium_dir || cleanup_and_quit "Failed to create btrfs subvolume"
 
 	# Create directory structure
 	printf "\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n"
-	mkdir -pv $(readlink -m $bttrfs_dir/deployments) \
-		$(readlink -m $bttrfs_dir/deployments/primary_a) \
-		$(readlink -m $bttrfs_dir/deployments/primary_b) \
-		$(readlink -m $bttrfs_dir/data) \
-		$(readlink -m $bttrfs_dir/cache) \
-		$(readlink -m $bttrfs_dir/shared) ||
-		cleanup_and_quit "Failed to create /bttrfs and related directories"
+	mkdir -pv $(readlink -m $arkanium_dir/deployments) \
+		$(readlink -m $arkanium_dir/deployments/primary_a) \
+		$(readlink -m $arkanium_dir/deployments/primary_b) \
+		$(readlink -m $arkanium_dir/data) \
+		$(readlink -m $arkanium_dir/cache) \
+		$(readlink -m $arkanium_dir/shared) ||
+		cleanup_and_quit "Failed to create /arkanium and related directories"
 
 	# Add home shared subvolume and make writable
-	btrfs subvolume create $(readlink -m ${bttrfs_dir}/shared/home) || cleanup_and_quit "Failed to create home subvolume"
-	btrfs property set -f -ts $(readlink -m  ${bttrfs_dir}/shared/home)
+	btrfs subvolume create $(readlink -m ${arkanium_dir}/shared/home) || cleanup_and_quit "Failed to create home subvolume"
+	btrfs property set -f -ts $(readlink -m  ${arkanium_dir}/shared/home)
 
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
-	cat <<- END > $bttrfs_dir/config
+	cat <<- END > $arkanium_dir/config
 	# Primary filesystem operating system
 	primary_os='${repo_default_image}'
 
-	# Write /bttrfs/overlay overlay to root or etc
+	# Write /arkanium/overlay overlay to root or etc
 	enable_overlay=0
 
 	# Do not install additional packages defined customize
@@ -116,7 +116,7 @@ init () {
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
 	initrd /initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=bttrfs/deployments/primary_a/rootfs rw
+	options root="LABEL=arkane_root" rootflags=subvol=arkanium/deployments/primary_a/rootfs rw
 	END
 
 	cat <<- END > /boot/loader/entries/${os_name}-primary-b.conf
@@ -125,7 +125,7 @@ init () {
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
 	initrd /initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=bttrfs/deployments/primary_b/rootfs rw
+	options root="LABEL=arkane_root" rootflags=subvol=arkanium/deployments/primary_b/rootfs rw
 	END
 
 	exit 0
@@ -135,12 +135,12 @@ init () {
 teardown () {
 
 	cat <<- END
-	WARNING: Removing bttrfs may leave your system in an unbootable state and you
+	WARNING: Removing arkanium may leave your system in an unbootable state and you
 	may have to manually reconfigure your bootloader etc.. Only proceed if you know
 	what you are doing!
 
 	The following changes will be made to your system;
-	- All subvolumes under $bttrfs_dir will be deleted
+	- All subvolumes under $arkanium_dir will be deleted
 
 	END
 
@@ -149,23 +149,23 @@ teardown () {
 
 	if [[ $input_confirm == 'I KNOW WHAT I AM DOING' ]]; then
 
-		printf '\e[1;34m-->\e[0m\e[1m Tearing down bttrfs\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Tearing down arkanium\e[0m\n'
 
-		# Quit with error if $bttrfs_dir does not exist
-		if [[ ! -d $bttrfs_dir ]]; then
-			printf "\e[1;31m<#>\e[0m $(readlink -m $bttrfs_dir) does not exist, there is nothing to tear down"
+		# Quit with error if $arkanium_dir does not exist
+		if [[ ! -d $arkanium_dir ]]; then
+			printf "\e[1;31m<#>\e[0m $(readlink -m $arkanium_dir) does not exist, there is nothing to tear down"
 			exit 1
 		fi
 
-		# Remove all nested subvolumes in $bttrfs_dir
-		for volume in $(btrfs subvolume list $bttrfs_dir | grep -oE '[^ ]+$'); do
-			btrfs property set -f -ts $(readlink -m $bttrfs_dir/$volume) ro false
-			btrfs subvolume delete $(readlink -m $bttrfs_dir/$volume)
+		# Remove all nested subvolumes in $arkanium_dir
+		for volume in $(btrfs subvolume list $arkanium_dir | grep -oE '[^ ]+$'); do
+			btrfs property set -f -ts $(readlink -m $arkanium_dir/$volume) ro false
+			btrfs subvolume delete $(readlink -m $arkanium_dir/$volume)
 		done
 
-		# Remove $bttrfs_dir itself
-		btrfs property set -f -ts $(readlink -m $bttrfs_dir) ro false
-		btrfs subvolume delete $(readlink -m $bttrfs_dir)
+		# Remove $arkanium_dir itself
+		btrfs property set -f -ts $(readlink -m $arkanium_dir) ro false
+		btrfs subvolume delete $(readlink -m $arkanium_dir)
 
 		# Remove bootloader files
 		rm -v /boot/loader/entries/${os_name}-*
@@ -190,7 +190,7 @@ get_available () {
 deploy () {
 
 	# Load defaults from config file
-	source $bttrfs_dir/config
+	source $arkanium_dir/config
 
 	# target and version are optional, if not defined default to primary latest
 	[[ -n $2 ]] && declare -r deploy_target=$2 || declare -r deploy_target="$primary_os"
@@ -207,20 +207,20 @@ deploy () {
 		data[2]=${data[2]//[$'\t\r\n']}
 
 	# Check if requested version is already downloaded
-	if [[ -e $(readlink -m $bttrfs_dir/cache/${data[0]}.tar.${data[1]}) ]]; then
+	if [[ -e $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) ]]; then
 
 		printf "\e[1;34m-->\e[0m\e[1m ${data[0]} already in cache, skipping download\e[0m\n"
 
 	else
 
 		# Download the tarball
-		wget -P $(readlink -m $bttrfs_dir/cache/) "${repo_url}/${repo_default_image}/${data[0]}.tar.${data[1]}" ||
+		wget -P $(readlink -m $arkanium_dir/cache/) "${repo_url}/${repo_default_image}/${data[0]}.tar.${data[1]}" ||
 			(printf "\e[1;31m<#>\e[0m Failed to download tarball\e[0m\n"; exit 1)
 
 	fi
 
 	printf "\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n"
-	sha1sum "$(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]})" |
+	sha1sum "$(readlink -m ${arkanium_dir}/cache/${data[0]}.tar.${data[1]})" |
 		grep "${data[3]}" ||
 		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
@@ -229,52 +229,52 @@ deploy () {
 	#
 	# Extract the root image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
-	[[ ! -e $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img) ]] &&
-	tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}.img" ||
+	[[ ! -e $(readlink -m ${arkanium_dir}/cache/${data[0]}.img) ]] &&
+	tar -xf $(readlink -m ${arkanium_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${arkanium_dir}/cache/) "${data[0]}.img" ||
 		cleanup_and_quit 'Failed to extract root'
 
 	# Write the root image
-	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img) $(readlink -m ${bttrfs_dir}/deployments/primary_a/) ||
+	btrfs receive -f $(readlink -m ${arkanium_dir}/cache/${data[0]}.img) $(readlink -m ${arkanium_dir}/deployments/primary_a/) ||
 		cleanup_and_quit 'Failed to receive root'
 
 	# Cleanup root image
-	rm $(readlink -m ${bttrfs_dir}/cache/${data[0]}.img)
+	rm $(readlink -m ${arkanium_dir}/cache/${data[0]}.img)
 
 	# Ensure /var exists for mounting
-	mkdir $(readlink -m ${bttrfs_dir}/)
+	mkdir $(readlink -m ${arkanium_dir}/)
 
 	# Extract the etc image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
-	[[ ! -e $(readlink -m ${bttrfs_dir}/cache/${data[0]}-etc.img) ]] &&
-	tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}-etc.img" ||
+	[[ ! -e $(readlink -m ${arkanium_dir}/cache/${data[0]}-etc.img) ]] &&
+	tar -xf $(readlink -m ${arkanium_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${arkanium_dir}/cache/) "${data[0]}-etc.img" ||
 		cleanup_and_quit 'failed to extract etc'
 
 	# Write the etc image, we have to unlock rootfs temporarily to do this
-	btrfs property set -f -ts $(readlink -m ${bttrfs_dir}/deployments/primary_a/rootfs) ro false ||
+	btrfs property set -f -ts $(readlink -m ${arkanium_dir}/deployments/primary_a/rootfs) ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
-	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}-etc.img) $(readlink -m ${bttrfs_dir}/deployments/primary_a/rootfs/) ||
+	btrfs receive -f $(readlink -m ${arkanium_dir}/cache/${data[0]}-etc.img) $(readlink -m ${arkanium_dir}/deployments/primary_a/rootfs/) ||
 		cleanup_and_quit 'Failed to receive etc'
-	btrfs property set -f -ts $(readlink -m ${bttrfs_dir}/deployments/primary_a/rootfs) ro true ||
+	btrfs property set -f -ts $(readlink -m ${arkanium_dir}/deployments/primary_a/rootfs) ro true ||
 		cleanup_and_quit 'Failed to lock root'
 
 	# Cleanup etc image
-	rm $(readlink -m ${bttrfs_dir}/cache/${data[0]}-etc.img)
+	rm $(readlink -m ${arkanium_dir}/cache/${data[0]}-etc.img)
 
 	# Overlay customizations to etc
 	# TODO: overlay here if enabled in config file
 
 	# Extract the var image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
-	[[ ! -e $(readlink -m ${bttrfs_dir}/cache/${data[0]}-var.img) ]] &&
-	tar -xf $(readlink -m ${bttrfs_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${bttrfs_dir}/cache/) "${data[0]}-var.img" ||
+	[[ ! -e $(readlink -m ${arkanium_dir}/cache/${data[0]}-var.img) ]] &&
+	tar -xf $(readlink -m ${arkanium_dir}/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m ${arkanium_dir}/cache/) "${data[0]}-var.img" ||
 		cleanup_and_quit 'failed to extract etc'
 
 	# Write the var image
-	btrfs receive -f $(readlink -m ${bttrfs_dir}/cache/${data[0]}-var.img) $(readlink -m ${bttrfs_dir}/shared/) ||
+	btrfs receive -f $(readlink -m ${arkanium_dir}/cache/${data[0]}-var.img) $(readlink -m ${arkanium_dir}/shared/) ||
 		cleanup_and_quit 'Failed to receive var'
 
 	# Make var writable
-	btrfs property set -f -ts $(readlink -m ${bttrfs_dir}/shared/var) ro false ||
+	btrfs property set -f -ts $(readlink -m ${arkanium_dir}/shared/var) ro false ||
 		cleanup_and_quit 'Failed to unlock var'
 
 }
