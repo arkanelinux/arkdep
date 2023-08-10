@@ -83,16 +83,16 @@ init () {
 	# Create directory structure
 	printf "\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n"
 	mkdir -pv $(readlink -m $arkanium_dir/deployments) \
-		$(readlink -m $arkanium_dir/deployments/primary_a) \
-		$(readlink -m $arkanium_dir/deployments/primary_b) \
-		$(readlink -m $arkanium_dir/data) \
+		$(readlink -m $arkanium_dir/deployments) \
 		$(readlink -m $arkanium_dir/cache) \
+		$(readlink -m $arkanium_dir/templates) \
+		$(readlink -m $arkanium_dir/overlay) \
 		$(readlink -m $arkanium_dir/shared) ||
 		cleanup_and_quit "Failed to create /arkanium and related directories"
 
 	# Add home shared subvolume and make writable
 	btrfs subvolume create $(readlink -m ${arkanium_dir}/shared/home) || cleanup_and_quit "Failed to create home subvolume"
-	btrfs property set -f -ts $(readlink -m  ${arkanium_dir}/shared/home)
+	btrfs property set -f -ts $(readlink -m  ${arkanium_dir}/shared/home) ro false
 
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
@@ -107,25 +107,14 @@ init () {
 	custom_packages=0
 	END
 
-	# Write bootloader entries
-	# TODO: Just loop this
-	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader entries\e[0m\n"
-	cat <<- END > /boot/loader/entries/${os_name}-primary-a.conf
+	# Add default bootloader config file
+	cat <<- END > $arkanium_dir/templates/systemd-boot
 	title Arkane GNU/Linux - Primary A
 	linux /vmlinuz-linux
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
 	initrd /initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=arkanium/deployments/primary_a/rootfs rw
-	END
-
-	cat <<- END > /boot/loader/entries/${os_name}-primary-b.conf
-	title Arkane GNU/Linux - Primary B
-	linux /vmlinuz-linux
-	initrd /amd-ucode.img
-	initrd /intel-ucode.img
-	initrd /initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=arkanium/deployments/primary_b/rootfs rw
+	options root="LABEL=arkane_root" rootflags=subvol=${arkanium_dir}/${data} rw
 	END
 
 	exit 0
@@ -167,9 +156,6 @@ teardown () {
 		btrfs property set -f -ts $(readlink -m $arkanium_dir) ro false
 		btrfs subvolume delete $(readlink -m $arkanium_dir)
 
-		# Remove bootloader files
-		rm -v /boot/loader/entries/${os_name}-*
-
 	else
 		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
 	fi
@@ -201,7 +187,7 @@ deploy () {
 	# If latest is requested grab latest file
 	[[ $deploy_version == 'latest' ]] &&
 		declare latest_data=$(curl -sf "${repo_url}/${deploy_target}/${deploy_version}") &&
-		# Split latest_version at the delimiter, creating an array with data.1=package ver, data.2=compression method
+		# Split latest_version at the delimiter, creating an array with data.1=package ver, data.2=compression method, data.3=sha1 hash
 		readarray -d : -t data <<< "$latest_data"
 		# A carriage feed is inserted for some reason, lets remove it
 		data[2]=${data[2]//[$'\t\r\n']}

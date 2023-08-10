@@ -80,14 +80,10 @@ done
 if [[ $type == 'archlinux' ]]; then
 
 	# Ensure base.list exists, if not error and quit
-	[[ ! -e arkanium-build.d/$variant/base.list ]] &&
-		printf "\e[1;31m<#>\e[0m\e[1m The required file 'base.list' is not preset in arkanium-build.d/$(readlink -m $variant)\e[0m\n" &&
+	if [[ ! -e arkanium-build.d/$variant/base.list ]]; then
+		printf "\e[1;31m<#>\e[0m\e[1m The required file 'base.list' is not preset in $(readlink -m $configs_dir/$variant)\e[0m\n" &&
 		exit 1
-
-	# Check if optional packages.list file exists, if not notify and continue
-	[[ ! -e arkanium-build.d/$variant/packages.list ]] &&
-		printf "\e[1;34m-->\e[0m\e[1m The optional file 'packages.list' is not preset in arkanium-build.d/$(readlink -m $variant), running without it\e[0m\n" &&
-		skip_secondary_package_installation=1
+	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
 
@@ -103,6 +99,7 @@ if [[ $type == 'archlinux' ]]; then
 	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 
 	# Read package list and install secondary system components, skip if not used
+
 	if [[ ! -n skip_secondary_package_installation ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages...\e[0m\n'
 		readarray packages < arkanium-build.d/$variant/packages.list
