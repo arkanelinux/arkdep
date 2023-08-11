@@ -54,6 +54,16 @@ cleanup_and_quit () {
 
 }
 
+# Generate a 42 character long random string, used for generating psuedo-random
+# image names
+gen_random_string () {
+
+	random=$(openssl rand -hex 100 | head -c 42)
+
+	printf "${random}\n"
+
+}
+
 ## Error checking
 #
 # Quit if not root
@@ -143,11 +153,18 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs property set -ts $workdir/etc ro true
 	btrfs property set -ts $workdir/var ro true
 
+	# Generate random name for new image
+	declare -r image_name=$(gen_random_string)
+
+	# Create dir for storing the images
+	mkdir -vp $(readlink -m $output_target/$image_name)
+
 	# Write subvolume to image
 	printf "\e[1;34m-->\e[0m\e[1m Creating images...\e[0m\n"
-	btrfs send -f $output_target/rootfs.img $workdir
-	btrfs send -f $output_target/etc.img $workdir/etc
-	btrfs send -f $output_target/var.img $workdir/var
+	btrfs send -f $output_target/$image_name/rootfs.img $workdir
+	btrfs send -f $output_target/$image_name/etc.img $workdir/etc
+	btrfs send -f $output_target/$image_name/var.img $workdir/var
 
 	cleanup_and_quit
+
 fi
