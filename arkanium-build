@@ -27,7 +27,7 @@ declare -r workdir='/var/tmp/rootfs'
 declare -r configs_dir="./arkanium-build.d/"
 declare -r variant="$1"
 declare -r type="$(cat $(readlink -m $configs_dir/$variant/type))"
-declare -r output_target="$(pwd)/"
+declare -r output_target="$(pwd)/target/"
 
 ## Common functions
 #
@@ -42,9 +42,9 @@ cleanup_and_quit () {
 	btrfs property set -ts $workdir/var ro false
 
 	# Remove temporary btrfs volumes
-	[[ ! -n $arkanium_NO_CLEANUP ]] && btrfs subvolume delete $workdir/etc \
+	rm -rf $workdir/etc \
 		$workdir/var \
-		$workdir 2> /dev/null
+		$workdir
 
 	# Quit program if argument provided to function
 	[[ -n $1 ]] && exit 1
@@ -108,23 +108,24 @@ if [[ $type == 'archlinux' ]]; then
 	printf "\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n"
 	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 
-	# Read package list and install secondary system components, skip if not used
-
-	if [[ ! -n skip_secondary_package_installation ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages...\e[0m\n'
-		readarray packages < arkanium-build.d/$variant/packages.list
-		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
-	fi
-
-	# If overlay directory exists in variant copy it to the temporary subvolume
+	# If overlay directory exists in variant copy it's contents to the temporary subvolume
 	if [[ -d arkanium-build.d/$variant/overlay ]]; then
 		cp -rv arkanium-build.d/$variant/overlay/* $workdir/
+	fi
+
+	# Read package list and install secondary system components, skip if not used
+	if [[ -e arkanium-build.d/$variant/package.list ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages...\e[0m\n'
+		readarray packages < arkanium-build.d/$variant/package.list
+		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 	fi
 
 	# Enable systemd services if requested
 	if [[ -e arkanium-build.d/$variant/systemd.services ]]; then
 
-		readarray services < "arkanium-build.d/$variant/systemd.services"
+		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services...\e[0m\n'
+
+		readarray services < arkanium-build.d/$variant/systemd.services
 
 		for service in services; do
 			arch-chroot $workdir systemctl enable $service
@@ -161,9 +162,12 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Write subvolume to image
 	printf "\e[1;34m-->\e[0m\e[1m Creating images...\e[0m\n"
-	btrfs send -f $output_target/$image_name/rootfs.img $workdir
-	btrfs send -f $output_target/$image_name/etc.img $workdir/etc
-	btrfs send -f $output_target/$image_name/var.img $workdir/var
+	btrfs send -f $output_target/$image_name/$image_name-rootfs.img $workdir
+	btrfs send -f $output_target/$image_name/$image_name-etc.img $workdir/etc
+	btrfs send -f $output_target/$image_name/$image_name-var.img $workdir/var
+
+	printf "\e[1;34m-->\e[0m\e[1m Compressing images...\e[0m\n"
+	tar -cv -I 'zstd -20 -T0 ' -f $output_target/$image_name.tar.zst $output_target/$image_name
 
 	cleanup_and_quit
 
