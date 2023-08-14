@@ -23,10 +23,6 @@ fi
 #
 declare -r arkanium_dir='/arkanium/'
 declare -r arkanium_deployment_dir="$arkanium_dir/deployments"
-# FIXME: Automatically filter trailing /
-declare -r repo_url='https://repo.arkanelinux.org/arkanium-test'
-declare -r repo_default_image='arkanelinux'
-declare -r os_name='arkane'
 
 ## Common functions
 #
@@ -105,6 +101,12 @@ init () {
 
 	# Do not install additional packages defined customize
 	custom_packages=0
+
+	# URL to image repository, do not add trailing slash
+	repo_url='https://repo.arkanelinux.org/arkanium'
+
+	# Default image pulled from repo if nothing defined
+	repo_default_image='arkanelinux'
 	END
 
 	# Add default bootloader config file
