@@ -19,6 +19,9 @@ Use the arkanium-build script to build your customlinux images.
 
 ```shell
 $	sudo arkanium-build customlinux
+
+### Or alternatively using a custom image name
+$   sudo ARKANIUM_OVERWRITE_RANDOM='customos_v1.0' arkanium-build customlinux
 ```
 
 Once done you can find compressed and uncompressed copies of your new image in the `target` directory.
