@@ -93,9 +93,6 @@ init () {
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
 	cat <<- END > $arkanium_dir/config
-	# Primary filesystem operating system
-	primary_os='${repo_default_image}'
-
 	# Write /arkanium/overlay overlay to root or etc
 	enable_overlay=0
 
@@ -111,12 +108,12 @@ init () {
 
 	# Add default bootloader config file
 	cat <<- END > $arkanium_dir/templates/systemd-boot
-	title Arkane GNU/Linux - Primary A
+	title Arkane GNU/Linux - arkanium
 	linux /vmlinuz-linux
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
 	initrd /initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=$arkanium_dir/${data} rw
+	options root="LABEL=arkane_root" rootflags=subvol=$arkanium_dir/%TARGET_DEPLOYMENT% rw
 	END
 
 	exit 0
@@ -180,8 +177,9 @@ deploy () {
 	# Load defaults from config file
 	source $arkanium_dir/config
 
-	# target and version are optional, if not defined default to primary latest
-	[[ -n $2 ]] && declare -r deploy_target=$2 || declare -r deploy_target="$primary_os"
+	# target and version are optional, if not defined default to primary as defined in
+	# /arkanium/config and latest
+	[[ -n $2 ]] && declare -r deploy_target=$2 || declare -r deploy_target="$repo_default_image"
 	[[ -n $3 ]] && declare -r deploy_version=$3 || declare -r deploy_version='latest'
 
 	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
@@ -201,9 +199,11 @@ deploy () {
 
 	else
 
-		# Download the tarball
-		wget -P $(readlink -m $arkanium_dir/cache/) "$repo_url/$repo_default_image/${data[0]}.tar.${data[1]}" ||
-			(printf "\e[1;31m<#>\e[0m Failed to download tarball\e[0m\n"; exit 1)
+		# Download the tarball if not yet downloaded
+		if [[ ! -e $arkanium_dir/cache/${data[0]}.tar.${data[1]} ]]; then
+			wget -P $(readlink -m $arkanium_dir/cache/) "$repo_url/$repo_default_image/${data[0]}.tar.${data[1]}" ||
+				cleanup_and_quit 'Failed to download tarball'
+		fi
 
 	fi
 
@@ -212,38 +212,45 @@ deploy () {
 		grep "${data[3]}" ||
 		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
-	# TODO: Just for loop this?
-	# TODO: Add a bunch of control flow to check if stuff already exists and if a or b needs to be targeted
-	#
+	# Create directory using unique deployment name
+	mkdir -pv $arkanium_dir/deployments/${data[0]} || cleanup_and_quit 'Failed to create deployment directory'
+
 	# Extract the root image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
-	[[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}.img) ]] &&
-	tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "${data[0]}.img" ||
-		cleanup_and_quit 'Failed to extract root'
+	if [[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-rootfs.img) ]]; then
+		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-rootfs.img" ||
+			cleanup_and_quit 'Failed to extract root'
+	fi
 
 	# Write the root image
-	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}.img) $(readlink -m $arkanium_dir/deployments/primary_a/) ||
+	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-rootfs.img) $(readlink -m $arkanium_dir/deployments/${data[0]}) ||
 		cleanup_and_quit 'Failed to receive root'
 
 	# Cleanup root image
-	rm $(readlink -m $arkanium_dir/cache/${data[0]}.img)
-
-	# Ensure /var exists for mounting
-	mkdir $(readlink -m $arkanium_dir/)
+	rm $(readlink -m $arkanium_dir/cache/${data[0]}-rootfs.img)
 
 	# Extract the etc image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
-	[[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) ]] &&
-	tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "${data[0]}-etc.img" ||
-		cleanup_and_quit 'failed to extract etc'
+	if [[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) ]]; then
+		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-etc.img" ||
+			cleanup_and_quit 'failed to extract etc'
+	fi
 
-	# Write the etc image, we have to unlock rootfs temporarily to do this
-	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/primary_a/rootfs) ro false ||
+	# Write the etc image and create var directory, we have to unlock rootfs temporarily to do this
+	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs) ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
-	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) $(readlink -m $arkanium_dir/deployments/primary_a/rootfs/) ||
+
+	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/) ||
 		cleanup_and_quit 'Failed to receive etc'
-	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/primary_a/rootfs) ro true ||
+
+	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/var)
+
+	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs) ro true ||
 		cleanup_and_quit 'Failed to lock root'
+
+	# Unlock the etc deployment
+	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc) ro false ||
+		cleanup_and_quit 'Failed to unlock root to write etc'
 
 	# Cleanup etc image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img)
@@ -253,9 +260,10 @@ deploy () {
 
 	# Extract the var image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
-	[[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) ]] &&
-	tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "${data[0]}-var.img" ||
-		cleanup_and_quit 'failed to extract etc'
+	if [[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) ]]; then
+		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-var.img" ||
+			cleanup_and_quit 'failed to extract var'
+	fi
 
 	# Write the var image
 	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) $(readlink -m $arkanium_dir/shared/) ||
@@ -264,6 +272,9 @@ deploy () {
 	# Make var writable
 	btrfs property set -f -ts $(readlink -m $arkanium_dir/shared/var) ro false ||
 		cleanup_and_quit 'Failed to unlock var'
+
+	# Cleanup var image
+	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
 
 }
 
