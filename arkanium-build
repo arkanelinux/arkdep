@@ -58,7 +58,7 @@ cleanup_and_quit () {
 # image names
 gen_random_string () {
 
-	if [[ -e $ARKANIUM_OVERWRITE_RANDOM ]]; then
+	if [[ -v ARKANIUM_OVERWRITE_RANDOM ]]; then
 		random=$ARKANIUM_OVERWRITE_RANDOM
 	else
 		random=$(openssl rand -hex 100 | head -c 42)
