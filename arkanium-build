@@ -10,6 +10,7 @@ if [[ ! -n $1 || -n $2 ]]; then
 	cat <<- END
 	Usage: arkanium-build [variant]
 	Variants:
+	  archlinux		Plain Arch Linux TTY image
 	  arkanelinux		Arkane Linux GNOME image
 
 	Variants are loaded based on their directory names, the ones listed here
