@@ -10,8 +10,8 @@ arkanium-build.d
 |  ├── overlay				# Root filesystem overlay directory, contents are copied to root
 |  ├── base.list			# Plain text file containing list of packages installed by pacstrap
 |  ├── package.list			# (Optional) Plain text file containing list of packages installed by pacman
-|  ├── systemd.services		# (Optional) Plain text file containing list of systemd services to enable
-|  ├── type         		# Plain text file, for configs of the Arch type should contain `archlinux`
+|  ├── systemd.services			# (Optional) Plain text file containing list of systemd services to enable
+|  ├── type         			# Plain text file, for configs of the Arch type should contain `archlinux`
 ```
 
 ### Building an image
