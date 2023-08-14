@@ -58,7 +58,11 @@ cleanup_and_quit () {
 # image names
 gen_random_string () {
 
-	random=$(openssl rand -hex 100 | head -c 42)
+	if [[ -e $ARKANIUM_OVERWRITE_RANDOM ]]; then
+		random=$ARKANIUM_OVERWRITE_RANDOM
+	else
+		random=$(openssl rand -hex 100 | head -c 42)
+	fi
 
 	printf "${random}\n"
 
@@ -154,8 +158,11 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs property set -ts $workdir/etc ro true
 	btrfs property set -ts $workdir/var ro true
 
+	printf "\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name...\e[0m\n"
+
 	# Generate random name for new image
 	declare -r image_name=$(gen_random_string)
+	printf "$image_name\n"
 
 	# Create dir for storing the images
 	mkdir -vp $(readlink -m $output_target/$image_name)
