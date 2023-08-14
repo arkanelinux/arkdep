@@ -177,7 +177,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	if [[ ! -v ARKANIUM_NO_TAR ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m Compressing images...\e[0m\n"
-		tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst $output_target/$image_name
+		tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst -C $output_target/$image_name .
 	fi
 
 	cleanup_and_quit
