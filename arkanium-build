@@ -10,13 +10,10 @@ if [[ ! -n $1 || -n $2 ]]; then
 	cat <<- END
 	Usage: arkanium-build [variant]
 	Variants:
-	  archlinux		Plain Arch Linux TTY image
 	  arkanelinux		Arkane Linux GNOME image
-	  debian		Plain Debian TTY image
 
 	Variants are loaded based on their directory names, the ones listed here
-	 are included by default. For information on the exact configuration of
-	 these variants or to create your own see /etc/arkanium/variants.
+	 are included by default.
 	END
 	exit 0
 fi
