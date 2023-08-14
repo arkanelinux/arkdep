@@ -7,7 +7,7 @@ A toolkit for building, deploying and maintaining a btrfs-based multi-root syste
 ```text
 arkanium-build.d
 ├── customlinux			# Directory carrying a custom name
-|  ├── overlay			# Root filesystem overlay directory, contents are copied to root
+|  ├── overlay			# (Optional) Root filesystem overlay directory, contents are copied to root
 |  ├── base.list		# Plain text file containing list of packages installed by pacstrap
 |  ├── package.list		# (Optional) Plain text file containing list of packages installed by pacman
 |  ├── systemd.services		# (Optional) Plain text file containing list of systemd services to enable
