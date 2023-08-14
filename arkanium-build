@@ -167,7 +167,7 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs send -f $output_target/$image_name/$image_name-var.img $workdir/var
 
 	printf "\e[1;34m-->\e[0m\e[1m Compressing images...\e[0m\n"
-	tar -cv -I 'zstd -20 -T0 ' -f $output_target/$image_name.tar.zst $output_target/$image_name
+	tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst $output_target/$image_name
 
 	cleanup_and_quit
 
