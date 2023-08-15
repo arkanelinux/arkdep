@@ -30,7 +30,7 @@ Arkanium will by default generate a psuedo-random hex string and use this as the
 
 ## Repository
 
-### Example repo layout
+### Example repository layout
 This would be a suitable layout if `repo_url` in `/arkanium/config` is set to `https://repo.example.com/arkanium`.
 ```text
 repo.example.com
