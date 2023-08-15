@@ -5,8 +5,10 @@
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 
+set -o pipefail
+
 # Print manual if no parameters provided or invalid amount of parameters is provided
-if [[ ! -n $1 || -n $2 ]]; then
+if [[ ! -n $1 ]]; then
 	cat <<- END
 	Usage: arkanium-deploy <action> [target]
 	Actions:
@@ -184,13 +186,18 @@ deploy () {
 
 	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
 
-	# If latest is requested grab latest file
-	[[ $deploy_version == 'latest' ]] &&
-		declare latest_data=$(curl -sf "${repo_url}/${deploy_target}/${deploy_version}") &&
-		# Split latest_version at the delimiter, creating an array with data.1=package ver, data.2=compression method, data.3=sha1 hash
-		readarray -d : -t data <<< "$latest_data"
-		# A carriage feed is inserted for some reason, lets remove it
-		data[2]=${data[2]//[$'\t\r\n']}
+	# If latest is requested grab database and get first line
+	if [[ $deploy_version == 'latest' ]]; then
+		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
+	else
+		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $3)
+	fi
+
+	# Split latest_version at the delimiter, creating an array with data.1=package ver, data.2=compression method, data.3=sha1 hash
+	readarray -d : -t data <<< "$curl_data"
+	# A carriage feed is inserted for some reason, lets remove it
+	data[2]=${data[2]//[$'\t\r\n']}
+
 
 	# Check if requested version is already downloaded
 	if [[ -e $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) ]]; then
