@@ -181,8 +181,17 @@ deploy () {
 
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkanium/config and latest
-	[[ -n $2 ]] && declare -r deploy_target=$2 || declare -r deploy_target="$repo_default_image"
-	[[ -n $3 ]] && declare -r deploy_version=$3 || declare -r deploy_version='latest'
+	if [[ -n $2 ]]; then
+		declare -r deploy_target=$2
+	else
+		declare -r deploy_target="$repo_default_image"
+	fi
+
+	if [[ -n $3 ]]; then
+		declare -r deploy_version=$3
+	else
+		declare -r deploy_version='latest'
+	fi
 
 	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
 
@@ -285,9 +294,8 @@ deploy () {
 
 }
 
-# If $1 is init run init
 [[ $1 == 'init' ]] && init
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'update' ]] && check_for_updates
 [[ $1 == 'get-available' ]] && get_available
-[[ $1 == 'deploy' ]] && deploy
+[[ $1 == 'deploy' ]] && deploy $1 $2 $3
