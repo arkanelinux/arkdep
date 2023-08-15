@@ -35,10 +35,10 @@ This would be a suitable layout if `repo_url` in `/arkanium/config` is set to `h
 ```text
 repo.example.com
 ├── arkanium
-|  ├── list		# Plain text file containing names of all available image types
+|  ├── list		        # Plain text file containing names of all available image types
 |  ├── customlinux
-|  |  ├── database		# Plain text file containing : delimited lists of all available images `image_name:compression_method:sha1sum`
-|  |  ├── customlinux_v1.0.tar.zst		# Compressed disk images
+|  |  ├── database		    # Plain text file containing : delimited lists of all available images `image_name:compression_method:sha1sum`
+|  |  ├── customlinux_v1.0.tar.zst	# Compressed disk images
 ```
 
 ### Example repository configuration
