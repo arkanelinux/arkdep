@@ -88,6 +88,9 @@ init () {
 		$(readlink -m $arkanium_dir/shared) ||
 		cleanup_and_quit "Failed to create /arkanium and related directories"
 
+	# Create empty database files
+	touch $(readlink -m $arkanium_dir/tracker)
+
 	# Add home shared subvolume and make writable
 	btrfs subvolume create $(readlink -m $arkanium_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
 	btrfs property set -f -ts $(readlink -m  $arkanium_dir/shared/home) ro false
@@ -106,6 +109,9 @@ init () {
 
 	# Default image pulled from repo if nothing defined
 	repo_default_image='arkanelinux'
+
+	# Keep the latest n+1 deployments, remove anything older
+	deploy_keep=2
 	END
 
 	# Add default bootloader config file
@@ -209,7 +215,7 @@ deploy () {
 
 
 	# Check if requested version is already downloaded
-	if [[ -e $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) ]]; then
+	if [[ -e $arkanium_dir/cache/${data[0]}.tar.${data[1]} ]]; then
 
 		printf "\e[1;34m-->\e[0m\e[1m ${data[0]} already in cache, skipping download\e[0m\n"
 
@@ -233,7 +239,7 @@ deploy () {
 
 	# Extract the root image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
-	if [[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-rootfs.img) ]]; then
+	if [[ ! -e $arkanium_dir/cache/${data[0]}-rootfs.img ]]; then
 		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-rootfs.img" ||
 			cleanup_and_quit 'Failed to extract root'
 	fi
@@ -247,7 +253,7 @@ deploy () {
 
 	# Extract the etc image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
-	if [[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) ]]; then
+	if [[ ! -e $arkanium_dir/cache/${data[0]}-etc.img ]]; then
 		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-etc.img" ||
 			cleanup_and_quit 'failed to extract etc'
 	fi
@@ -268,22 +274,24 @@ deploy () {
 	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc) ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
 
-	# Cleanup etc image
-	rm $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img)
-
 	# Overlay customizations to etc
 	# TODO: overlay here if enabled in config file
 
+	# Cleanup etc image
+	rm $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img)
+
 	# Extract the var image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
-	if [[ ! -e $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) ]]; then
+	if [[ ! -e $arkanium_dir/cache/${data[0]}-var.img ]]; then
 		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-var.img" ||
 			cleanup_and_quit 'failed to extract var'
 	fi
 
 	# Write the var image
-	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) $(readlink -m $arkanium_dir/shared/) ||
-		cleanup_and_quit 'Failed to receive var'
+	if [[ ! -e $arkanium_dir/shared/var ]]; then
+		btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) $(readlink -m $arkanium_dir/shared/) ||
+			cleanup_and_quit 'Failed to receive var'
+	fi
 
 	# Make var writable
 	btrfs property set -f -ts $(readlink -m $arkanium_dir/shared/var) ro false ||
@@ -292,6 +300,19 @@ deploy () {
 	# Cleanup var image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
 
+	# Add to database
+	printf "\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n"
+	printf "${data[0]}\n$(cat $(readlink -m $arkanium_dir/tracker | head -$deploy_keep))" > $arkanium_dir/tracker
+
+	# Remove entries outside of keep
+	declare -r remove_deployments="$(cat $arkanium_dir/tracker | head -$deploy_keep | grep -rvf - $(readlink -m $arkanium_dir/tracker))"
+
+	# Remove old deployments
+	for deployment in $remove_deployments; do
+		btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro false
+		rm -rf $(readlink -m $arkanium_dir/deployments/$deployment)
+		grep -rv $deployment $(readline -m $arkanium_dir/tracker) > $arkanium_dir/tracker
+	done
 }
 
 [[ $1 == 'init' ]] && init
