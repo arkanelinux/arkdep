@@ -12,6 +12,7 @@ arkanium-build.d
 |  ├── package.list		# (Optional) Plain text file containing list of packages installed by pacman
 |  ├── systemd.services		# (Optional) Plain text file containing list of systemd services to enable
 |  ├── type         		# Plain text file, for configs of the Arch type should contain `archlinux`
+|  ├── tracker         		# Plain text file, tracks deployed images
 ```
 
 ### Building an image
