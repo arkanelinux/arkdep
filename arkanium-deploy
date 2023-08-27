@@ -121,7 +121,7 @@ init () {
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
 	initrd /initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=$arkanium_dir/%TARGET_DEPLOYMENT% rw
+	options root="LABEL=arkane_root" rootflags=subvol=/arkanium/deployments/%target%/rootfs rw
 	END
 
 	exit 0
@@ -304,6 +304,15 @@ deploy () {
 	printf "\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n"
 	printf "${data[0]}\n$(cat $(readlink -m $arkanium_dir/tracker | head -$deploy_keep))" > $arkanium_dir/tracker
 
+	# Deploy bootloader configuration
+	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader configuration\e[0m\n"
+	sed "s/%target%/${data[0]}/" $arkanium_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
+
+	printf "\e[1;34m-->\e[0m\e[1m Define new bootloader entry as default in EFI variables\e[0m\n"
+	# Configuring it with a oneshot for now, for testing
+	#bootctl set-default ${data[0]}.conf || cleanup_and_exit "Failed to set default bootloader entry"
+	bootctl set-oneshot ${data[0]}.conf || cleanup_and_exit "Failed to set default bootloader entry"
+
 	# Remove entries outside of keep
 	declare -r remove_deployments="$(cat $arkanium_dir/tracker | head -$deploy_keep | grep -rvf - $(readlink -m $arkanium_dir/tracker))"
 
@@ -313,6 +322,7 @@ deploy () {
 		rm -rf $(readlink -m $arkanium_dir/deployments/$deployment)
 		grep -rv $deployment $(readline -m $arkanium_dir/tracker) > $arkanium_dir/tracker
 	done
+
 }
 
 [[ $1 == 'init' ]] && init
