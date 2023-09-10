@@ -39,6 +39,8 @@ cleanup_and_quit () {
 	# If any paramters are passed we will assume it to be an error
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
+	umount $workdir
+
 	btrfs property set -ts $workdir ro false
 	btrfs property set -ts $workdir/etc ro false
 	btrfs property set -ts $workdir/var ro false
@@ -109,6 +111,9 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/etc)"
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/var)"
 
+	printf "\e[1;34m-->\e[0m\e[1m Creating bind mount at $(readlink -m $workdir)\e[0m\n"
+	mount --bind $workdir $workdir
+
 	# Read base package list and install base system
 	readarray base_packages < arkanium-build.d/$variant/base.list
 	printf "\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n"
@@ -127,6 +132,7 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# Enable systemd services if requested
+	# # FIXME: BUG?
 	if [[ -e arkanium-build.d/$variant/systemd.services ]]; then
 
 		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services...\e[0m\n'
