@@ -132,14 +132,13 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# Enable systemd services if requested
-	# # FIXME: BUG?
 	if [[ -e arkanium-build.d/$variant/systemd.services ]]; then
 
 		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services...\e[0m\n'
 
 		readarray services < arkanium-build.d/$variant/systemd.services
 
-		for service in services; do
+		for service in ${services[*]}; do
 			arch-chroot $workdir systemctl enable $service
 		done
 
