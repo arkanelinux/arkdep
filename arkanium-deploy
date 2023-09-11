@@ -318,9 +318,9 @@ deploy () {
 
 	# Remove old deployments
 	for deployment in $remove_deployments; do
+		rm /boot/loader/entries/$deployment.conf
 		btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro false
 		rm -rf $(readlink -m $arkanium_dir/deployments/$deployment)
-		rm /boot/loader/entries/$deployment.conf
 		grep -rv $deployment $(readline -m $arkanium_dir/tracker) > $arkanium_dir/tracker
 	done
 
