@@ -117,10 +117,10 @@ init () {
 	# Add default bootloader config file
 	cat <<- END > $arkanium_dir/templates/systemd-boot
 	title Arkane GNU/Linux - arkanium
-	linux /vmlinuz-linux
+	linux /arkanium/%target%/vmlinuz
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
-	initrd /initramfs-linux.img
+	initrd /arkanium/%target%/initramfs-linux.img
 	options root="LABEL=arkane_root" rootflags=subvol=/arkanium/deployments/%target%/rootfs rw
 	END
 
@@ -300,7 +300,18 @@ deploy () {
 	# Cleanup var image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
 
+	# Install kernel and generate initramfs
+	# TODO: Hard coding for now, reasonable chance have to redo this later
+	printf "\e[1;34m-->\e[0m\e[1m Installing kernel\e[0m\n"
+	install -Dm644 $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/usr/lib/modules/*/vmlinuz) /boot/arkanium/${data[0]}/vmlinuz ||
+		cleanup_and_quit 'Failed to copy kernel image'
+
+	printf "\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n"
+	mkinitcpio --config /etc/mkinitcpio.conf --generate /boot/arkanium/${data[0]}/initramfs-linux.img ||
+		cleanup_and_quit 'Failed to generate initramfs'
+
 	# Add to database
+	# TODO: If this step is never reached ensure cleanup
 	printf "\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n"
 	printf "${data[0]}\n$(cat $(readlink -m $arkanium_dir/tracker | head -$deploy_keep))" > $arkanium_dir/tracker
 
@@ -318,9 +329,11 @@ deploy () {
 
 	# Remove old deployments
 	for deployment in $remove_deployments; do
-		rm /boot/loader/entries/$deployment.conf
+		printf "\e[1;34m-->\e[0m\e[1m Removing old deployment $deployment\e[0m\n"
+		rm -v /boot/loader/entries/$deployment.conf
 		btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro false
-		rm -rf $(readlink -m $arkanium_dir/deployments/$deployment)
+		rm -rfv $(readlink -m $arkanium_dir/deployments/$deployment)
+		rm -rfv $(readlink -m /boot/arkanium/$deployment)
 		grep -rv $deployment $(readline -m $arkanium_dir/tracker) > $arkanium_dir/tracker
 	done
 
