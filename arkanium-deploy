@@ -26,6 +26,10 @@ fi
 declare -r arkanium_dir='/arkanium/'
 declare -r arkanium_deployment_dir="$arkanium_dir/deployments"
 
+## Load config file
+#
+source $arkanium_dir/config
+
 ## Common functions
 #
 # Cleanup and quit if error
@@ -181,9 +185,6 @@ get_available () {
 
 # Deploy a new or update an existing deployment
 deploy () {
-
-	# Load defaults from config file
-	source $arkanium_dir/config
 
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkanium/config and latest
