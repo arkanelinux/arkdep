@@ -307,12 +307,28 @@ deploy () {
 	install -Dm644 $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/usr/lib/modules/*/vmlinuz) /boot/arkanium/${data[0]}/vmlinuz ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
-	printf "\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n"
-	mkinitcpio --config /etc/mkinitcpio.conf --generate /boot/arkanium/${data[0]}/initramfs-linux.img ||
+	# Create an mkinitcpio preset if it does not exist yet
+	if [[ ! -e $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.d/${data[0]}.preset ]]; then
+		printf "\e[1;34m-->\e[0m\e[1m Generating initramfs using mkinitcpio\e[0m\n"
+
+		cat <<- END > $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.d/${data[0]}.preset
+		ALL_config="$(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.conf)"
+		ALL_kver="$(readlink -m /boot/arkanium/${data[0]}/vmlinuz)"
+
+		PRESETS=('default')
+
+		#default_config="$(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.conf)"
+		default_image="$(readlink -m /boot/arkanium/${data[0]}/initramfs-linux.img)"
+		#default_options=""
+		END
+	fi
+
+	# TODO: Add dracut support
+	mkinitcpio --preset $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.d/${data[0]}.preset) ||
 		cleanup_and_quit 'Failed to generate initramfs'
 
 	# Add to database
-	# TODO: If this step is never reached ensure cleanup
+	# TODO: If this step is never reached ensure cleanup, maybe write a "busy file" somewhere
 	printf "\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n"
 	printf "${data[0]}\n$(cat $(readlink -m $arkanium_dir/tracker | head -$deploy_keep))" > $arkanium_dir/tracker
 
