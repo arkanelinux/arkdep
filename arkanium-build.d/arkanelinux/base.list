@@ -4,3 +4,4 @@ linux-firmware
 amd-ucode
 intel-ucode
 arkane-keyring
+dracut
