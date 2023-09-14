@@ -304,9 +304,13 @@ deploy () {
 	# Cleanup var image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
 
+	printf "\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n"
+	mkdir -pv $(readlink -m /boot/arkanium/${data[0]})
+	cp -v $arkanium_dir/deployments/${data[0]}/rootfs/usr/lib/modules/*/vmlinuz /boot/arkanium/${data[0]}/ ||
+		cleanup_and_quit 'Failed to copy kernel image'
+
 	# Install kernel and generate initramfs
 	printf "\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n"
-	mkdir -pv $(readlink -m /boot/arkanium/${data[0]})
 	dracut -k $(cd /arkanium/deployments/${data[0]}/rootfs/usr/lib/modules/*; pwd) \
 		--kernel-image /boot/arkanium/${data[0]}/vmlinuz \
 		--force \
