@@ -24,7 +24,6 @@ fi
 ## Set common variables
 #
 declare -r arkanium_dir='/arkanium/'
-declare -r arkanium_deployment_dir="$arkanium_dir/deployments"
 
 ## Load config file
 #
@@ -38,10 +37,14 @@ cleanup_and_quit () {
 	# If any paramters are passed we will assume it to be an error
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
-	# Remove temporary btrfs volumes
-	# ONLY IF CUSTOM DEFINED?
-	#[[ ! -n $arkanium_NO_CLEANUP || ! -n $subvol_created ]] &&
-	#	btrfs subvolume delete $workdir 2> /dev/null
+	# Remove the subvolume we were working on
+	# TODO: Make this a generic function and share with the removal of old images?
+	if [[ -n ${data[0]} ]]; then
+		btrfs property set -f -ts $arkanium_dir/deployments/${data[0]}/rootfs ro false
+		rm -rf $arkanium_dir/deployments/${data[0]}
+		rm -rf /boot/arkanium/${data[0]}
+		rm /boot/loader/entries/${data[0]}.conf
+	fi
 
 	# Quit program if argument provided to function
 	[[ -n $1 ]] && exit 1
@@ -59,7 +62,7 @@ cleanup_and_quit () {
 	exit 1
 
 # Check if all dependencies are installed, quit if not
-for prog in btrfs wget; do
+for prog in btrfs wget dracut bootctl; do
 	if ! command -v $prog > /dev/null; then
 		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
 		exit 1
@@ -209,7 +212,7 @@ deploy () {
 		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $3)
 	fi
 
-	# Split latest_version at the delimiter, creating an array with data.1=package ver, data.2=compression method, data.3=sha1 hash
+	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
 	readarray -d : -t data <<< "$curl_data"
 	# A carriage feed is inserted for some reason, lets remove it
 	data[2]=${data[2]//[$'\t\r\n']}
@@ -236,7 +239,7 @@ deploy () {
 		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
 	# Create directory using unique deployment name
-	mkdir -pv $arkanium_dir/deployments/${data[0]} || cleanup_and_quit 'Failed to create deployment directory'
+	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}) || cleanup_and_quit 'Failed to create deployment directory'
 
 	# Extract the root image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
@@ -302,30 +305,12 @@ deploy () {
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
 
 	# Install kernel and generate initramfs
-	# TODO: Hard coding for now, reasonable chance have to redo this later
-	printf "\e[1;34m-->\e[0m\e[1m Installing kernel\e[0m\n"
-	install -Dm644 $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/usr/lib/modules/*/vmlinuz) /boot/arkanium/${data[0]}/vmlinuz ||
-		cleanup_and_quit 'Failed to copy kernel image'
-
-	# Create an mkinitcpio preset if it does not exist yet
-	if [[ ! -e $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.d/${data[0]}.preset ]]; then
-		printf "\e[1;34m-->\e[0m\e[1m Generating initramfs using mkinitcpio\e[0m\n"
-
-		cat <<- END > $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.d/${data[0]}.preset
-		ALL_config="$(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.conf)"
-		ALL_kver="$(readlink -m /boot/arkanium/${data[0]}/vmlinuz)"
-
-		PRESETS=('default')
-
-		#default_config="$(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.conf)"
-		default_image="$(readlink -m /boot/arkanium/${data[0]}/initramfs-linux.img)"
-		#default_options=""
-		END
-	fi
-
-	# TODO: Add dracut support
-	mkinitcpio --preset $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc/mkinitcpio.d/${data[0]}.preset) ||
-		cleanup_and_quit 'Failed to generate initramfs'
+	printf "\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n"
+	mkdir -pv $(readlink -m /boot/arkanium/${data[0]})
+	dracut -k $(cd /arkanium/deployments/${data[0]}/rootfs/usr/lib/modules/*; pwd) \
+		--kernel-image /boot/arkanium/${data[0]}/vmlinuz \
+		--force \
+		/boot/arkanium/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
 
 	# Add to database
 	# TODO: If this step is never reached ensure cleanup, maybe write a "busy file" somewhere
@@ -333,13 +318,13 @@ deploy () {
 	printf "${data[0]}\n$(cat $(readlink -m $arkanium_dir/tracker | head -$deploy_keep))" > $arkanium_dir/tracker
 
 	# Deploy bootloader configuration
-	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader configuration\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n"
 	sed "s/%target%/${data[0]}/" $arkanium_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
 
-	printf "\e[1;34m-->\e[0m\e[1m Define new bootloader entry as default in EFI variables\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n"
 	# Configuring it with a oneshot for now, for testing
-	#bootctl set-default ${data[0]}.conf || cleanup_and_exit "Failed to set default bootloader entry"
-	bootctl set-oneshot ${data[0]}.conf || cleanup_and_exit "Failed to set default bootloader entry"
+	#bootctl set-default ${data[0]}.conf || cleanup_and_quit "Failed to set default bootloader entry"
+	bootctl set-oneshot ${data[0]}.conf || cleanup_and_quit "Failed to set default bootloader entry"
 
 	# Remove entries outside of keep
 	declare -r remove_deployments="$(cat $arkanium_dir/tracker | head -$deploy_keep | grep -rvf - $(readlink -m $arkanium_dir/tracker))"
