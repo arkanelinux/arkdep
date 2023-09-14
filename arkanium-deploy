@@ -206,6 +206,7 @@ deploy () {
 	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
 
 	# If latest is requested grab database and get first line
+	printf "\e[1;34m-->\e[0m\e[1m Downloading database from repo\e[0m\n"
 	if [[ $deploy_version == 'latest' ]]; then
 		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
 	else
