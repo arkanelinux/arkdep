@@ -320,14 +320,14 @@ deploy () {
 
 		# Unlock root if required
 		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro false
+			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}) ro false
 		fi
 
-		cp -rv $(readlink -m $arkanium_dir/overlay/*) $(readlink -m /$arkanium_dir/deployments/$deployment/rootfs/)
+		cp -rv $(readlink -m $arkanium_dir/overlay/*) $(readlink -m /$arkanium_dir/deployments/${data[0]}/rootfs/)
 
 		# Lock root again if required
 		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro true
+			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}) ro true
 		fi
 	fi
 
