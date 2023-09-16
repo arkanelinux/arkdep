@@ -149,13 +149,14 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Remove subvolumes created by systemd
 	[[ -d $workdir/var/lib/portables ]] &&
-		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/portables\e[0m\n" &&
+		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/portables\e[0m\n"
 		btrfs subvolume delete $workdir/var/lib/portables
 	[[ -d $workdir/var/lib/machines ]] &&
-		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n" &&
+		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n"
 		btrfs subvolume delete $workdir/var/lib/machines
 
 	# Clear pacman cache
+	printf "\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n"
 	rm -rf $workdir/var/cache/pacman/pkg/*
 	rm -rf $workdir/var/lib/pacman/local/*
 
@@ -165,9 +166,8 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs property set -ts $workdir/etc ro true
 	btrfs property set -ts $workdir/var ro true
 
-	printf "\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name...\e[0m\n"
-
 	# Generate random name for new image
+	printf "\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name...\e[0m\n"
 	declare -r image_name=$(gen_random_string)
 	printf "$image_name\n"
 
