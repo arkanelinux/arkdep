@@ -1,8 +1,0 @@
-# /dev/nvme0n1p1
-UUID=DB43-C39F      	/boot     	vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
-
-# /dev/nvme0n1p2
-UUID=a184dd2f-af9f-4079-8ec2-13ede1239574	none      	swap      	defaults  	0 0
-
-LABEL=arkane_root	/home         	btrfs     	rw,relatime,compress=zstd:3,ssd,space_cache=v2,subvol=arkanium/shared/home	0 0
-LABEL=arkane_root	/var         	btrfs     	rw,relatime,compress=zstd:3,ssd,space_cache=v2,subvol=arkanium/shared/var	0 0
