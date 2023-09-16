@@ -106,7 +106,7 @@ init () {
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
 	cat <<- END > $arkanium_dir/config
 	# Write /arkanium/overlay overlay to root or etc
-	enable_overlay=0
+	enable_overlay=1
 
 	# Do not install additional packages defined customize
 	custom_packages=0
@@ -282,9 +282,6 @@ deploy () {
 	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc) ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
 
-	# Overlay customizations to etc
-	# TODO: overlay here if enabled in config file
-
 	# Cleanup etc image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img)
 
@@ -307,6 +304,32 @@ deploy () {
 
 	# Cleanup var image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
+
+	# Add overlay if enabled
+	if [[ $enable_overlay -eq 1 ]]; then
+		printf "\e[1;34m-->\e[0m\e[1m Copying overlay to deployment\e[0m\n"
+		overlay_files=$(ls $arkanium_dir/overlay/)
+
+		# Check if only /etc is present, if it is we do not have to unlock the root volume
+		for file in ${overlay_files[*]}; do
+			if [[ ! $file -eq etc ]]; then
+				printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} Non /etc file or directory detected, root will be temporarily unlocked\e[0m\n"
+				overlay_unlock_root=1
+			fi
+		done
+
+		# Unlock root if required
+		if [[ $overlay_unlock_root -eq 1 ]]; then
+			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro false
+		fi
+
+		cp -rv $(readlink -m $arkanium_dir/overlay/*) $(readlink -m /$arkanium_dir/deployments/$deployment/rootfs/)
+
+		# Lock root again if required
+		if [[ $overlay_unlock_root -eq 1 ]]; then
+			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro true
+		fi
+	fi
 
 	printf "\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n"
 	mkdir -pv $(readlink -m /boot/arkanium/${data[0]})
