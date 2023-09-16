@@ -100,7 +100,9 @@ init () {
 
 	# Add home shared subvolume and make writable
 	btrfs subvolume create $(readlink -m $arkanium_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
+	btrfs subvolume create $(readlink -m $arkanium_dir/shared/root) || cleanup_and_quit "Failed to create root subvolume"
 	btrfs property set -f -ts $(readlink -m  $arkanium_dir/shared/home) ro false
+	btrfs property set -f -ts $(readlink -m  $arkanium_dir/shared/root) ro false
 
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
@@ -242,11 +244,12 @@ deploy () {
 		grep "${data[3]}" ||
 		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
+	# Extract the root image if not yet extracted
+	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
+
 	# Create directory using unique deployment name
 	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}) || cleanup_and_quit 'Failed to create deployment directory'
 
-	# Extract the root image if not yet extracted
-	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
 	if [[ ! -e $arkanium_dir/cache/${data[0]}-rootfs.img ]]; then
 		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-rootfs.img" ||
 			cleanup_and_quit 'Failed to extract root'
@@ -273,8 +276,11 @@ deploy () {
 	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/) ||
 		cleanup_and_quit 'Failed to receive etc'
 
+	printf "\e[1;34m-->\e[0m\e[1m Ensure var and root mountpoints exist\e[0m\n"
 	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/var)
+	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/root)
 
+	# Lock the root volume again
 	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs) ro true ||
 		cleanup_and_quit 'Failed to lock root'
 
