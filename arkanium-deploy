@@ -291,15 +291,16 @@ deploy () {
 	# Cleanup etc image
 	rm $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img)
 
-	# Extract the var image if not yet extracted
-	printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
-	if [[ ! -e $arkanium_dir/cache/${data[0]}-var.img ]]; then
-		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-var.img" ||
-			cleanup_and_quit 'failed to extract var'
-	fi
-
 	# Write the var image
 	if [[ ! -e $arkanium_dir/shared/var ]]; then
+		printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
+
+		# Extract the var image if not yet extracted
+		if [[ ! -e $arkanium_dir/cache/${data[0]}-var.img ]]; then
+			tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-var.img" ||
+				cleanup_and_quit 'failed to extract var'
+		fi
+
 		btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) $(readlink -m $arkanium_dir/shared/) ||
 			cleanup_and_quit 'Failed to receive var'
 	fi
