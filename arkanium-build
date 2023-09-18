@@ -114,10 +114,6 @@ if [[ $type == 'archlinux' ]]; then
 	printf "\e[1;34m-->\e[0m\e[1m Creating bind mount at $(readlink -m $workdir)\e[0m\n"
 	mount --bind $workdir $workdir
 
-	# Make /usr/local symlink in var
-	mkdir -vp $workdir/{var/usrlocal,usr}
-	ln -s /var/usrlocal $workdir/usr/local
-
 	# Read base package list and install base system
 	readarray base_packages < arkanium-build.d/$variant/base.list
 	printf "\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n"
@@ -130,7 +126,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e arkanium-build.d/$variant/package.list ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages...\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
 		readarray packages < arkanium-build.d/$variant/package.list
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 	fi
@@ -138,7 +134,7 @@ if [[ $type == 'archlinux' ]]; then
 	# Enable systemd services if requested
 	if [[ -e arkanium-build.d/$variant/systemd.services ]]; then
 
-		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services...\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services\e[0m\n'
 
 		readarray services < arkanium-build.d/$variant/systemd.services
 
@@ -164,14 +160,19 @@ if [[ $type == 'archlinux' ]]; then
 	rm -rf $workdir/var/cache/pacman/pkg/*
 	rm -rf $workdir/var/lib/pacman/local/*
 
+	# Make /usr/local symlink in var
+	printf "\e[1;34m-->\e[0m\e[1m Creating usrlocal symlink\e[0m\n"
+	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
+	ln -s /var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
+
 	# Make subvolume read-only
 	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n"
-	btrfs property set -ts $workdir ro true
-	btrfs property set -ts $workdir/etc ro true
-	btrfs property set -ts $workdir/var ro true
+	btrfs property set -ts $workdir ro true || cleanup_and_quit 'Failed to set root to read-only'
+	btrfs property set -ts $workdir/etc ro true || cleanup_and_quit 'Failed to set etc to read-only'
+	btrfs property set -ts $workdir/var ro true || cleanup_and_quit 'Failed to set var to read-only'
 
 	# Generate random name for new image
-	printf "\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name...\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name\e[0m\n"
 	declare -r image_name=$(gen_random_string)
 	printf "$image_name\n"
 
@@ -179,13 +180,13 @@ if [[ $type == 'archlinux' ]]; then
 	mkdir -vp $(readlink -m $output_target/$image_name)
 
 	# Write subvolume to image
-	printf "\e[1;34m-->\e[0m\e[1m Creating images...\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Creating images\e[0m\n"
 	btrfs send -f $output_target/$image_name/$image_name-rootfs.img $workdir
 	btrfs send -f $output_target/$image_name/$image_name-etc.img $workdir/etc
 	btrfs send -f $output_target/$image_name/$image_name-var.img $workdir/var
 
 	if [[ ! -v ARKANIUM_NO_TAR ]]; then
-		printf "\e[1;34m-->\e[0m\e[1m Compressing images...\e[0m\n"
+		printf "\e[1;34m-->\e[0m\e[1m Compressing images\e[0m\n"
 		tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst -C $output_target/$image_name .
 	fi
 
