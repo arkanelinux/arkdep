@@ -160,6 +160,10 @@ if [[ $type == 'archlinux' ]]; then
 	rm -rf $workdir/var/cache/pacman/pkg/*
 	rm -rf $workdir/var/lib/pacman/local/*
 
+	# Make /usr/local symlink in var
+	mv -v $workdir/usr/local $workdir/var/usrlocal
+	ln -s /var/usrlocal $workdir/usr/local
+
 	# Make subvolume read-only
 	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n"
 	btrfs property set -ts $workdir ro true
