@@ -115,7 +115,7 @@ if [[ $type == 'archlinux' ]]; then
 	mount --bind $workdir $workdir
 
 	# Make /usr/local symlink in var
-	mkdir -vp $workdir/{var,usr/local}
+	mkdir -vp $workdir/{var/usrlocal,usr}
 	ln -s /var/usrlocal $workdir/usr/local
 
 	# Read base package list and install base system
