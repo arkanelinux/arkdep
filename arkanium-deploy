@@ -303,6 +303,9 @@ deploy () {
 
 		btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) $(readlink -m $arkanium_dir/shared/) ||
 			cleanup_and_quit 'Failed to receive var'
+	else
+		# Notify if var is not deployed
+		printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} var is already preset, skipping var deployment\e[0m\n"
 	fi
 
 	# Make var writable
