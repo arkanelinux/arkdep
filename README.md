@@ -79,25 +79,25 @@ System requirements;
 - dracut, wget and curl are installed
 
 The following command will initialize Arkanium, it will deploy a subvolume containing all Arkanium related files excluding kernels and initramfs to `/arkanium`.
-```console
+```shell
 sudo arkanium-deploy init
 ```
 
 ### Deploying an image
 To deploy the latest available image from the default repository run the following command;
-```console
+```shell
 sudo arkanium-deploy deploy
 ```
 It will check in with the server defined in `/arkanium/config` as `repo_url` and pull the latest image defined in `$repo_url/database`, see [Repository](#Repository) for additional information.
 
 ### Deploying a specified image version
 A specific image version to pull and deploy can be parsed like so;
-```console
+```shell
 sudo arkanium-deploy deploy 00ce35074659538f946be77d9efaefc37725335689
 ```
 Simply provide the basename of the image and it will attempt to find it in `/database`.
 
 You do not have to provide the full basename, you can provide it with an impartial basename, the first hit will be pulled and deployed.
-```console
+```shell
 sudo arkanium-deploy deploy 00ce
 ```
