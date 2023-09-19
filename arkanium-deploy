@@ -17,6 +17,7 @@ if [[ ! -n $1 ]]; then
 	  init			Initialize Arkanium on a new system
 	  teardown		Remove all Arkanium-deploy related files and folders
 	  get-available		List available packages in repo
+	  list			List all currently deployed images
 	END
 	exit 0
 fi
@@ -186,6 +187,10 @@ get_available () {
 	printf "\e[1;34m-->\e[0m\e[1m Downloading list file from $repo_url\e[0m\n"
 	curl -sf "${repo_url}/list" || cleanup_and_quit 'Failed to download repo file'
 
+}
+
+list_deployed () {
+	cat $arkanium_dir/tracker
 }
 
 # Deploy a new or update an existing deployment
@@ -387,3 +392,4 @@ deploy () {
 [[ $1 == 'update' ]] && check_for_updates
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'deploy' ]] && deploy $1 $2 $3
+[[ $1 == 'list' ]] && list_deployed
