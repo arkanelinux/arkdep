@@ -62,3 +62,42 @@ The compression method is flexible, any compression method tar can ifner is supp
 The sha1sum is used to ensure the file was downloaded properly.
 
 Arkanium will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
+
+## Usage
+### Rolling out Arkanium on a new system
+
+> **Note** Are you lazy? Is `arkanium-deploy` a physical and mental struggle to type? I recommend symlinking or script wrapping it as `arkdep`
+
+> **Note** Arkanium has as of now only been tested on Arch Linux-based systems
+
+Arkanium can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
+
+System requirements;
+- `/` is partitioned with btrfs
+- `/boot` mounted boot partition
+- Systemd-boot bootloader is installed and configured as the primary bootloader
+- dracut, wget and curl are installed
+
+The following command will initialize Arkanium, it will deploy a subvolume containing all Arkanium related files excluding kernels and initramfs to `/arkanium`.
+```console
+sudo arkanium-deploy init
+```
+
+### Deploying an image
+To deploy the latest available image from the default repository run the following command;
+```console
+sudo arkanium-deploy deploy
+```
+It will check in with the server defined in `/arkanium/config` as `repo_url` and pull the latest image defined in `$repo_url/database`, see [Repository](#Repository) for additional information.
+
+### Deploying a specified image version
+A specific image version to pull and deploy can be parsed like so;
+```console
+sudo arkanium-deploy deploy 00ce35074659538f946be77d9efaefc37725335689
+```
+Simply provide the basename of the image and it will attempt to find it in `/database`.
+
+You do not have to provide the full basename, you can provide it with an impartial basename, the first hit will be pulled and deployed.
+```console
+sudo arkanium-deploy deploy 00ce
+```
