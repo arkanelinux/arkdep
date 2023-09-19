@@ -63,7 +63,7 @@ cleanup_and_quit () {
 	exit 1
 
 # Check if all dependencies are installed, quit if not
-for prog in btrfs wget dracut bootctl; do
+for prog in btrfs wget dracut bootctl curl; do
 	if ! command -v $prog > /dev/null; then
 		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
 		exit 1
@@ -217,7 +217,8 @@ deploy () {
 	if [[ $deploy_version == 'latest' ]]; then
 		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
 	else
-		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $3)
+		# Only return first hit
+		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $3 | head -1)
 	fi
 
 	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
