@@ -21,12 +21,12 @@ Use the arkdep-build script to build your customlinux images.
 sudo arkdep-build customlinux
 
 # Or alternatively using a custom image name
-sudo arkdep_OVERWRITE_RANDOM='customlinux_v1.0' arkdep-build customlinux
+sudo ARKDEP_OVERWRITE_RANDOM='customlinux_v1.0' arkdep-build customlinux
 ```
 
 Once done you can find compressed and uncompressed copies of your new image in the `target` directory.
 
-arkdep will by default generate a psuedo-random hex string and use this as the name of your image. This behaviour can be overwritten by assigning a custom name to the `arkdep_OVERWRITE_RANDOM` environment variable.
+arkdep will by default generate a psuedo-random hex string and use this as the name of your image. This behaviour can be overwritten by assigning a custom name to the `ARKDEP_OVERWRITE_RANDOM` environment variable.
 
 ## Repository
 

@@ -17,8 +17,8 @@ if [[ ! -n $1 || -n $2 ]]; then
 	 are included by default.
 
 	Variables:
-	  arkdep_NO_TAR			Do not create a compressed tarball, only create the images
-	  arkdep_OVERWRITE_RANDOM		Define a custom image name
+	  ARKDEP_NO_TAR			Do not create a compressed tarball, only create the images
+	  ARKDEP_OVERWRITE_RANDOM		Define a custom image name
 	END
 	exit 0
 fi
@@ -62,8 +62,8 @@ cleanup_and_quit () {
 # image names
 gen_random_string () {
 
-	if [[ -v arkdep_OVERWRITE_RANDOM ]]; then
-		random=$arkdep_OVERWRITE_RANDOM
+	if [[ -v ARKDEP_OVERWRITE_RANDOM ]]; then
+		random=$ARKDEP_OVERWRITE_RANDOM
 	else
 		random=$(openssl rand -hex 100 | head -c 42)
 	fi
@@ -185,7 +185,7 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs send -f $output_target/$image_name/$image_name-etc.img $workdir/etc
 	btrfs send -f $output_target/$image_name/$image_name-var.img $workdir/var
 
-	if [[ ! -v arkdep_NO_TAR ]]; then
+	if [[ ! -v ARKDEP_NO_TAR ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m Compressing images\e[0m\n"
 		tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst -C $output_target/$image_name .
 	fi
