@@ -10,12 +10,12 @@ set -o pipefail
 # Print manual if no parameters provided or invalid amount of parameters is provided
 if [[ ! -n $1 ]]; then
 	cat <<- END
-	Usage: arkanium-deploy <action> [target]
+	Usage: arkdep-deploy <action> [target]
 	Actions:
 	  update		Check for updates, optionally provide a target, if no target provided it defaults to primary
 	  deploy		Deploy a new or update an existing deployment
-	  init			Initialize Arkanium on a new system
-	  teardown		Remove all Arkanium-deploy related files and folders
+	  init			Initialize arkdep on a new system
+	  teardown		Remove all arkdep-deploy related files and folders
 	  get-available		List available packages in repo
 	  list			List all currently deployed images
 	END
@@ -24,11 +24,11 @@ fi
 
 ## Set common variables
 #
-declare -r arkanium_dir='/arkanium/'
+declare -r arkdep_dir='/arkdep/'
 
 ## Load config file
 #
-source $arkanium_dir/config
+source $arkdep_dir/config
 
 ## Common functions
 #
@@ -41,9 +41,9 @@ cleanup_and_quit () {
 	# Remove the subvolume we were working on
 	# TODO: Make this a generic function and share with the removal of old images?
 	if [[ -n ${data[0]} ]]; then
-		btrfs property set -f -ts $arkanium_dir/deployments/${data[0]}/rootfs ro false
-		rm -rf $arkanium_dir/deployments/${data[0]}
-		rm -rf /boot/arkanium/${data[0]}
+		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false
+		rm -rf $arkdep_dir/deployments/${data[0]}
+		rm -rf /boot/arkdep/${data[0]}
 		rm /boot/loader/entries/${data[0]}.conf
 	fi
 
@@ -72,50 +72,47 @@ done
 
 ## Core functions
 #
-# Initialize the system for arkanium
+# Initialize the system for arkdep
 init () {
 
 	# Ensure systemd-boot is installed before continuing, for it is the only thing we support
 	bootctl is-installed || cleanup_and_quit 'systemd-boot seems to not be installed'
 
-	printf '\e[1;34m-->\e[0m\e[1m Initializing arkanium\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
 
-	[[ -d $arkanium_dir ]] && cleanup_and_quit "$arkanium_dir already exists"
+	[[ -d $arkdep_dir ]] && cleanup_and_quit "$arkdep_dir already exists"
 
-	# Create the /arkanium subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $arkanium_dir) subvolume\e[0m\n"
-	btrfs subvolume create $arkanium_dir || cleanup_and_quit "Failed to create btrfs subvolume"
+	# Create the /arkdep subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $arkdep_dir) subvolume\e[0m\n"
+	btrfs subvolume create $arkdep_dir || cleanup_and_quit "Failed to create btrfs subvolume"
 
 	# Create directory structure
 	printf "\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n"
-	mkdir -pv $(readlink -m $arkanium_dir/deployments) \
-		$(readlink -m $arkanium_dir/deployments) \
-		$(readlink -m $arkanium_dir/cache) \
-		$(readlink -m $arkanium_dir/templates) \
-		$(readlink -m $arkanium_dir/overlay) \
-		$(readlink -m $arkanium_dir/shared) ||
-		cleanup_and_quit "Failed to create /arkanium and related directories"
+	mkdir -pv $(readlink -m $arkdep_dir/deployments) \
+		$(readlink -m $arkdep_dir/deployments) \
+		$(readlink -m $arkdep_dir/cache) \
+		$(readlink -m $arkdep_dir/templates) \
+		$(readlink -m $arkdep_dir/overlay) \
+		$(readlink -m $arkdep_dir/shared) ||
+		cleanup_and_quit "Failed to create /arkdep and related directories"
 
 	# Create empty database files
-	touch $(readlink -m $arkanium_dir/tracker)
+	touch $(readlink -m $arkdep_dir/tracker)
 
 	# Add home shared subvolume and make writable
-	btrfs subvolume create $(readlink -m $arkanium_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
-	btrfs subvolume create $(readlink -m $arkanium_dir/shared/root) || cleanup_and_quit "Failed to create root subvolume"
-	btrfs property set -f -ts $(readlink -m  $arkanium_dir/shared/home) ro false
-	btrfs property set -f -ts $(readlink -m  $arkanium_dir/shared/root) ro false
+	btrfs subvolume create $(readlink -m $arkdep_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
+	btrfs subvolume create $(readlink -m $arkdep_dir/shared/root) || cleanup_and_quit "Failed to create root subvolume"
+	btrfs property set -f -ts $(readlink -m  $arkdep_dir/shared/home) ro false
+	btrfs property set -f -ts $(readlink -m  $arkdep_dir/shared/root) ro false
 
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
-	cat <<- END > $arkanium_dir/config
-	# Write /arkanium/overlay overlay to root or etc
+	cat <<- END > $arkdep_dir/config
+	# Write /arkdep/overlay overlay to root or etc
 	enable_overlay=1
 
-	# Do not install additional packages defined customize
-	custom_packages=0
-
 	# URL to image repository, do not add trailing slash
-	repo_url='https://repo.arkanelinux.org/arkanium'
+	repo_url='https://repo.arkanelinux.org/arkdep'
 
 	# Default image pulled from repo if nothing defined
 	repo_default_image='arkanelinux'
@@ -125,13 +122,13 @@ init () {
 	END
 
 	# Add default bootloader config file
-	cat <<- END > $arkanium_dir/templates/systemd-boot
-	title Arkane GNU/Linux - arkanium
-	linux /arkanium/%target%/vmlinuz
+	cat <<- END > $arkdep_dir/templates/systemd-boot
+	title Arkane GNU/Linux - arkdep
+	linux /arkdep/%target%/vmlinuz
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
-	initrd /arkanium/%target%/initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=/arkanium/deployments/%target%/rootfs rw
+	initrd /arkdep/%target%/initramfs-linux.img
+	options root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw
 	END
 
 	exit 0
@@ -141,12 +138,12 @@ init () {
 teardown () {
 
 	cat <<- END
-	WARNING: Removing arkanium may leave your system in an unbootable state and you
+	WARNING: Removing arkdep may leave your system in an unbootable state and you
 	may have to manually reconfigure your bootloader etc.. Only proceed if you know
 	what you are doing!
 
 	The following changes will be made to your system;
-	- All subvolumes under $arkanium_dir will be deleted
+	- All subvolumes under $arkdep_dir will be deleted
 
 	END
 
@@ -155,23 +152,23 @@ teardown () {
 
 	if [[ $input_confirm == 'I KNOW WHAT I AM DOING' ]]; then
 
-		printf '\e[1;34m-->\e[0m\e[1m Tearing down arkanium\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Tearing down arkdep\e[0m\n'
 
-		# Quit with error if $arkanium_dir does not exist
-		if [[ ! -d $arkanium_dir ]]; then
-			printf "\e[1;31m<#>\e[0m $(readlink -m $arkanium_dir) does not exist, there is nothing to tear down"
+		# Quit with error if $arkdep_dir does not exist
+		if [[ ! -d $arkdep_dir ]]; then
+			printf "\e[1;31m<#>\e[0m $(readlink -m $arkdep_dir) does not exist, there is nothing to tear down"
 			exit 1
 		fi
 
-		# Remove all nested subvolumes in $arkanium_dir
-		for volume in $(btrfs subvolume list $arkanium_dir | grep -oE '[^ ]+$'); do
-			btrfs property set -f -ts $(readlink -m $arkanium_dir/$volume) ro false
-			btrfs subvolume delete $(readlink -m $arkanium_dir/$volume)
+		# Remove all nested subvolumes in $arkdep_dir
+		for volume in $(btrfs subvolume list $arkdep_dir | grep -oE '[^ ]+$'); do
+			btrfs property set -f -ts $(readlink -m $arkdep_dir/$volume) ro false
+			rm -rf $(readlink -m $arkdep_dir/$volume)
 		done
 
-		# Remove $arkanium_dir itself
-		btrfs property set -f -ts $(readlink -m $arkanium_dir) ro false
-		btrfs subvolume delete $(readlink -m $arkanium_dir)
+		# Remove $arkdep_dir itself
+		btrfs property set -f -ts $(readlink -m $arkdep_dir) ro false
+		rm -rf $(readlink -m $arkdep_dir)
 
 	else
 		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
@@ -190,14 +187,14 @@ get_available () {
 }
 
 list_deployed () {
-	cat $arkanium_dir/tracker
+	cat $arkdep_dir/tracker
 }
 
 # Deploy a new or update an existing deployment
 deploy () {
 
 	# target and version are optional, if not defined default to primary as defined in
-	# /arkanium/config and latest
+	# /arkdep/config and latest
 	if [[ -n $2 ]]; then
 		declare -r deploy_target=$2
 	else
@@ -227,26 +224,26 @@ deploy () {
 	data[2]=${data[2]//[$'\t\r\n']}
 
 	# Lets ensure the requested image is not already deployed
-	if [[ -e $arkanium_dir/deployments/${data[0]} ]]; then
+	if [[ -e $arkdep_dir/deployments/${data[0]} ]]; then
 		printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} is already deployed, canceling deployment\e[0m\n"
 		exit 0
 	fi
 
 	# Check if requested version is already downloaded
-	if [[ -e $arkanium_dir/cache/${data[0]}.tar.${data[1]} ]]; then
+	if [[ -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m ${data[0]} already in cache, skipping download\e[0m\n"
 	else
 
 		# Download the tarball if not yet downloaded
-		if [[ ! -e $arkanium_dir/cache/${data[0]}.tar.${data[1]} ]]; then
-			wget -P $(readlink -m $arkanium_dir/cache/) "$repo_url/$repo_default_image/${data[0]}.tar.${data[1]}" ||
+		if [[ ! -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
+			wget -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$repo_default_image/${data[0]}.tar.${data[1]}" ||
 				cleanup_and_quit 'Failed to download tarball'
 		fi
 
 	fi
 
 	printf "\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n"
-	sha1sum "$(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]})" |
+	sha1sum "$(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]})" |
 		grep "${data[3]}" ||
 		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
@@ -254,60 +251,60 @@ deploy () {
 	printf "\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n"
 
 	# Create directory using unique deployment name
-	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}) || cleanup_and_quit 'Failed to create deployment directory'
+	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}) || cleanup_and_quit 'Failed to create deployment directory'
 
-	if [[ ! -e $arkanium_dir/cache/${data[0]}-rootfs.img ]]; then
-		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-rootfs.img" ||
+	if [[ ! -e $arkdep_dir/cache/${data[0]}-rootfs.img ]]; then
+		tar -xf $(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkdep_dir/cache/) "./${data[0]}-rootfs.img" ||
 			cleanup_and_quit 'Failed to extract root'
 	fi
 
 	# Write the root image
-	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-rootfs.img) $(readlink -m $arkanium_dir/deployments/${data[0]}) ||
+	btrfs receive -f $(readlink -m $arkdep_dir/cache/${data[0]}-rootfs.img) $(readlink -m $arkdep_dir/deployments/${data[0]}) ||
 		cleanup_and_quit 'Failed to receive root'
 
 	# Cleanup root image
-	rm $(readlink -m $arkanium_dir/cache/${data[0]}-rootfs.img)
+	rm $(readlink -m $arkdep_dir/cache/${data[0]}-rootfs.img)
 
 	# Extract the etc image if not yet extracted
 	printf "\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n"
-	if [[ ! -e $arkanium_dir/cache/${data[0]}-etc.img ]]; then
-		tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-etc.img" ||
+	if [[ ! -e $arkdep_dir/cache/${data[0]}-etc.img ]]; then
+		tar -xf $(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkdep_dir/cache/) "./${data[0]}-etc.img" ||
 			cleanup_and_quit 'failed to extract etc'
 	fi
 
 	# Write the etc image and create var directory, we have to unlock rootfs temporarily to do this
-	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs) ro false ||
+	btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs) ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
 
-	btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img) $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/) ||
+	btrfs receive -f $(readlink -m $arkdep_dir/cache/${data[0]}-etc.img) $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/) ||
 		cleanup_and_quit 'Failed to receive etc'
 
 	printf "\e[1;34m-->\e[0m\e[1m Ensure var and root mountpoints exist\e[0m\n"
-	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/var)
-	mkdir -pv $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/root)
+	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/var)
+	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/root)
 
 	# Lock the root volume again
-	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs) ro true ||
+	btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs) ro true ||
 		cleanup_and_quit 'Failed to lock root'
 
 	# Unlock the etc deployment
-	btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}/rootfs/etc) ro false ||
+	btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/etc) ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
 
 	# Cleanup etc image
-	rm $(readlink -m $arkanium_dir/cache/${data[0]}-etc.img)
+	rm $(readlink -m $arkdep_dir/cache/${data[0]}-etc.img)
 
 	# Write the var image
-	if [[ ! -e $arkanium_dir/shared/var ]]; then
+	if [[ ! -e $arkdep_dir/shared/var ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n"
 
 		# Extract the var image if not yet extracted
-		if [[ ! -e $arkanium_dir/cache/${data[0]}-var.img ]]; then
-			tar -xf $(readlink -m $arkanium_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkanium_dir/cache/) "./${data[0]}-var.img" ||
+		if [[ ! -e $arkdep_dir/cache/${data[0]}-var.img ]]; then
+			tar -xf $(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]}) -C $(readlink -m $arkdep_dir/cache/) "./${data[0]}-var.img" ||
 				cleanup_and_quit 'failed to extract var'
 		fi
 
-		btrfs receive -f $(readlink -m $arkanium_dir/cache/${data[0]}-var.img) $(readlink -m $arkanium_dir/shared/) ||
+		btrfs receive -f $(readlink -m $arkdep_dir/cache/${data[0]}-var.img) $(readlink -m $arkdep_dir/shared/) ||
 			cleanup_and_quit 'Failed to receive var'
 	else
 		# Notify if var is not deployed
@@ -315,16 +312,16 @@ deploy () {
 	fi
 
 	# Make var writable
-	btrfs property set -f -ts $(readlink -m $arkanium_dir/shared/var) ro false ||
+	btrfs property set -f -ts $(readlink -m $arkdep_dir/shared/var) ro false ||
 		cleanup_and_quit 'Failed to unlock var'
 
 	# Cleanup var image
-	rm $(readlink -m $arkanium_dir/cache/${data[0]}-var.img)
+	rm $(readlink -m $arkdep_dir/cache/${data[0]}-var.img)
 
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m Copying overlay to deployment\e[0m\n"
-		overlay_files=$(ls $arkanium_dir/overlay/)
+		overlay_files=$(ls $arkdep_dir/overlay/)
 
 		# Check if only /etc is present, if it is we do not have to unlock the root volume
 		for file in ${overlay_files[*]}; do
@@ -336,37 +333,37 @@ deploy () {
 
 		# Unlock root if required
 		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}) ro false
+			btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}) ro false
 		fi
 
-		cp -rv $(readlink -m $arkanium_dir/overlay/*) $(readlink -m /$arkanium_dir/deployments/${data[0]}/rootfs/)
+		cp -rv $(readlink -m $arkdep_dir/overlay/*) $(readlink -m /$arkdep_dir/deployments/${data[0]}/rootfs/)
 
 		# Lock root again if required
 		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/${data[0]}) ro true
+			btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}) ro true
 		fi
 	fi
 
 	printf "\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n"
-	mkdir -pv $(readlink -m /boot/arkanium/${data[0]})
-	cp -v $arkanium_dir/deployments/${data[0]}/rootfs/usr/lib/modules/*/vmlinuz /boot/arkanium/${data[0]}/ ||
+	mkdir -pv $(readlink -m /boot/arkdep/${data[0]})
+	cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/*/vmlinuz /boot/arkdep/${data[0]}/ ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
 	# Install kernel and generate initramfs
 	printf "\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n"
-	dracut -k $(cd /arkanium/deployments/${data[0]}/rootfs/usr/lib/modules/*; pwd) \
-		--kernel-image /boot/arkanium/${data[0]}/vmlinuz \
+	dracut -k $(cd /arkdep/deployments/${data[0]}/rootfs/usr/lib/modules/*; pwd) \
+		--kernel-image /boot/arkdep/${data[0]}/vmlinuz \
 		--force \
-		/boot/arkanium/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
+		/boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
 
 	# Add to database
 	# TODO: If this step is never reached ensure cleanup, maybe write a "busy file" somewhere
 	printf "\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n"
-	printf "${data[0]}\n$(cat $(readlink -m $arkanium_dir/tracker | head -$deploy_keep))" > $arkanium_dir/tracker
+	printf "${data[0]}\n$(cat $(readlink -m $arkdep_dir/tracker | head -$deploy_keep))" > $arkdep_dir/tracker
 
 	# Deploy bootloader configuration
 	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n"
-	sed "s/%target%/${data[0]}/" $arkanium_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
+	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
 
 	printf "\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n"
 	# Configuring it with a oneshot for now, for testing
@@ -374,16 +371,16 @@ deploy () {
 	bootctl set-oneshot ${data[0]}.conf || cleanup_and_quit "Failed to set default bootloader entry"
 
 	# Remove entries outside of keep
-	declare -r remove_deployments="$(cat $arkanium_dir/tracker | head -$deploy_keep | grep -rvf - $(readlink -m $arkanium_dir/tracker))"
+	declare -r remove_deployments="$(cat $arkdep_dir/tracker | head -$deploy_keep | grep -rvf - $(readlink -m $arkdep_dir/tracker))"
 
 	# Remove old deployments
 	for deployment in $remove_deployments; do
 		printf "\e[1;34m-->\e[0m\e[1m Removing old deployment $deployment\e[0m\n"
 		rm -v /boot/loader/entries/$deployment.conf
-		btrfs property set -f -ts $(readlink -m $arkanium_dir/deployments/$deployment) ro false
-		rm -rfv $(readlink -m $arkanium_dir/deployments/$deployment)
-		rm -rfv $(readlink -m /boot/arkanium/$deployment)
-		grep -rv $deployment $(readline -m $arkanium_dir/tracker) > $arkanium_dir/tracker
+		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/$deployment) ro false
+		rm -rfv $(readlink -m $arkdep_dir/deployments/$deployment)
+		rm -rfv $(readlink -m /boot/arkdep/$deployment)
+		grep -rv $deployment $(readline -m $arkdep_dir/tracker) > $arkdep_dir/tracker
 	done
 
 }

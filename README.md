@@ -1,11 +1,11 @@
-# Arkanium / Arkdep
+# arkdep
 A toolkit for building, deploying and maintaining a btrfs-based multi-root system.
 
 ## Packaging
 ### Custom configurations
 #### Arch Linux-based
 ```text
-arkanium-build.d
+arkdep-build.d
 ├── customlinux			# Directory carrying a custom name
 |  ├── overlay			# (Optional) Root filesystem overlay directory, contents are copied to root
 |  ├── base.list		# Plain text file containing list of packages installed by pacstrap
@@ -15,26 +15,26 @@ arkanium-build.d
 ```
 
 ### Building an image
-Use the arkanium-build script to build your customlinux images.
+Use the arkdep-build script to build your customlinux images.
 
 ```shell
-sudo arkanium-build customlinux
+sudo arkdep-build customlinux
 
 # Or alternatively using a custom image name
-sudo ARKANIUM_OVERWRITE_RANDOM='customlinux_v1.0' arkanium-build customlinux
+sudo arkdep_OVERWRITE_RANDOM='customlinux_v1.0' arkdep-build customlinux
 ```
 
 Once done you can find compressed and uncompressed copies of your new image in the `target` directory.
 
-Arkanium will by default generate a psuedo-random hex string and use this as the name of your image. This behaviour can be overwritten by assigning a custom name to the `ARKANIUM_OVERWRITE_RANDOM` environment variable.
+arkdep will by default generate a psuedo-random hex string and use this as the name of your image. This behaviour can be overwritten by assigning a custom name to the `arkdep_OVERWRITE_RANDOM` environment variable.
 
 ## Repository
 
 ### Example repository layout
-This would be a suitable layout if `repo_url` in `/arkanium/config` is set to `https://repo.example.com/arkanium`.
+This would be a suitable layout if `repo_url` in `/arkdep/config` is set to `https://repo.example.com/arkdep`.
 ```text
 repo.example.com
-├── arkanium
+├── arkdep
 |  ├── list		                # Plain text file containing names of all available image types
 |  ├── customlinux
 |  |  ├── database		        # Plain text file containing : delimited lists of all available images `image_name:compression_method:sha1sum`
@@ -61,14 +61,14 @@ The compression method is flexible, any compression method tar can ifner is supp
 
 The sha1sum is used to ensure the file was downloaded properly.
 
-Arkanium will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
+arkdep will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
 
 ## Usage
-### Rolling out Arkanium on a new system
+### Rolling out arkdep on a new system
 
-> **Note** Arkanium has as of now only been tested on Arch Linux-based systems
+> **Note** arkdep has as of now only been tested on Arch Linux-based systems
 
-Arkanium can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
+arkdep can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
 
 System requirements;
 - `/` is partitioned with btrfs
@@ -76,7 +76,7 @@ System requirements;
 - Systemd-boot bootloader is installed and configured as the primary bootloader
 - dracut, wget and curl are installed
 
-The following command will initialize Arkanium, it will deploy a subvolume containing all Arkanium related files excluding kernels and initramfs to `/arkanium`.
+The following command will initialize arkdep, it will deploy a subvolume containing all arkdep related files excluding kernels and initramfs to `/arkdep`.
 ```shell
 sudo arkdep init
 ```
@@ -86,7 +86,7 @@ To deploy the latest available image from the default repository run the followi
 ```shell
 sudo arkdep deploy
 ```
-It will check in with the server defined in `/arkanium/config` as `repo_url` and pull the latest image defined in `$repo_url/database`, see [Repository](#Repository) for additional information.
+It will check in with the server defined in `/arkdep/config` as `repo_url` and pull the latest image defined in `$repo_url/database`, see [Repository](#Repository) for additional information.
 
 ### Deploying a specified image version
 A specific image version to pull and deploy can be parsed like so;
