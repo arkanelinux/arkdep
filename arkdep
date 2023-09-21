@@ -279,9 +279,10 @@ deploy () {
 	btrfs receive -f $(readlink -m $arkdep_dir/cache/${data[0]}-etc.img) $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/) ||
 		cleanup_and_quit 'Failed to receive etc'
 
-	printf "\e[1;34m-->\e[0m\e[1m Ensure var and root mountpoints exist\e[0m\n"
+	printf "\e[1;34m-->\e[0m\e[1m Ensure var, root and arkdep mountpoints exist\e[0m\n"
 	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/var)
 	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/root)
+	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/arkdep)
 
 	# Lock the root volume again
 	btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs) ro true ||
