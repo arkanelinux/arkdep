@@ -1,4 +1,4 @@
-# Arkanium
+# Arkanium / Arkdep
 A toolkit for building, deploying and maintaining a btrfs-based multi-root system.
 
 ## Packaging
@@ -43,7 +43,7 @@ repo.example.com
 ```
 
 ### Example repository configuration
-The `list` file is in part optional, it not utilized during the deployment process but the user may use it in combination with the `arkanium-deploy list` command to request a list of all available images in the repository.
+The `list` file is in part optional, it not utilized during the deployment process but the user may use it in combination with the `arkdep list` command to request a list of all available images in the repository.
 ```text
 customlinux
 customlinux-gnome
@@ -55,7 +55,7 @@ The `database` file contains a `:` delimited list of all available images. Each 
 customlinux_v2.0:zst:d5f45b2dac77399b37231c6ec4e864d184d35cf1
 customlinux_v1.0:zst:80ba4c7f3ff7a0ebce8e67d5b73f87c56af1b9f3
 ```
-The image name is used to find the actual image, users can also manually refer to a version with `arkanium-deploy deploy customlinux customlinux_v1.0`
+The image name is used to find the actual image, users can also manually refer to a version with `arkdep deploy customlinux customlinux_v1.0`
 
 The compression method is flexible, any compression method tar can ifner is supported. Some examples being `xz`, `gz` and `zst`.
 
@@ -65,8 +65,6 @@ Arkanium will assume the top most entry in the database is the latest one, when 
 
 ## Usage
 ### Rolling out Arkanium on a new system
-
-> **Note** Are you lazy? Is `arkanium-deploy` a physical and mental struggle to type? I recommend symlinking or script wrapping it as `arkdep`
 
 > **Note** Arkanium has as of now only been tested on Arch Linux-based systems
 
@@ -80,24 +78,24 @@ System requirements;
 
 The following command will initialize Arkanium, it will deploy a subvolume containing all Arkanium related files excluding kernels and initramfs to `/arkanium`.
 ```shell
-sudo arkanium-deploy init
+sudo arkdep init
 ```
 
 ### Deploying an image
 To deploy the latest available image from the default repository run the following command;
 ```shell
-sudo arkanium-deploy deploy
+sudo arkdep deploy
 ```
 It will check in with the server defined in `/arkanium/config` as `repo_url` and pull the latest image defined in `$repo_url/database`, see [Repository](#Repository) for additional information.
 
 ### Deploying a specified image version
 A specific image version to pull and deploy can be parsed like so;
 ```shell
-sudo arkanium-deploy deploy 00ce35074659538f946be77d9efaefc37725335689
+sudo arkdep deploy 00ce35074659538f946be77d9efaefc37725335689
 ```
 Simply provide the basename of the image and it will attempt to find it in `/database`.
 
 You do not have to provide the full basename, you can provide it with an impartial basename, the first hit will be pulled and deployed.
 ```shell
-sudo arkanium-deploy deploy 00ce
+sudo arkdep deploy 00ce
 ```
