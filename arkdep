@@ -180,14 +180,27 @@ teardown () {
 
 # List all available packages defined in the repo's list file
 get_available () {
-
 	printf "\e[1;34m-->\e[0m\e[1m Downloading list file from $repo_url\e[0m\n"
 	curl -sf "${repo_url}/list" || cleanup_and_quit 'Failed to download repo file'
-
 }
 
+# List all deployments and provide additional information about any untracked deployments
 list_deployed () {
-	cat $arkdep_dir/tracker
+
+	declare tracker=$(cat $arkdep_dir/tracker)
+	declare deployed=$(ls $arkdep_dir/deployments/)
+	declare untracked=$deployed
+
+	for tracked in ${tracker[@]}; do
+		untracked=("${untracked[@]/$tracked}")
+	done
+
+	printf "${tracked[*]}\n"
+
+	if [[ ! -z $untracked ]]; then
+		printf "\nThe following deployments were found but are not tracked;\n${untracked[@]}"
+	fi
+
 }
 
 # Deploy a new or update an existing deployment
