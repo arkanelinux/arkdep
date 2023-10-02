@@ -187,18 +187,25 @@ get_available () {
 # List all deployments and provide additional information about any untracked deployments
 list_deployed () {
 
-	declare tracker=$(cat $arkdep_dir/tracker)
-	declare deployed=$(ls $arkdep_dir/deployments/)
-	declare untracked=$deployed
+	declare tracker=($(cat $arkdep_dir/tracker))
+	declare deployed=($(ls $arkdep_dir/deployments/))
+	declare untracked=${deployed[*]}
 
+	# Compare items in tracker to actual deployed
 	for tracked in ${tracker[@]}; do
 		untracked=("${untracked[@]/$tracked}")
 	done
 
-	printf "${tracked[*]}\n"
+	printf "${tracker[*]}\n"
+
+	# Clean whitespaces
+	untracked=$(echo $untracked | xargs)
 
 	if [[ ! -z $untracked ]]; then
-		printf "\nThe following deployments were found but are not tracked;\n${untracked[@]}"
+		printf "\nThe following deployments were found but are not tracked;\n"
+		for t in $untracked; do
+			printf "$t\n"
+		done
 	fi
 
 }
