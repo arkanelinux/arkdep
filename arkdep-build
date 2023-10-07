@@ -18,18 +18,11 @@ if [[ ! -n $1 || -n $2 ]]; then
 
 	Variables:
 	  ARKDEP_NO_TAR			Do not create a compressed tarball, only create the images
-	  ARKDEP_OVERWRITE_RANDOM		Define a custom image name
+	  ARKDEP_CUSTOM_NAME		Define a custom image name
+	  ARKDEP_OUTPUT_TARGET		Overwrite location to which images will be written
 	END
 	exit 0
 fi
-
-## Set common variables
-#
-declare -r workdir='/var/tmp/rootfs'
-declare -r configs_dir="./arkdep-build.d/"
-declare -r variant="$1"
-declare -r type="$(cat $(readlink -m $configs_dir/$variant/type))"
-declare -r output_target="$(pwd)/target/"
 
 ## Common functions
 #
@@ -58,12 +51,25 @@ cleanup_and_quit () {
 
 }
 
+## Set common variables
+#
+declare -r workdir='/var/tmp/rootfs'
+declare -r configs_dir="./arkdep-build.d/"
+declare -r variant="$1"
+declare -r type="$(cat $(readlink -m $configs_dir/$variant/type) 2> /dev/null || cleanup_and_quit 'Failed to get build type')"
+[[ -v ARKDEP_OUTPUT_TARGET ]] &&
+	declare -r output_target="$ARKDEP_OUTPUT_TARGET" ||
+	declare -r output_target="$(pwd)/target/"
+
+echo $output_target
+exit 0
+
 # Generate a 42 character long random string, used for generating psuedo-random
 # image names
 gen_random_string () {
 
-	if [[ -v ARKDEP_OVERWRITE_RANDOM ]]; then
-		random=$ARKDEP_OVERWRITE_RANDOM
+	if [[ -v ARKDEP_CUSTOM_NAME ]]; then
+		random=$ARKDEP_CUSTOM_NAME
 	else
 		random=$(openssl rand -hex 100 | head -c 42)
 	fi
