@@ -20,6 +20,7 @@ if [[ ! -n $1 || -n $2 ]]; then
 	  ARKDEP_NO_TAR			Do not create a compressed tarball, only create the images
 	  ARKDEP_CUSTOM_NAME		Define a custom image name
 	  ARKDEP_OUTPUT_TARGET		Overwrite location to which images will be written
+	  ARKDEP_CONFIGS		Define directory in which build will search for configuration files
 	END
 	exit 0
 fi
@@ -54,15 +55,14 @@ cleanup_and_quit () {
 ## Set common variables
 #
 declare -r workdir='/var/tmp/rootfs'
-declare -r configs_dir="./arkdep-build.d/"
+[[ -v ARKDEP_CONFIGS ]] &&
+	declare -r configs_dir="$ARKDEP_CONFIGS" ||
+	declare -r configs_dir="$(readlink -m ./arkdep-build.d/)"
 declare -r variant="$1"
 declare -r type="$(cat $(readlink -m $configs_dir/$variant/type) 2> /dev/null || cleanup_and_quit 'Failed to get build type')"
 [[ -v ARKDEP_OUTPUT_TARGET ]] &&
 	declare -r output_target="$ARKDEP_OUTPUT_TARGET" ||
 	declare -r output_target="$(pwd)/target/"
-
-echo $output_target
-exit 0
 
 # Generate a 42 character long random string, used for generating psuedo-random
 # image names
@@ -94,7 +94,7 @@ for prog in btrfs pacstrap; do
 done
 
 # Check if requested variant exists
-[[ ! -d arkdep-build.d/$variant ]] &&
+[[ ! -d $configs_dir/$variant ]] &&
 	printf '\e[1;31m<#>\e[0m\e[1m The requested variant does not exist\e[0m\n' &&
 	exit 1
 
@@ -104,7 +104,7 @@ done
 if [[ $type == 'archlinux' ]]; then
 
 	# Ensure base.list exists, if not error and quit
-	if [[ ! -e arkdep-build.d/$variant/base.list ]]; then
+	if [[ ! -e $configs_dir/$variant/base.list ]]; then
 		printf "\e[1;31m<#>\e[0m\e[1m The required file 'base.list' is not preset in $(readlink -m $configs_dir/$variant)\e[0m\n" &&
 		exit 1
 	fi
@@ -121,28 +121,28 @@ if [[ $type == 'archlinux' ]]; then
 	mount --bind $workdir $workdir
 
 	# Read base package list and install base system
-	readarray base_packages < arkdep-build.d/$variant/base.list
+	readarray base_packages < $configs_dir/$variant/base.list
 	printf "\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n"
 	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
-	if [[ -d arkdep-build.d/$variant/overlay ]]; then
-		cp -rv arkdep-build.d/$variant/overlay/* $workdir/
+	if [[ -d $configs_dir/$variant/overlay ]]; then
+		cp -rv $configs_dir/$variant/overlay/* $workdir/
 	fi
 
 	# Read package list and install secondary system components, skip if not used
-	if [[ -e arkdep-build.d/$variant/package.list ]]; then
+	if [[ -e $configs_dir/$variant/package.list ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
-		readarray packages < arkdep-build.d/$variant/package.list
+		readarray packages < $configs_dir/$variant/package.list
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 	fi
 
 	# Enable systemd services if requested
-	if [[ -e arkdep-build.d/$variant/systemd.services ]]; then
+	if [[ -e $configs_dir/$variant/systemd.services ]]; then
 
 		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services\e[0m\n'
 
-		readarray services < arkdep-build.d/$variant/systemd.services
+		readarray services < $configs_dir/$variant/systemd.services
 
 		for service in ${services[*]}; do
 			arch-chroot $workdir systemctl enable $service
