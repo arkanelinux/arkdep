@@ -28,7 +28,7 @@ declare -r arkdep_dir='/arkdep/'
 
 ## Load config file
 #
-source $arkdep_dir/config
+source $(readlink -m $arkdep_dir/config)
 
 ## Common functions
 #
@@ -66,8 +66,10 @@ cleanup_and_quit () {
 for prog in btrfs wget dracut bootctl curl; do
 	if ! command -v $prog > /dev/null; then
 		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
-		exit 1
+		err=1
 	fi
+
+	[[ $err ]] && exit 1
 done
 
 ## Core functions
