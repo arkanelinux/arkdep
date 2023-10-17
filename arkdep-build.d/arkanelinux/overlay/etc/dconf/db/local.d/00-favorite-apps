@@ -1,0 +1,2 @@
+[org/gnome/shell]
+favorite-apps = ['com.github.p3732.OS-Installer.desktop', 'firefox.desktop', 'org.gnome.Calendar.desktop', 'io.bassi.Amberol.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Software.desktop']
