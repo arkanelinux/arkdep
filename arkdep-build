@@ -137,19 +137,6 @@ if [[ $type == 'archlinux' ]]; then
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 	fi
 
-	# Enable systemd services if requested
-	if [[ -e $configs_dir/$variant/systemd.services ]]; then
-
-		printf '\e[1;34m-->\e[0m\e[1m Enabling systemd services\e[0m\n'
-
-		readarray services < $configs_dir/$variant/systemd.services
-
-		for service in ${services[*]}; do
-			arch-chroot $workdir systemctl enable $service
-		done
-
-	fi
-
 	# Clear pacman cache
 	arch-chroot $workdir pacman --noconfirm -Scc
 
