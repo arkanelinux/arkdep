@@ -70,6 +70,7 @@ pipewire-audio
 pipewire-jack
 pipewire-pulse
 plymouth
+podman
 power-profiles-daemon
 pv
 qemu-guest-agent
@@ -87,6 +88,7 @@ webp-pixbuf-loader
 wireplumber
 xdg-desktop-portal-gnome
 xdg-user-dirs
+xdg-utils
 zsh
 zsh-autosuggestions
 zsh-completions
