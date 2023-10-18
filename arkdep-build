@@ -158,6 +158,10 @@ if [[ $type == 'archlinux' ]]; then
 	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
 	ln -s /var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
 
+	printf "\e[1;34m-->\e[0m\e[1m Creating usrliblocale symlink\e[0m\n"
+	mv $workdir/usr/lib/locale $workdir/var/usrliblocale || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
+	ln -s /var/usrliblocale $workdir/usr/lib/locale || cleanup_and_quit 'Failed to create usrlocal symlink'
+
 	# Make subvolume read-only
 	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n"
 	btrfs property set -ts $workdir ro true || cleanup_and_quit 'Failed to set root to read-only'
