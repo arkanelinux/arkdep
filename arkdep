@@ -18,6 +18,7 @@ if [[ ! -n $1 ]]; then
 	  teardown		Remove all arkdep-deploy related files and folders
 	  get-available		List available packages in repo
 	  list			List all currently deployed images
+	  remove		Remove a specified deployment
 	END
 	exit 0
 fi
@@ -174,6 +175,46 @@ teardown () {
 	else
 		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
 	fi
+
+	exit 0
+
+}
+
+# TODO: Make it accept multiple deployments
+remove_deployment () {
+
+	# Ensure required vars are set
+	[[ ! -n $1 ]] && \
+		printf 'No deployment defined\n' && exit 1
+
+	declare -r hits=($(grep -v $1 $arkdep_dir/tracker))
+
+	if [[ ${#hits[@]} -gt 1 ]]; then
+		printf 'Multiple deployments match target, be more specific\n'
+		exit 1
+	elif [[ ${#hits[@]} -lt 1 ]]; then
+		printf 'No deployments match target\n'
+		exit 1
+	fi
+
+	declare -r target="${hits[0]}"
+
+	# Remove bootloader entry
+	rm -rfv /boot/loader/entries/$target.conf
+	rm -rfv /boot/arkdep/$target
+
+	# Ensure the deployment and all sub-volumes are writable
+	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
+		echo $volume
+		btrfs property set -f -ts $volume ro false || printf "failed to make subvol $volume writable\n"
+	done
+
+	# Remove the deployment
+	rm -rf $(readlink -m $arkdep_dir/deployments/$target)
+
+	# Remove from tracker
+	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
+	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
 
 	exit 0
 
@@ -413,3 +454,4 @@ deploy () {
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'deploy' ]] && deploy $1 $2 $3
 [[ $1 == 'list' ]] && list_deployed
+[[ $1 == 'remove' ]] && remove_deployment $1
