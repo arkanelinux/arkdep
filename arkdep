@@ -162,15 +162,14 @@ teardown () {
 			exit 1
 		fi
 
-		# Remove all nested subvolumes in $arkdep_dir
-		for volume in $(btrfs subvolume list $arkdep_dir | grep -oE '[^ ]+$'); do
-			btrfs property set -f -ts $(readlink -m $arkdep_dir/$volume) ro false
-			rm -rf $(readlink -m $arkdep_dir/$volume)
-		done
+		# Remove all bootloader entries
+		rm -v $(grep -ril arkdep /boot/loader/entries)
 
-		# Remove $arkdep_dir itself
-		btrfs property set -f -ts $(readlink -m $arkdep_dir) ro false
-		rm -rf $(readlink -m $arkdep_dir)
+		# Ensure all nested volumes in arkdep are writable and remove
+		for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep "^$arkdep_dir" | tac); do
+			btrfs property set -f -ts $(readlink -m $volume) ro false
+			btrfs subvolume delete $volume
+		done
 
 	else
 		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
