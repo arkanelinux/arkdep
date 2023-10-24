@@ -85,6 +85,7 @@ vulkan-intel
 vulkan-mesa-layers
 vulkan-radeon
 webp-pixbuf-loader
+wget
 wireplumber
 xdg-desktop-portal-gnome
 xdg-user-dirs
