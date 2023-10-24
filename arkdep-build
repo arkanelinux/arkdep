@@ -152,27 +152,27 @@ if [[ $type == 'archlinux' ]]; then
 	# Make /usr/local symlink in var
 	printf "\e[1;34m-->\e[0m\e[1m Creating moving dirs to var and creating symlinks\e[0m\n"
 	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
-	ln -sv /var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
+	ln -sv var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
 
 	# locale symlink
 	mv $workdir/usr/lib/locale $workdir/var/usrliblocale || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
-	ln -sv /var/usrliblocale $workdir/usr/lib/locale || cleanup_and_quit 'Failed to create usrlocal symlink'
+	ln -sv var/usrliblocale $workdir/usr/lib/locale || cleanup_and_quit 'Failed to create usrlocal symlink'
 
 	# roothome symlink
 	mv $workdir/root $workdir/var/roothome || cleanup_and_quit 'Failed to move root to var/roothome'
-	ln -sv /var/roothome $workdir/root || cleanup_and_quit 'Failed to create roothome symlink'
+	ln -sv var/roothome $workdir/root || cleanup_and_quit 'Failed to create roothome symlink'
 
 	# Opt symlink
 	mv $workdir/opt $workdir/var/opt || cleanup_and_quit 'Failed to move opt to var/opt'
-	ln -sv /var/opt $workdir/opt || cleanup_and_quit 'Failed to create opt symlink'
+	ln -sv var/opt $workdir/opt || cleanup_and_quit 'Failed to create opt symlink'
 
 	# srv symlink
 	mv $workdir/srv $workdir/var/srv || cleanup_and_quit 'Failed to move srv to var/srv'
-	ln -sv /var/srv $workdir/srv || cleanup_and_quit 'Failed to create srv symlink'
+	ln -sv var/srv $workdir/srv || cleanup_and_quit 'Failed to create srv symlink'
 
 	# mnt symlink
 	mv $workdir/mnt $workdir/var/mnt || cleanup_and_quit 'Failed to move mnt to var/mnt'
-	ln -sv /var/mnt $workdir/mnt || cleanup_and_quit 'Failed to create mnt symlink'
+	ln -sv var/mnt $workdir/mnt || cleanup_and_quit 'Failed to create mnt symlink'
 
 	# Make subvolume read-only
 	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n"
