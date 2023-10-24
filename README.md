@@ -1,6 +1,8 @@
 # arkdep
 A toolkit for building, deploying and maintaining a btrfs-based multi-root system.
 
+arkdep attempts to be as simple to use as possible and avoid unnecessary abstraction, if you know how to use GNU/Linux picking up arkdep should be painless for it maintains much of your old familiar workflow.
+
 ## Usage
 ### Rolling out arkdep on a new system
 
@@ -112,7 +114,7 @@ customlinux_v1.0:zst:80ba4c7f3ff7a0ebce8e67d5b73f87c56af1b9f3
 ```
 The image name is used to find the actual image, users can also manually refer to a version with `arkdep deploy customlinux customlinux_v1.0`
 
-The compression method is flexible, any compression method tar can ifner is supported. Some examples being `xz`, `gz` and `zst`.
+The compression method is flexible, any compression method tar can infer is supported. Some examples being `xz`, `gz` and `zst`.
 
 The sha1sum is used to ensure the file was downloaded properly.
 
