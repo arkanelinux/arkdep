@@ -30,11 +30,10 @@ You will most likely wish to add the following to the overlay;
 Here is a reference fstab file, take note of the `subvol` mount option;
 ```shell
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/           btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvolid=5,subvol=/,compress=zstd	0 0
-UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/root       btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/root,compress=zstd	0 0
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/home       btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/home,compress=zstd	0 0
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/var        btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/var,compress=zstd	0 0
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/arkdep     btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep,compress=zstd	0 0
-UUID=1223-2137      	                    /boot       vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
+UUID=1223-2137                              /boot       vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
 ```
 
 If you wish to use custom kernel parameters you can edit `/arkdep/templates/systemd-boot`

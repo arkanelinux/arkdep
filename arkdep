@@ -104,9 +104,7 @@ init () {
 
 	# Add home shared subvolume and make writable
 	btrfs subvolume create $(readlink -m $arkdep_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
-	btrfs subvolume create $(readlink -m $arkdep_dir/shared/root) || cleanup_and_quit "Failed to create root subvolume"
 	btrfs property set -f -ts $(readlink -m  $arkdep_dir/shared/home) ro false
-	btrfs property set -f -ts $(readlink -m  $arkdep_dir/shared/root) ro false
 
 	# Write default config file
 	printf "\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n"
@@ -346,7 +344,6 @@ deploy () {
 
 	printf "\e[1;34m-->\e[0m\e[1m Ensure var, root and arkdep mountpoints exist\e[0m\n"
 	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/var)
-	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/root)
 	mkdir -pv $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/arkdep)
 
 	# Lock the root volume again
