@@ -29,7 +29,6 @@ You will most likely wish to add the following to the overlay;
 
 Here is a reference fstab file, take note of the `subvol` mount option;
 ```shell
-UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/           btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvolid=5,subvol=/,compress=zstd	0 0
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/home       btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/home,compress=zstd	0 0
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/var        btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/var,compress=zstd	0 0
 UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/arkdep     btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep,compress=zstd	0 0
