@@ -138,6 +138,7 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# Clear pacman cache
+	printf "\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n"
 	arch-chroot $workdir pacman --noconfirm -Scc
 
 	# Remove subvolumes created by systemd
@@ -147,11 +148,6 @@ if [[ $type == 'archlinux' ]]; then
 	[[ -d $workdir/var/lib/machines ]] &&
 		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n"
 		btrfs subvolume delete $workdir/var/lib/machines
-
-	# Clear pacman cache
-	printf "\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n"
-	rm -rf $workdir/var/cache/pacman/pkg/*
-	rm -rf $workdir/var/lib/pacman/local/*
 
 	# Make /usr/local symlink in var
 	printf "\e[1;34m-->\e[0m\e[1m Creating moving dirs to var and creating symlinks\e[0m\n"
