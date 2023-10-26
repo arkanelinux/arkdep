@@ -25,7 +25,7 @@ Once ardep is installed you should prepare the overlay located at `/arkdep/overl
 
 You will most likely wish to add the following to the overlay;
 - passwd, shadow, group, subgid and subuid files
-- Optionally an fstab, locale.conf/locale.gen and custom dracut configuration
+- Optionally an fstab, locale.conf/locale.gen, localtime symlink and custom dracut configuration
 
 Here is a reference fstab file, take note of the `subvol` mount option;
 ```shell
