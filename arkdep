@@ -97,7 +97,7 @@ init () {
 		$(readlink -m $arkdep_dir/templates) \
 		$(readlink -m $arkdep_dir/overlay) \
 		$(readlink -m $arkdep_dir/shared) ||
-		cleanup_and_quit "Failed to create /arkdep and related directories"
+		cleanup_and_quit "Failed to create $arkdep_dir and related directories"
 
 	# Create empty database files
 	touch $(readlink -m $arkdep_dir/tracker)
@@ -414,8 +414,10 @@ deploy () {
 
 	# Install kernel and generate initramfs
 	printf "\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n"
-	dracut -k $(cd /arkdep/deployments/${data[0]}/rootfs/usr/lib/modules/*; pwd) \
+	declare -r kernel_version=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
+	dracut -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernel_version[0]} \
 		--kernel-image /boot/arkdep/${data[0]}/vmlinuz \
+		--kver ${kernel_version[0]}
 		--force \
 		/boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
 
