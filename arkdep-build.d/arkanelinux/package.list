@@ -48,6 +48,7 @@ gst-plugin-pipewire
 gst-plugins-base
 gst-plugins-good
 ibus-typing-booster
+libnss-extrausers
 libva-mesa-driver
 loupe
 man-db
