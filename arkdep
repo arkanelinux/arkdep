@@ -118,7 +118,7 @@ init () {
 	# Default image pulled from repo if nothing defined
 	repo_default_image='arkanelinux'
 
-	# Keep the latest n+1 deployments, remove anything older
+	# Keep the latest n-1 deployments, remove anything older
 	deploy_keep=2
 	END
 
