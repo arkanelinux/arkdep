@@ -436,10 +436,10 @@ deploy () {
 	bootctl set-oneshot ${data[0]}.conf || cleanup_and_quit "Failed to set default bootloader entry"
 
 	# Remove entries outside of keep
-	declare -r remove_deployments="$(cat $arkdep_dir/tracker | head -$deploy_keep | grep -rvf - $(readlink -m $arkdep_dir/tracker))"
+	declare -r remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
 
 	# Remove old deployments
-	for deployment in $remove_deployments; do
+	for deployment in ${remove_deployments[@]}; do
 		printf "\e[1;34m-->\e[0m\e[1m Removing old deployment $deployment\e[0m\n"
 		rm -v /boot/loader/entries/$deployment.conf
 		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/$deployment) ro false
