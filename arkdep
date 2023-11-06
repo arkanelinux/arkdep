@@ -417,7 +417,7 @@ deploy () {
 	declare -r kernel_version=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
 	dracut -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernel_version[0]} \
 		--kernel-image /boot/arkdep/${data[0]}/vmlinuz \
-		--kver ${kernel_version[0]}
+		--kver ${kernel_version[0]} \
 		--force \
 		/boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
 
