@@ -189,8 +189,8 @@ if [[ $type == 'archlinux' ]]; then
 	done
 
 	# Ensure passwd/group/shadow permissions are set properly
-	chmod 600 $workdir/etc/shadow
-	chmod 644 $workdir/etc/{passwd,group}
+	chmod 600 $workdir/etc/shadow $workdir/usr/lib/shadow
+	chmod 644 $workdir/etc/{passwd,group} $workdir/usr/lib/{passwd,group}
 
 	#
 	# nss-switch.conf is added using the overlay
