@@ -188,7 +188,7 @@ remove_deployment () {
 	[[ ! -z $3 ]] && \
 		printf 'Multiple targets provided, remove only accepts a single target at a time\n' && exit 1
 
-	declare -r hits=($(grep -v $1 $arkdep_dir/tracker))
+	declare -r hits=($(grep $2 $arkdep_dir/tracker))
 
 	if [[ ${#hits[@]} -gt 1 ]]; then
 		printf 'Multiple deployments match target, be more specific\n'
