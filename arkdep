@@ -185,10 +185,12 @@ remove_deployment () {
 		printf 'No deployment defined\n' && exit 1
 
 	# Ensure deployment is not currently active
-	if grep "$2" /proc/cmdline > /dev/null; then
+	if grep "$(readlink -m $arkdep_dir/deployments/$2)" /proc/cmdline > /dev/null; then
 		printf 'Target is currently active deployment\n'
 		exit 1
 	fi
+
+	exit 0
 
 	# Ensure user only provided a single target
 	[[ ! -z $3 ]] && \
@@ -448,7 +450,7 @@ deploy () {
 	for deployment in ${remove_deployments[@]}; do
 
 		# Ensure deployment is not currently active
-		if grep "$deployment" /proc/cmdline > /dev/null; then
+		if grep "$(readlink -m $arkdep_dir/deployments/$deployment)" /proc/cmdline > /dev/null; then
 			break
 		fi
 
