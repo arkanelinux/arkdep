@@ -190,8 +190,6 @@ remove_deployment () {
 		exit 1
 	fi
 
-	exit 0
-
 	# Ensure user only provided a single target
 	[[ ! -z $3 ]] && \
 		printf 'Multiple targets provided, remove only accepts a single target at a time\n' && exit 1
