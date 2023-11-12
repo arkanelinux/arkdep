@@ -47,13 +47,17 @@ It will check in with the server defined in `/arkdep/config` as `repo_url` and p
 ### Deploying a specified image version
 A specific image version to pull and deploy can be parsed like so;
 ```shell
-sudo arkdep deploy 00ce35074659538f946be77d9efaefc37725335689
+sudo arkdep deploy arkanelinux 00ce35074659538f946be77d9efaefc37725335689
 ```
-Simply provide the basename of the image and it will attempt to find it in `/database`.
+
+The target name may be substituted with a `-` to pull the default target.
+```shell
+sudo arkdep deploy - 00ce35074659538f946be77d9efaefc37725335689
+```
 
 You do not have to provide the full basename, you can provide it with an impartial basename, the first hit will be pulled and deployed.
 ```shell
-sudo arkdep deploy 00ce
+sudo arkdep deploy arkanelinux 00ce
 ```
 
 ## Packaging
