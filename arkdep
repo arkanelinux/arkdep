@@ -457,7 +457,7 @@ deploy () {
 		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/$deployment) ro false
 		rm -rfv $(readlink -m $arkdep_dir/deployments/$deployment)
 		rm -rfv $(readlink -m /boot/arkdep/$deployment)
-		grep -rv $deployment $(readline -m $arkdep_dir/tracker) > $arkdep_dir/tracker
+		grep -rv $deployment $(readlink -m $arkdep_dir/tracker) > $arkdep_dir/tracker
 
 	done
 
