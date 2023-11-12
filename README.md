@@ -63,9 +63,8 @@ sudo arkdep deploy 00ce
 arkdep-build.d
 ├── customlinux			# Directory carrying a custom name
 |  ├── overlay			# (Optional) Root filesystem overlay directory, contents are copied to root
-|  ├── base.list		# Plain text file containing list of packages installed by pacstrap
-|  ├── package.list		# (Optional) Plain text file containing list of packages installed by pacman
-|  ├── systemd.services		# (Optional) Plain text file containing list of systemd services to enable
+|  ├── base.list		# Plain text file containing list of packages installed by pacstrap, used for installing the base system
+|  ├── package.list		# (Optional) Plain text file containing list of packages installed by pacman in a chroot, used for aditional package installations
 |  ├── type         		# Plain text file, for configs of the Arch type should contain `archlinux`
 ```
 
