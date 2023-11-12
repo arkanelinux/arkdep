@@ -39,20 +39,22 @@ cleanup_and_quit () {
 	# If any paramters are passed we will assume it to be an error message
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
+	# Ensure we do not try to remove our current deployment
+	if grep "$(readlink -m $arkdep_dir/deployments/$deployment)" /proc/cmdline > /dev/null; then
+		printf "\e[1;33m<!>\e[0m\e[1m Cleanup target is current active deployment, skipping\e[0m\n"
+		exit 1
+	fi
+
 	# Remove the subvolume we were working on
 	# TODO: Make this a generic function and share with the removal of old images?
 	if [[ -n ${data[0]} ]]; then
-		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false
+		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs) ro false
 		rm -rf $arkdep_dir/deployments/${data[0]}
 		rm -rf /boot/arkdep/${data[0]}
 		rm /boot/loader/entries/${data[0]}.conf
 	fi
 
-	# Quit program if argument provided to function
-	[[ -n $1 ]] && exit 1
-
-	# Otherwise just quit, there is no error
-	exit 0
+	exit 1
 
 }
 
