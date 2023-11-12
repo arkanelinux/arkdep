@@ -213,7 +213,7 @@ remove_deployment () {
 	# Ensure the deployment and all sub-volumes are writable
 	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
 		echo $volume
-		btrfs property set -f -ts $volume ro false || printf "failed to make subvol $volume writable\n"
+		btrfs property set -f -ts "/$volume" ro false || printf "failed to make subvol $volume writable\n"
 	done
 
 	# Remove the deployment
