@@ -168,7 +168,7 @@ teardown () {
 
 		# Ensure all nested volumes in arkdep are writable and remove
 		for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep "^$arkdep_dir" | tac); do
-			btrfs property set -f -ts $(readlink -m $volume) ro false
+			btrfs property set -f -ts $(readlink -m /$volume) ro false
 			btrfs subvolume delete $volume
 		done
 
@@ -215,7 +215,7 @@ remove_deployment () {
 	# Ensure the deployment and all sub-volumes are writable
 	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
 		echo $volume
-		btrfs property set -f -ts "/$volume" ro false || printf "failed to make subvol $volume writable\n"
+		btrfs property set -f -ts $(readlink -m /$volume) ro false || printf "failed to make subvol $volume writable\n"
 	done
 
 	# Remove the deployment
