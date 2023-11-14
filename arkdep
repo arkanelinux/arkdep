@@ -121,7 +121,7 @@ init () {
 	repo_default_image='arkanelinux'
 
 	# Keep the latest n-1 deployments, remove anything older
-	deploy_keep=2
+	deploy_keep=4
 	END
 
 	# Add default bootloader config file
