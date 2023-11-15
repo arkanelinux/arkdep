@@ -232,7 +232,8 @@ remove_deployment () {
 # List all available packages defined in the repo's list file
 get_available () {
 	printf "\e[1;34m-->\e[0m\e[1m Downloading list file from $repo_url\e[0m\n"
-	curl -sf "${repo_url}/list" || cleanup_and_quit 'Failed to download repo file'
+	curl -sf "${repo_url}/list" || printf "\e[1;33m<!>\e[0m\e[1m Failed to download list file\e[0m\n"
+	exit 0
 }
 
 # List all deployments and provide additional information about any untracked deployments
@@ -258,6 +259,8 @@ list_deployed () {
 			printf "$t\n"
 		done
 	fi
+
+	exit 0
 
 }
 
@@ -462,6 +465,8 @@ deploy () {
 		grep -rv $deployment $(readlink -m $arkdep_dir/tracker) > $arkdep_dir/tracker
 
 	done
+
+	exit 0
 
 }
 
