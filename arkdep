@@ -294,8 +294,27 @@ deploy () {
 
 	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
 	readarray -d : -t data <<< "$curl_data"
-	# A carriage feed is inserted for some reason, lets remove it
+
+	# Ensure none of the vars contain whitespaces
+	data[0]=${data[0]//[$'\t\r\n']}
+	data[1]=${data[1]//[$'\t\r\n']}
 	data[2]=${data[2]//[$'\t\r\n']}
+
+	# Lets do a bunch of checks to ensure the data is all present
+	if [[ -z ${data[0]+x} ]] || [[ ! -n ${data[0]} ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m No target found\n\e[0m'
+		exit 1
+	fi
+
+	if [[ -z ${data[1]+x} ]] || [[ ! -n ${data[1]} ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m No compression method found\n\e[0m'
+		exit 1
+	fi
+
+	if [[ -z ${data[2]+x} ]] || [[ ! -n ${data[2]} ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m No checksum found\n\e[0m'
+		exit 1
+	fi
 
 	# Lets ensure the requested image is not already deployed
 	if [[ -e $arkdep_dir/deployments/${data[0]} ]]; then
