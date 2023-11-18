@@ -337,7 +337,7 @@ deploy () {
 
 	printf "\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n"
 	sha1sum "$(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]})" |
-		grep "${data[3]}" ||
+		grep "${data[2]}" ||
 		cleanup_and_quit "Checksum does not match repo file, got $chksum\e[0m\n"
 
 	# Extract the root image if not yet extracted
