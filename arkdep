@@ -12,13 +12,28 @@ if [[ ! -n $1 ]]; then
 	cat <<- END
 	Usage: arkdep <action> [target]
 	Actions:
-	  update		Check for updates, optionally provide a target, if no target provided it defaults to primary
 	  deploy		Deploy a new or update an existing deployment
 	  init			Initialize arkdep on a new system
 	  teardown		Remove all arkdep-deploy related files and folders
 	  get-available		List available packages in repo
 	  list			List all currently deployed images
 	  remove		Remove a specified deployment
+
+	Examples:
+	  arkdep deploy
+	      Check for updates, if available download and deploy
+
+	  arkdep deploy arkanelinux-dev
+	      Download and deploy the latest release of the defined image variant
+
+	  arkdep deploy - stable_v1
+	      Download the defined image release from the default variant
+
+	  arkdep deploy arkanelinux-dev stable_v1
+	      Download the defined image release from the specified variant
+
+	  arkdep remove stable_v1
+	      Remove the defined deployment
 	END
 	exit 0
 fi
