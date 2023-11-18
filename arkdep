@@ -198,20 +198,20 @@ teardown () {
 remove_deployment () {
 
 	# Ensure required vars are set
-	[[ -z $2  ]] && \
+	[[ -z $1  ]] && \
 		printf 'No deployment defined\n' && exit 1
 
 	# Ensure deployment is not currently active
-	if grep "$(readlink -m $arkdep_dir/deployments/$2)" /proc/cmdline > /dev/null; then
+	if grep "$(readlink -m $arkdep_dir/deployments/$1)" /proc/cmdline > /dev/null; then
 		printf 'Target is currently active deployment\n'
 		exit 1
 	fi
 
 	# Ensure user only provided a single target
-	[[ ! -z $3 ]] && \
+	[[ ! -z $2 ]] && \
 		printf 'Multiple targets provided, remove only accepts a single target at a time\n' && exit 1
 
-	declare -r hits=($(grep $2 $arkdep_dir/tracker))
+	declare -r hits=($(grep $1 $arkdep_dir/tracker))
 
 	if [[ ${#hits[@]} -gt 1 ]]; then
 		printf 'Multiple deployments match target, be more specific\n'
@@ -237,7 +237,7 @@ remove_deployment () {
 	rm -rf $(readlink -m $arkdep_dir/deployments/$target)
 
 	# Remove from tracker
-	grep -v $2 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
+	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
 	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
 
 	exit 0
@@ -284,14 +284,14 @@ deploy () {
 
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkdep/config and latest
-	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
-		declare -r deploy_target=$2
+	if [[ -n $1 ]] && [[ $2 != '-' ]]; then
+		declare -r deploy_target=$1
 	else
 		declare -r deploy_target="$repo_default_image"
 	fi
 
-	if [[ -n $3 ]]; then
-		declare -r deploy_version=$3
+	if [[ -n $2 ]]; then
+		declare -r deploy_version=$2
 	else
 		declare -r deploy_version='latest'
 	fi
@@ -304,7 +304,7 @@ deploy () {
 		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
 	else
 		# Only return first hit
-		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $3 | head -1)
+		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $2 | head -1)
 	fi
 
 	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
@@ -485,19 +485,7 @@ deploy () {
 
 	# Remove old deployments
 	for deployment in ${remove_deployments[@]}; do
-
-		# Ensure deployment is not currently active
-		if grep "$(readlink -m $arkdep_dir/deployments/$deployment)" /proc/cmdline > /dev/null; then
-			break
-		fi
-
-		printf "\e[1;34m-->\e[0m\e[1m Removing old deployment $deployment\e[0m\n"
-		rm -v /boot/loader/entries/$deployment.conf
-		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/$deployment) ro false
-		rm -rfv $(readlink -m $arkdep_dir/deployments/$deployment)
-		rm -rfv $(readlink -m /boot/arkdep/$deployment)
-		grep -rv $deployment $(readlink -m $arkdep_dir/tracker) > $arkdep_dir/tracker
-
+		remove_deployment $deployment
 	done
 
 	exit 0
@@ -508,6 +496,6 @@ deploy () {
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'update' ]] && check_for_updates
 [[ $1 == 'get-available' ]] && get_available
-[[ $1 == 'deploy' ]] && deploy $1 $2 $3
+[[ $1 == 'deploy' ]] && deploy $2 $3
 [[ $1 == 'list' ]] && list_deployed
-[[ $1 == 'remove' ]] && remove_deployment $1 $2 $3
+[[ $1 == 'remove' ]] && remove_deployment $2 $3
