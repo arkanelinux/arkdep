@@ -10,7 +10,7 @@ set -o pipefail
 # Print manual if no parameters provided or invalid amount of parameters is provided
 if [[ ! -n $1 ]]; then
 	cat <<- END
-	Usage: arkdep-deploy <action> [target]
+	Usage: arkdep <action> [target]
 	Actions:
 	  update		Check for updates, optionally provide a target, if no target provided it defaults to primary
 	  deploy		Deploy a new or update an existing deployment
