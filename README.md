@@ -21,17 +21,17 @@ The following command will initialize arkdep, it will deploy a subvolume contain
 sudo arkdep init
 ```
 
-Once ardep is installed you should prepare the overlay located at `/arkdep/overlay`. The overlay is copied directory on to the root filesystem of a new deployment, create directories inside of it as-if it were a root filesystem. For example, `/arkdep/overlay/etc` will be your `/etc` folder.
+Once ardep is installed you should prepare the overlay located at `/arkdep/overlay`. The overlay is copied directly on to the root filesystem of a new deployment, create directories inside of it as-if it were a root filesystem. For example, `/arkdep/overlay/etc` will be your `/etc` folder.
 
 You will most likely wish to add the following to the overlay;
-- passwd, shadow, group, subgid and subuid files
+- passwd, shadow, group, subgid and subuid files containing only entries for root and normal user accounts, system accounts will be supplied via the images and are stored seperate in `/usr/lib`.
 - Optionally an fstab, locale.conf/locale.gen, localtime symlink and custom dracut configuration
 
 Here is a reference fstab file, take note of the `subvol` mount option;
 ```shell
-UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/home       btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/home,compress=zstd	0 0
-UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/var        btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep/shared/var,compress=zstd	0 0
-UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/arkdep     btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=arkdep,compress=zstd	0 0
+UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/home       btrfs     	rw,relatime,discard=async,space_cache=v2,subvol=arkdep/shared/home,compress=zstd	0 0
+UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/var        btrfs     	rw,relatime,discard=async,space_cache=v2,subvol=arkdep/shared/var,compress=zstd	0 0
+UUID=f8b62c6c-fba0-41e5-b12c-42aa1cdaa452	/arkdep     btrfs     	rw,relatime,discard=async,space_cache=v2,subvol=arkdep,compress=zstd	0 0
 UUID=1223-2137                              /boot       vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
 ```
 
