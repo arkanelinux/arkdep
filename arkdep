@@ -467,9 +467,10 @@ deploy () {
 		/boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
 
 	# Add to database
-	# TODO: If this step is never reached ensure cleanup, maybe write a "busy file" somewhere
 	printf "\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n"
-	printf "${data[0]}\n$(cat $(readlink -m $arkdep_dir/tracker | head -$deploy_keep))" > $arkdep_dir/tracker
+	printf "${data[0]}\n$(cat $(readlink -m $arkdep_dir/tracker))" |
+		tee $arkdep_dir/tracker.tmp
+	mv $arkdep_dir/tracker.tmp $arkdep_dir/tracker
 
 	# Deploy bootloader configuration
 	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n"
@@ -486,6 +487,9 @@ deploy () {
 	# Remove old deployments
 	for deployment in ${remove_deployments[@]}; do
 		remove_deployment $deployment
+		grep -v $deployment $arkdep_dir/tracker |
+			tee $arkdep_dir/tracker.tmp
+		mv $arkdep_dir/tracker.tmp $arkdep_dir/tracker
 	done
 
 	exit 0
