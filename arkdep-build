@@ -152,7 +152,7 @@ if [[ $type == 'archlinux' ]]; then
 	# Make /usr/local symlink in var
 	printf "\e[1;34m-->\e[0m\e[1m Moving dirs to var and creating symlinks\e[0m\n"
 	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
-	ln -sv var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
+	ln -sv ../var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
 
 	# locale symlink
 	mv $workdir/usr/lib/locale $workdir/var/usrliblocale || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
