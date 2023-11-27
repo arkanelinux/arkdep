@@ -165,7 +165,7 @@ teardown () {
 
 	END
 
-	read -p 'Type "I KNOW WHAT I AM GOING" in uppercase to confirm that you know what you are doing: ' input_confirm
+	read -p 'Type "I KNOW WHAT I AM DOING" in uppercase to confirm that you know what you are doing: ' input_confirm
 
 
 	if [[ $input_confirm == 'I KNOW WHAT I AM DOING' ]]; then
