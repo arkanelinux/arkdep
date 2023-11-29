@@ -13,6 +13,7 @@ arkdep can be easily rolled out and torn down again, it is non-invasive by desig
 System requirements;
 - `/` is partitioned with btrfs
 - `/boot` mounted boot partition
+- 512MiB boot partition for max 2 deployments, 1GiB recommended
 - Systemd-boot bootloader is installed and configured as the primary bootloader
 - dracut, wget and curl are installed
 
