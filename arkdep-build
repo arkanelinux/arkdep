@@ -140,6 +140,8 @@ if [[ $type == 'archlinux' ]]; then
 	# Clear pacman cache
 	printf "\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n"
 	arch-chroot $workdir pacman -Scc <<< Y <<< Y
+	# Insert a new line to clean, the previous command fails to do so
+	printf '\n'
 
 	# Remove subvolumes created by systemd
 	[[ -d $workdir/var/lib/portables ]] &&
