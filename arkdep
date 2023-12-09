@@ -137,6 +137,9 @@ init () {
 
 	# Keep the latest n-1 deployments, remove anything older
 	deploy_keep=4
+
+	# Remove images from the cache when their deployments are removed
+	clean_cache_on_remove=1
 	END
 
 	# Add default bootloader config file
@@ -229,7 +232,6 @@ remove_deployment () {
 
 	# Ensure the deployment and all sub-volumes are writable
 	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
-		echo $volume
 		btrfs property set -f -ts $(readlink -m /$volume) ro false || printf "failed to make subvol $volume writable\n"
 	done
 
@@ -239,6 +241,14 @@ remove_deployment () {
 	# Remove from tracker
 	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
 	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
+
+	# Remove images from cache if requested
+	if [[ $clean_cache_on_remove -eq 1 ]]; then
+		# Only attempt remove if file exists
+		if ls $arkdep_dir/cache/ | grep $1; then
+			rm -v $arkdep_dir/cache/$1.tar.*
+		fi
+	fi
 
 	exit 0
 
