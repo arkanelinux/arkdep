@@ -483,7 +483,8 @@ deploy () {
 	mv $arkdep_dir/tracker.tmp $arkdep_dir/tracker
 
 	# Deploy bootloader configuration
-	printf "\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n"
+	# also insert newline
+	printf "\n\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n"
 	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
 
 	printf "\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n"
