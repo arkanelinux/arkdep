@@ -43,7 +43,7 @@ To deploy the latest available image from the default repository run the followi
 ```shell
 sudo arkdep deploy
 ```
-It will check in with the server defined in `/arkdep/config` as `repo_url` and pull the latest image defined in `$repo_url/database`, see [Repository](#Repository) for additional information.
+It will check in with the server defined in `/arkdep/config` as `repo_url` and pull the latest image defined in `$repo_url/$repo_default_image/database`, see [Repository](#Repository) for additional information.
 
 ### Deploying a specified image version
 A specific image version to pull and deploy can be parsed like so;
