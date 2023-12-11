@@ -25,8 +25,9 @@ sudo arkdep init
 Once ardep is installed you should prepare the overlay located at `/arkdep/overlay`. The overlay is copied directly on to the root filesystem of a new deployment, create directories inside of it as-if it were a root filesystem. For example, `/arkdep/overlay/etc` will be your `/etc` folder.
 
 You will most likely wish to add the following to the overlay;
-- passwd, shadow, group, subgid and subuid files containing only entries for root and normal user accounts, system accounts will be supplied via the images and are stored seperate in `/usr/lib`.
-- Optionally an fstab, locale.conf/locale.gen, localtime symlink and custom dracut configuration
+- passwd, shadow, group, subgid and subuid files containing only entries for root and normal user accounts, system accounts will be supplied via the images and are stored separate in `/usr/lib`.
+- fstab file with at least a writable `/var` subvolume configured
+- Optionally a locale.conf/locale.gen, localtime symlink and custom dracut configuration
 
 Here is a reference fstab file, take note of the `subvol` mount option;
 ```shell
