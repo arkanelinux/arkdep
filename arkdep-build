@@ -122,7 +122,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Read base package list and install base system
 	readarray base_packages < $configs_dir/$variant/base.list
-	printf "\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
 	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
@@ -138,21 +138,21 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# Clear pacman cache
-	printf "\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n'
 	arch-chroot $workdir pacman -Scc <<< Y <<< Y
 	# Insert a new line to clean, the previous command fails to do so
 	printf '\n'
 
 	# Remove subvolumes created by systemd
 	[[ -d $workdir/var/lib/portables ]] &&
-		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/portables\e[0m\n"
+		printf '\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/portables\e[0m\n'
 		btrfs subvolume delete $workdir/var/lib/portables
 	[[ -d $workdir/var/lib/machines ]] &&
-		printf "\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n"
+		printf '\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n'
 		btrfs subvolume delete $workdir/var/lib/machines
 
 	# Make /usr/local symlink in var
-	printf "\e[1;34m-->\e[0m\e[1m Moving dirs to var and creating symlinks\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Moving dirs to var and creating symlinks\e[0m\n'
 	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
 	ln -sv ../var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
 
@@ -176,7 +176,7 @@ if [[ $type == 'archlinux' ]]; then
 	mv $workdir/mnt $workdir/var/mnt || cleanup_and_quit 'Failed to move mnt to var/mnt'
 	ln -sv var/mnt $workdir/mnt || cleanup_and_quit 'Failed to create mnt symlink'
 
-	printf "\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to lib\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to lib\e[0m\n'
 
 	# Create second passwd, group and shadow file in usr/lib and configure
 	for file in passwd group shadow; do
@@ -202,13 +202,13 @@ if [[ $type == 'archlinux' ]]; then
 	rm $workdir/etc/{passwd-,shadow-,group-}
 
 	# Make subvolume read-only
-	printf "\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n'
 	btrfs property set -ts $workdir ro true || cleanup_and_quit 'Failed to set root to read-only'
 	btrfs property set -ts $workdir/etc ro true || cleanup_and_quit 'Failed to set etc to read-only'
 	btrfs property set -ts $workdir/var ro true || cleanup_and_quit 'Failed to set var to read-only'
 
 	# Generate random name for new image
-	printf "\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name\e[0m\n'
 	declare -r image_name=$(gen_random_string)
 	printf "$image_name\n"
 
@@ -216,13 +216,13 @@ if [[ $type == 'archlinux' ]]; then
 	mkdir -vp $(readlink -m $output_target/$image_name)
 
 	# Write subvolume to image
-	printf "\e[1;34m-->\e[0m\e[1m Creating images\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Creating images\e[0m\n'
 	btrfs send -f $output_target/$image_name/$image_name-rootfs.img $workdir
 	btrfs send -f $output_target/$image_name/$image_name-etc.img $workdir/etc
 	btrfs send -f $output_target/$image_name/$image_name-var.img $workdir/var
 
 	if [[ ! -v ARKDEP_NO_TAR ]]; then
-		printf "\e[1;34m-->\e[0m\e[1m Compressing images\e[0m\n"
+		printf '\e[1;34m-->\e[0m\e[1m Compressing images\e[0m\n'
 		tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst -C $output_target/$image_name .
 	fi
 
