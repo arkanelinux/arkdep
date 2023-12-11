@@ -127,6 +127,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
 	if [[ -d $configs_dir/$variant/overlay ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to root\e[0m\n'
 		cp -rv $configs_dir/$variant/overlay/* $workdir/
 	fi
 
