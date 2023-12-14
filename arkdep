@@ -172,11 +172,13 @@ teardown () {
 
 	The following changes will be made to your system;
 	- All subvolumes under $arkdep_dir will be deleted
+	- All systemd-boot bootloader entries containing the word "arkdep" will be removed
+	- Kernel and initramfs storage location /boot/arkdep will be removed
 
 	END
 
+	# Ensure user knows what they are doing
 	read -p 'Type "I KNOW WHAT I AM DOING" in uppercase to confirm that you know what you are doing: ' input_confirm
-
 
 	if [[ $input_confirm == 'I KNOW WHAT I AM DOING' ]]; then
 
@@ -191,6 +193,9 @@ teardown () {
 		# Remove all bootloader entries
 		rm -v $(grep -ril arkdep /boot/loader/entries)
 
+		# Remove kernels and initramfs deployed by Arkdep
+		rm -rfv /boot/arkdep
+
 		# Ensure all nested volumes in arkdep are writable and remove
 		for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep "^$arkdep_dir" | tac); do
 			btrfs property set -f -ts $(readlink -m /$volume) ro false
@@ -198,7 +203,7 @@ teardown () {
 		done
 
 	else
-		printf '\e[1;34m-->\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
+		printf '\e[1;33m<!>\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
 	fi
 
 	exit 0
