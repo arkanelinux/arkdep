@@ -484,7 +484,7 @@ deploy () {
 
 	# Install kernel and generate initramfs
 	printf '\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n'
-	dracut -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
+	dracut -q -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
 		--kernel-image /boot/arkdep/${data[0]}/vmlinuz \
 		--kver ${kernels_installed[0]} \
 		--force \
