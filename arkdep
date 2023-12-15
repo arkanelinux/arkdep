@@ -226,6 +226,7 @@ remove_deployment () {
 	[[ ! -z $2 ]] && \
 		printf 'Multiple targets provided, remove only accepts a single target at a time\n' && exit 1
 
+	# Ensure requested deployment is tracked
 	declare -r hits=($(grep $1 $arkdep_dir/tracker))
 
 	if [[ ${#hits[@]} -gt 1 ]]; then
@@ -251,8 +252,8 @@ remove_deployment () {
 	rm -rf $(readlink -m $arkdep_dir/deployments/$target)
 
 	# Remove from tracker
-	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
-	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
+	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp || cleanup_and_quit 'Failed to update tracker file'
+	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker || cleanup_and_quit 'Failed to move tracker_tmp file to tracker'
 
 	# Remove images from cache if requested
 	if [[ $clean_cache_on_remove -eq 1 ]]; then
