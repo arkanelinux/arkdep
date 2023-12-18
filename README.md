@@ -5,8 +5,8 @@ arkdep attempts to be as simple to use as possible and avoid unnecessary abstrac
 
 ## Usage
 ### Rolling out arkdep on a new system
-
-> **Note** arkdep has as of now only been tested on Arch Linux-based systems
+> [!NOTE]
+> arkdep has as of now only been tested on Arch Linux-based systems
 
 arkdep can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
 
