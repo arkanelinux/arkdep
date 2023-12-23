@@ -419,7 +419,7 @@ deploy () {
 
 		# Download the tarball if not yet downloaded
 		if [[ ! -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
-			wget -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
+			wget -q --show-progress -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
 				cleanup_and_quit 'Failed to download tarball'
 		fi
 
