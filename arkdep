@@ -315,7 +315,7 @@ remove_deployment () {
 	if [[ $clean_cache_on_remove -eq 1 ]]; then
 		# Only attempt remove if file exists
 		if ls $arkdep_dir/cache/ | grep $1; then
-			rm -v $arkdep_dir/cache/$1.tar.*
+			rm -v $(readlink -m $arkdep_dir/cache/$1.tar.*)
 		fi
 	fi
 
