@@ -355,7 +355,7 @@ deploy () {
 		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
 	else
 		# Only return first hit
-		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep $2 | head -1)
+		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep "^$2" | head -1)
 	fi
 
 	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
