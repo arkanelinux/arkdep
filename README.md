@@ -1,14 +1,14 @@
-# arkdep
-A toolkit for building, deploying and maintaining a btrfs-based multi-root system.
+# Arkdep
+Toolkit for building, deploying and maintaining an immutable, btrfs-based, multi-root system.
 
-arkdep attempts to be as simple to use as possible and avoid unnecessary abstraction, if you know how to use GNU/Linux picking up arkdep should be painless for it maintains much of your old familiar workflow.
+Arkdep attempts to be as simple to use as possible and avoid unnecessary abstraction, if you know how to use GNU/Linux picking up Arkdep should be painless for it maintains much of your old familiar workflow.
 
 ## Usage
-### Rolling out arkdep on a new system
+### Rolling out Arkdep on a new system
 > [!NOTE]
-> arkdep has as of now only been tested on Arch Linux-based systems
+> Arkdep has as of now only been tested on Arch Linux-based systems
 
-arkdep can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
+Arkdep can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
 
 System requirements;
 - `/` is partitioned with btrfs
@@ -17,7 +17,7 @@ System requirements;
 - Systemd-boot bootloader is installed and configured as the primary bootloader
 - dracut, wget and curl are installed
 
-The following command will initialize arkdep, it will deploy a subvolume containing all arkdep related files excluding kernels and initramfs to `/arkdep`. Kernel and initramfs will instead be stored in `/boot/arkdep` upon generation.
+The following command will initialize Arkdep, it will deploy a subvolume containing all Arkdep related files excluding kernels and initramfs to `/arkdep`. Kernel and initramfs will instead be stored in `/boot/arkdep` upon generation.
 ```shell
 sudo arkdep init
 ```
@@ -86,7 +86,7 @@ sudo ARKDEP_CUSTOM_NAME='customlinux_v1.0' arkdep-build customlinux
 
 Once done you can find compressed and uncompressed copies of your new image in the `target` directory.
 
-arkdep will by default generate a psuedo-random hex string and use this as the name of your image. This behaviour can be overwritten by assigning a custom name to the `ARKDEP_CUSTOM_NAME` environment variable.
+Arkdep will by default generate a psuedo-random hex string and use this as the name of your image. This behaviour can be overwritten by assigning a custom name to the `ARKDEP_CUSTOM_NAME` environment variable.
 
 ## Repository
 
@@ -121,5 +121,5 @@ The compression method is flexible, any compression method tar can infer is supp
 
 The sha1sum is used to ensure the file was downloaded properly.
 
-arkdep will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
+Arkdep will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
 
