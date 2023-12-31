@@ -107,7 +107,7 @@ repo.example.com
 ```
 
 ### Example repository configuration
-The `list` file is in part optional, it not utilized during the deployment process but the user may use it in combination with the `arkdep list` command to request a list of all available images in the repository.
+The `list` file is in part optional, it not utilized during the deployment process but the user may use it in combination with the `arkdep get-available` command to request a list of all available images in the repository.
 ```text
 customlinux
 customlinux-gnome
