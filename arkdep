@@ -10,13 +10,13 @@ set -o pipefail
 # Print manual if no parameters provided or invalid amount of parameters is provided
 if [[ ! -n $1 ]]; then
 	cat <<- END
-	Usage: arkdep <action> [target]
+	Usage: arkdep <action> [variant] [version]
 	Actions:
 	  deploy		Deploy a new or update an existing deployment
 	  init			Initialize arkdep on a new system
 	  teardown		Remove all arkdep-deploy related files and folders
-	  get-available		List available packages in repo
-	  list			List all currently deployed images
+	  healthcheck		Check for and report any config issues or untracked deployments
+	  get-available         List available packages in repo
 	  remove		Remove a specified deployment
 
 	Examples:
@@ -52,6 +52,7 @@ source $(readlink -m $arkdep_dir/config)
 [[ -z ${repo_default_image+x} ]] && repo_default_image='arkanelinux' && printf '\e[1;33m<!>\e[0m\e[1m repo_default_image not defined in config, using default\e[0m\n'
 [[ -z ${deploy_keep+x} ]] && deploy_keep=3 && printf '\e[1;33m<!>\e[0m\e[1m deploy_config not defined in config, using default\e[0m\n'
 [[ -z ${clean_cache_on_remove+x} ]] && clean_cache_on_remove=1 && printf '\e[1;33m<!>\e[0m\e[1m clean_cache_on_remove not defined in config, using default\e[0m\n'
+[[ -z ${always_healthcheck+x} ]] && always_healthcheck=1 && printf '\e[1;33m<!>\e[0m\e[1m always_healthcheck not defined in config, using default\e[0m\n'
 
 ## Setup and process trap
 #
@@ -118,6 +119,58 @@ cleanup_and_quit () {
 	exit 1
 
 }
+
+## Healthcheck
+#
+# Check for and report on any issues such as untracked deployments or hanging files in cache
+healthcheck () {
+
+	# Gather tracked deployments
+	declare -r tracker=($(cat $arkdep_dir/tracker))
+	declare -r deployed=($(ls $arkdep_dir/deployments/))
+	declare untracked=${deployed[@]}
+
+	# Check for hanging cache files
+	declare -r cached=($(ls $arkdep_dir/cache/))
+	declare hanging_cache=()
+
+	# Generate grep regex for cache check
+	declare cache_regex=$(printf "|%s" "${tracker[@]}")
+	cache_regex=${cache_regex:1}
+
+	# Compare items in tracker to actual deployed
+	for tracked in ${tracker[@]}; do
+		untracked=("${untracked[@]/$tracked}")
+	done
+
+	for cached_item in ${cached[@]}; do
+		hanging_cache+=($(echo $cached_item | grep -v -E "$cache_regex"))
+	done
+
+	# Clean whitespaces
+	untracked=$(echo $untracked | xargs)
+
+	if [[ ! -z $untracked ]]; then
+		printf '\e[1;33m<!>\e[0m\e[1m The following deployments were found but are untracked\n\e[0m'
+		for t in ${untracked[@]}; do
+			printf "$t\n"
+		done
+	fi
+
+	if [[ ! -z $hanging_cache ]]; then
+		printf '\e[1;33m<!>\e[0m\e[1m The following hanging images were found in cache\n\e[0m'
+		for t in ${hanging_cache[@]}; do
+			printf "$t\n"
+		done
+	fi
+
+	# If $1 is healthcheck it was manually called by the user
+	[[ $1 == 'healthcheck' ]] && exit 0
+
+}
+
+# Always healthcheck on run if requested in config, unless the user explicitely called it
+[[ $always_healthcheck -eq 1 ]] && [[ ! $1 == 'healthcheck' ]] && healthcheck
 
 ## Error checking
 #
@@ -186,6 +239,9 @@ init () {
 
 	# Remove images from the cache when their deployments are removed
 	clean_cache_on_remove=1
+
+	# Check for untracked deployments and other issues on run
+	always_healthcheck=1
 	END
 
 	# Add default bootloader config file
@@ -324,34 +380,6 @@ get_available () {
 	printf "\e[1;34m-->\e[0m\e[1m Downloading list file from $repo_url\e[0m\n"
 	curl -sf "${repo_url}/list" || printf '\e[1;33m<!>\e[0m\e[1m Failed to download list file\e[0m\n'
 	exit 0
-}
-
-# List all deployments and provide additional information about any untracked deployments
-list_deployed () {
-
-	declare tracker=($(cat $arkdep_dir/tracker))
-	declare deployed=($(ls $arkdep_dir/deployments/))
-	declare untracked=${deployed[*]}
-
-	# Compare items in tracker to actual deployed
-	for tracked in ${tracker[@]}; do
-		untracked=("${untracked[@]/$tracked}")
-	done
-
-	printf "${tracker[*]}\n"
-
-	# Clean whitespaces
-	untracked=$(echo $untracked | xargs)
-
-	if [[ ! -z $untracked ]]; then
-		printf '\nThe following deployments were found but are not tracked;\n'
-		for t in $untracked; do
-			printf "$t\n"
-		done
-	fi
-
-	exit 0
-
 }
 
 # Deploy a new or update an existing deployment
@@ -580,5 +608,8 @@ deploy () {
 [[ $1 == 'update' ]] && check_for_updates
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'deploy' ]] && deploy $2 $3
-[[ $1 == 'list' ]] && list_deployed
 [[ $1 == 'remove' ]] && remove_deployment $2 $3
+[[ $1 == 'healthcheck' ]] && healthcheck $1
+
+# No valid params were provided
+exit 3
