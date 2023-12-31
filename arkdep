@@ -530,10 +530,9 @@ deploy () {
 	printf '\n\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n'
 	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
 
+	# Set new deployment as default bootloader entry
 	printf '\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n'
-	# Configuring it with a oneshot for now, for testing
 	bootctl set-default ${data[0]}.conf || cleanup_and_quit "Failed to set default bootloader entry"
-	#bootctl set-oneshot ${data[0]}.conf || cleanup_and_quit "Failed to set default bootloader entry"
 
 	# Remove entries outside of keep
 	declare -r remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
