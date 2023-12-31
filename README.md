@@ -100,6 +100,10 @@ repo.example.com
 |  |  ├── database		        # Plain text file containing : delimited lists of all available images `image_name:compression_method:sha1sum`
 |  |  ├── customlinux_v1.0.tar.zst	# Compressed disk images
 |  |  ├── customlinux_v2.0.tar.zst	# Compressed disk images
+|  ├── customlinux-gnome
+|  |  ├── database
+|  |  ├── customlinux-gnome_v1.0.tar.zst
+|  |  ├── customlinux-gnome_v2.0.tar.zst
 ```
 
 ### Example repository configuration
