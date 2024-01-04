@@ -390,8 +390,6 @@ deploy () {
 		# Split filename at delimiter
 		readarray -d . -t data_inter <<< "$cache_hits"
 
-		echo ${data_inter[@]}
-
 		# Set expected vars for remainder of script
 		data[0]=${data_inter[0]}
 		data[1]=${data_inter[2]}
