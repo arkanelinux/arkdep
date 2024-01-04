@@ -335,10 +335,10 @@ deploy () {
 
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkdep/config and latest
-	if [[ -n $1 ]] && [[ $2 != '-' ]]; then
+	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
 		declare -r deploy_target=$1
 	else
-		declare -r deploy_target="$repo_default_image"
+		declare -r deploy_target=$repo_default_image
 	fi
 
 	if [[ -n $2 ]]; then
@@ -347,19 +347,54 @@ deploy () {
 		declare -r deploy_version='latest'
 	fi
 
-	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
-
-	# If latest is requested grab database and get first line
-	printf '\e[1;34m-->\e[0m\e[1m Downloading database from repo\e[0m\n'
-	if [[ $deploy_version == 'latest' ]]; then
-		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
-	else
-		# Only return first hit
-		declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep "^$2" | head -1)
+	# If cache requested version may not be latest
+	if [[ $1 == 'cache' ]] && [[ $2 == 'latest' ]]; then
+		cleanup_and_quit '"latest" and undefined are not a valid version definitions for a cache source'
 	fi
 
+	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
+
 	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
-	readarray -d : -t data <<< "$curl_data"
+	# only run if request target is not cache
+	if [[ $1 != 'cache' ]]; then
+
+		# If latest is requested grab database and get first line
+		printf '\e[1;34m-->\e[0m\e[1m Downloading database from repo\e[0m\n'
+		if [[ $deploy_version == 'latest' ]]; then
+			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
+		elif [[ $deploy_target != 'cache' ]]; then
+			# Only return first hit
+			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep -E "^$2" | head -1)
+		else
+			declare curl_data='cache'
+		fi
+
+		readarray -d : -t data <<< "$curl_data"
+
+	# If target is cache
+	else
+
+		# Find full name in cache, if no hit quit with error
+		declare cache_hits=($(ls $arkdep_dir/cache | grep -E "^$deploy_version"))
+
+		# Temporary var to store the delimited file found in cache
+		declare data_inter=()
+
+		# Check if none or more than a single hit, we only expect a single item to match
+		[[ ${#cache_hits[@]} -gt 1 ]] && cleanup_and_quit 'More than a single item in cache matched requested version'
+		[[ ${#cache_hits[@]} -lt 1 ]] && cleanup_and_quit 'No item in cache matched requested version'
+
+		# Split filename at delimiter
+		readarray -d . -t data_inter <<< "$cache_hits"
+
+		echo ${data_inter[@]}
+
+		# Set expected vars for remainder of script
+		data[0]=${data_inter[0]}
+		data[1]=${data_inter[2]}
+		data[2]='-'
+
+	fi
 
 	# Ensure none of the vars contain whitespaces
 	data[0]=${data[0]//[$'\t\r\n']}
@@ -378,8 +413,11 @@ deploy () {
 	fi
 
 	if [[ -z ${data[2]+x} ]] || [[ ! -n ${data[2]} ]]; then
-		printf '\e[1;31m<#>\e[0m\e[1m No checksum found\n\e[0m'
-		exit 1
+		# Do not trigger if hash is -, is used for cache deployments
+		if [[ $deploy_target != '-' ]]; then
+			printf '\e[1;31m<#>\e[0m\e[1m No checksum found\n\e[0m'
+			exit 1
+		fi
 	fi
 
 	# Lets ensure the requested image is not already deployed
@@ -392,19 +430,20 @@ deploy () {
 	if [[ -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m ${data[0]} already in cache, skipping download\e[0m\n"
 	else
-
 		# Download the tarball if not yet downloaded
 		if [[ ! -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
 			wget -q --show-progress -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
 				cleanup_and_quit 'Failed to download tarball'
 		fi
-
 	fi
 
-	printf '\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n'
-	sha1sum "$(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]})" |
-		grep "${data[2]}" ||
-		cleanup_and_quit "Checksum does not match the one defined in database\e[0m\n"
+	# Only checksum on download
+	if [[ $deploy_target != 'cache' ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n'
+		sha1sum "$(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]})" |
+			grep "${data[2]}" ||
+			cleanup_and_quit "Checksum does not match the one defined in database\e[0m\n"
+	fi
 
 	# Extract the root image if not yet extracted
 	printf '\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n'
