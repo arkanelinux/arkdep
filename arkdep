@@ -437,8 +437,8 @@ deploy () {
 		fi
 	fi
 
-	# Only checksum on download
-	if [[ $deploy_target != 'cache' ]]; then
+	# Do not checksum if - provided
+	if [[ ${data[2]} != '-' ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n'
 		sha1sum "$(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]})" |
 			grep "${data[2]}" ||
