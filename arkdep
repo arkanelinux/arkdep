@@ -351,7 +351,7 @@ deploy () {
 	fi
 
 	# If cache requested version may not be latest
-	if [[ $1 == 'cache' ]] && [[ $2 == 'latest' ]]; then
+	if [[ $1 == 'cache' ]] && [[ $deploy_version == 'latest' ]]; then
 		cleanup_and_quit '"latest" and undefined are not a valid version definitions for a cache source'
 	fi
 
