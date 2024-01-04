@@ -32,6 +32,9 @@ if [[ ! -n $1 ]]; then
 	  arkdep deploy test-arkanelinux-kde stable_v1
 	      Download the defined image release from the specified variant
 
+	  arkdep deploy cache stable_v1
+	      Deploy an image from the cache directly skipping database download and checksum check
+
 	  arkdep remove stable_v1
 	      Remove the defined deployment
 	END
