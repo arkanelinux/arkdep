@@ -65,7 +65,7 @@ An item may be installed directly from the local `/arkdep/cache` directory, this
 sudo arkdep deploy cache 00ce35074659538f946be77d9efaefc37725335689
 ```
 
-You do not have to provide the full basename, you can provide it with an impartial basename, the first hit will be pulled and deployed.
+You do not have to provide the full image name, you can provide it with an impartial image name, the first hit will be pulled and deployed.
 ```shell
 sudo arkdep deploy arkanelinux 00ce
 ```
