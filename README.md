@@ -84,7 +84,7 @@ arkdep-build.d
 ```
 
 ### Building an image
-Use the arkdep-build script to build your customlinux images.
+Use the arkdep-build script to build your customlinux images, currently the script is assuming to be run from inside of arkdep-build.d's parent directory.
 
 ```shell
 sudo arkdep-build customlinux
