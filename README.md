@@ -15,10 +15,11 @@ System requirements for usage;
 - `/boot` mounted boot partition
 - 512MiB boot partition for max 2 deployments, 1GiB recommended
 - Systemd-boot bootloader is installed and configured as the primary bootloader
-- dracut, wget and curl are installed
+- `dracut`, `wget`, `curl` and `btrfs-progs` are installed
 
 System requirements for image building;
-- `arch-install-scripts` are installed
+- `arch-install-scripts` and `btrfs-progs` are installed
+- A btrfs partitioned workdir, default is `/var/tmp`
 
 The following command will initialize Arkdep, it will deploy a subvolume containing all Arkdep related files excluding kernels and initramfs to `/arkdep`. Kernel and initramfs will instead be stored in `/boot/arkdep` upon generation.
 ```shell
