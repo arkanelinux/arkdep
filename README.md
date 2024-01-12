@@ -10,12 +10,15 @@ Arkdep attempts to be as simple to use as possible and avoid unnecessary abstrac
 
 Arkdep can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
 
-System requirements;
+System requirements for usage;
 - `/` is partitioned with btrfs
 - `/boot` mounted boot partition
 - 512MiB boot partition for max 2 deployments, 1GiB recommended
 - Systemd-boot bootloader is installed and configured as the primary bootloader
 - dracut, wget and curl are installed
+
+System requirements for image building;
+- `arch-install-scripts` are installed
 
 The following command will initialize Arkdep, it will deploy a subvolume containing all Arkdep related files excluding kernels and initramfs to `/arkdep`. Kernel and initramfs will instead be stored in `/boot/arkdep` upon generation.
 ```shell
