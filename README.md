@@ -108,7 +108,9 @@ repo.example.com
 |  ├── customlinux
 |  |  ├── database		        # Plain text file containing : delimited lists of all available images `image_name:compression_method:sha1sum`
 |  |  ├── customlinux_v1.0.tar.zst	# Compressed disk images
+|  |  ├── customlinux_v1.0.tar.zst.sig	# Detached GPG signature
 |  |  ├── customlinux_v2.0.tar.zst	# Compressed disk images
+|  |  ├── customlinux_v2.0.tar.zst.sig	# Detached GPG signature
 |  ├── customlinux-gnome
 |  |  ├── database
 |  |  ├── customlinux-gnome_v1.0.tar.zst
@@ -136,3 +138,16 @@ The sha1sum is used to ensure the file was downloaded properly.
 
 Arkdep will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
 
+### Signed images
+A GPG signature is by default optional, if available Arkdep will use it instead of the sha1sum to verify image integrity. Arkdep can be configured to require these files to be provided by setting `gpg_signature_check` to `2` in the config file.
+
+A keyring with trusted (private) keys is stored at `/arkdep/keys/trusted-keys`, keys are only accepted in binary format.
+
+Arkdep assumes the signatures to be identical in name to their parent file with a .sig appended.
+
+Generate a signature like so;
+```shell
+gpg --output customlinux_v1.0.tar.zst.sig --detach-sig customlinux_v1.0.tar.zst
+```
+
+Then simply drop these signatures next to disk image itself.
