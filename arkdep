@@ -590,14 +590,14 @@ deploy () {
 	printf '\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n'
 	# Get list of all available kernels
 	kernels_installed=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
-	mkdir -pv $(readlink -m /boot/arkdep/${data[0]})
+	mkdir -pv /boot/arkdep/${data[0]}
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
-	cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz /boot/arkdep/${data[0]}/ ||
+	cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) /boot/arkdep/${data[0]}/ ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
 	# Install kernel and generate initramfs
 	printf '\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n'
-	dracut -q -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
+	dracut -q -k $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}) \
 		--kernel-image /boot/arkdep/${data[0]}/vmlinuz \
 		--kver ${kernels_installed[0]} \
 		--force \
