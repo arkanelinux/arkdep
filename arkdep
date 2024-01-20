@@ -389,8 +389,8 @@ deploy () {
 	# If target is cache
 	else
 
-		# Find full name in cache, if no hit quit with error
-		declare cache_hits=($(ls $arkdep_dir/cache | grep -E "^$deploy_version"))
+		# Find full name in cache, exclude sig files, if no hit quit with error
+		declare cache_hits=($(ls $arkdep_dir/cache | grep -E "^$deploy_version" | grep -v '.sig$'))
 
 		# Temporary var to store the delimited file found in cache
 		declare data_inter=()
@@ -448,42 +448,39 @@ deploy () {
 			wget -q --show-progress -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
 				cleanup_and_quit 'Failed to download tarball'
 
-			# If new download perform GPG check
-			#
-			# Only perform check if not disabled by user and keychain exists
+			# Download GPG signature, only perform check if not disabled by user and keychain exists
 			if [[ ! $gpg_signature_check -eq 0 ]] && [[ -s $arkdep_dir/keys/trusted-keys ]]; then
 
-				printf '\e[1;34m-->\e[0m\e[1m Checking GPG signature\e[0m\n'
+				# Download gpg signature if not yet in cache
+				if [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
+					wget -q --show-progress -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}.sig"
+					sig_exitcode=$?
+				fi
 
-				# Download gpg signature
-				wget -q --show-progress -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}.sig"
-				declare -r sig_exitcode=$?
-
-				# If download failed skip GPG check
 				if [[ ! $sig_exitcode -eq 0 ]] && [[ $gpg_signature_check -eq 1 ]]; then
 					# Sig download is allowed to fail
 					printf "\e[1;33m<!>\e[0m\e[1m Failed to download GPG signature, signature check will be skipped\e[0m\n"
 					skip_pgp_check=1
 				elif [[ ! $sig_exitcode -eq 0 ]] && [[ $gpg_signature_check -eq 2 ]]; then
-					# If this triggers the user explicitely defined gpg_signature_check to fail on error
+					# gpg_signature_check = 2, error and quit the program on fail
 					cleanup_and_quit 'GPG signature check configured to quit on download failure'
-				fi
-
-				# If not configured to skip by previous error handeling check the signature to the downloaded image
-				if [[ ! $skip_pgp_check -eq 1 ]]; then
-					gpgv --keyring $arkdep_dir/keys/trusted-keys $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig $arkdep_dir/cache/${data[0]}.tar.${data[1]} ||
-						cleanup_and_quit 'gpg check failed'
-
-					# We have already gpg checked, no need to check hash
-					was_gpg_checked=1
 				fi
 
 			fi
 		fi
 	fi
 
-	# Do not checksum if - provided
-	if [[ ${data[2]} != '-' ]] && [[ ! was_gpg_checked -eq 1 ]]; then
+	# If not configured to skip by previous error handeling check the signature to the downloaded image
+	if [[ ! $skip_pgp_check -eq 1 ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Checking GPG signature\e[0m\n'
+
+		# Perform GPG signature check
+		gpgv --keyring $arkdep_dir/keys/trusted-keys $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig $arkdep_dir/cache/${data[0]}.tar.${data[1]} ||
+			cleanup_and_quit 'gpg check failed'
+
+		was_gpg_checked=1
+	elif [[ ${data[2]} != '-' ]]; then
+		# If GPG check not triggered instead check hash, unless defined as -
 		printf '\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n'
 		sha1sum "$(readlink -m $arkdep_dir/cache/${data[0]}.tar.${data[1]})" |
 			grep "${data[2]}" ||
