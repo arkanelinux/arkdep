@@ -15,6 +15,7 @@ btrfs-progs
 celluloid
 cups
 cups-pdf
+dbus-broker-units
 dosfstools
 efibootmgr
 evince

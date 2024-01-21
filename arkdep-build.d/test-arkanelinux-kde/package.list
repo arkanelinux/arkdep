@@ -16,6 +16,7 @@ btrfs-progs
 colord-kde
 cups
 cups-pdf
+dbus-broker-units
 discover
 dolphin
 dosfstools
