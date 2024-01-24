@@ -64,6 +64,8 @@ mutter-dynamic-buffering
 nautilus
 neovim
 networkmanager
+networkmanager-openconnect
+networkmanager-openvpn
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji

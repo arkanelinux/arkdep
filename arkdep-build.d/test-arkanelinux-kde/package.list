@@ -58,6 +58,8 @@ mkinitcpio-archiso
 mutter-dynamic-buffering
 neovim
 networkmanager
+networkmanager-openconnect
+networkmanager-openvpn
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji
