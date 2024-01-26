@@ -3,6 +3,9 @@ Toolkit for building, deploying and maintaining an immutable, btrfs-based, multi
 
 Arkdep attempts to be as simple to use as possible and avoid unnecessary abstraction, if you know how to use GNU/Linux picking up Arkdep should be painless for it maintains much of your old familiar workflow.
 
+> [!WARNING]
+> Arkdep is still in active development, no more breaking changes are planned since all core functionality is now in, however the current codebase has yet to be thoroughly tested, there may be lingering bugs or other issues
+
 ## Usage
 ### Rolling out Arkdep on a new system
 > [!NOTE]
