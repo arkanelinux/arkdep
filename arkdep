@@ -374,7 +374,7 @@ deploy () {
 	if [[ $1 != 'cache' ]]; then
 
 		# If latest is requested grab database and get first line
-		printf '\e[1;34m-->\e[0m\e[1m Downloading database from repo\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Downloading database\e[0m\n'
 		if [[ $deploy_version == 'latest' ]]; then
 			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
 		elif [[ $deploy_target != 'cache' ]]; then
@@ -443,6 +443,7 @@ deploy () {
 	if [[ -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
 		printf "\e[1;34m-->\e[0m\e[1m ${data[0]} already in cache, skipping download\e[0m\n"
 	else
+		printf "\e[1;34m-->\e[0m\e[1m Downloading disk image\e[0m\n"
 		# Download the tarball if not yet downloaded
 		if [[ ! -e $arkdep_dir/cache/${data[0]}.tar.${data[1]} ]]; then
 			wget -q --show-progress -P $(readlink -m $arkdep_dir/cache/) "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
