@@ -98,6 +98,7 @@ wireplumber
 xdg-desktop-portal-gnome
 xdg-user-dirs
 xdg-utils
+yt-dlp
 zsh
 zsh-autosuggestions
 zsh-completions
