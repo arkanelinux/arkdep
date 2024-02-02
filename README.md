@@ -87,6 +87,9 @@ arkdep-build.d
 ```
 
 ### Building an image
+> [!NOTE]
+>  If you are planning to spin custom images you will need to implement some type of mechanism for loading the `/usr/lib` account and group files, Arkane uses a patched [libnss-extrausers](https://github.com/arkanelinux/libnss-extrausers) PAM module to achieve this, Fedora Silverblue uses sssd
+
 Use the arkdep-build script to build your customlinux images, currently the script is assuming to be run from inside of arkdep-build.d's parent directory.
 
 ```shell
