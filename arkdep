@@ -77,6 +77,7 @@ cleanup_and_quit () {
 	if [[ -n ${data[0]} ]]; then
 		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs) ro false
 		rm -rf $arkdep_dir/deployments/${data[0]}
+		rm $arkdep_dir/cache/${data[0]}-*.img
 		rm -rf /boot/arkdep/${data[0]}
 		rm /boot/loader/entries/${data[0]}.conf
 	fi
