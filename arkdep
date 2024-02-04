@@ -132,7 +132,7 @@ healthcheck () {
 
 	# Warn if gpg check is enabled but no keys are installed
 	if [[ ! $gpg_signature_check -eq 0 ]] && [[ ! -s $arkdep_dir/keys/trusted-keys ]]; then
-		printf "\e[1;33m<!>\e[0m\e[1m gpg_signature_check is enabled but $arkdep_dir/keys/trusted-keys does not exist or is empty\n\e[0m"
+		printf "\e[1;33m<!>\e[0m\e[1m gpg_signature_check is enabled but $(readlink -m $arkdep_dir/keys/trusted-keys) does not exist or is empty\n\e[0m"
 	fi
 
 	# If $1 is healthcheck it was manually called by the user
