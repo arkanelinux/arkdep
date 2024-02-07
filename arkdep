@@ -640,7 +640,6 @@ deploy () {
 
 [[ $1 == 'init' ]] && init
 [[ $1 == 'teardown' ]] && teardown
-[[ $1 == 'update' ]] && check_for_updates
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'deploy' ]] && deploy $2 $3
 [[ $1 == 'remove' ]] && remove_deployment $2 $3
