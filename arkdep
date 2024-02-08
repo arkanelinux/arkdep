@@ -57,6 +57,8 @@ source $(readlink -m $arkdep_dir/config)
 [[ -z ${clean_cache_on_remove+x} ]] && clean_cache_on_remove=1 && printf '\e[1;33m<!>\e[0m\e[1m clean_cache_on_remove not defined in config, using default\e[0m\n'
 [[ -z ${always_healthcheck+x} ]] && always_healthcheck=1 && printf '\e[1;33m<!>\e[0m\e[1m always_healthcheck not defined in config, using default\e[0m\n'
 [[ -z ${gpg_signature_check+x} ]] && gpg_signature_check=1 && printf '\e[1;33m<!>\e[0m\e[1m gpg_signature_check not defined in config, using default\e[0m\n'
+[[ -z ${minimum_available_boot_storage+x} ]] && minimum_available_boot_storage=153600 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_boot_storage not defined in config, using default\e[0m\n'
+[[ -z ${minimum_available_root_storage+x} ]] && minimum_available_root_storage=12582912 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_root_storage not defined in config, using default\e[0m\n'
 
 ## Common functions
 #
@@ -154,11 +156,30 @@ healthcheck () {
 for prog in btrfs wget dracut bootctl curl gpg gpgv; do
 	if ! command -v $prog > /dev/null; then
 		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
+		# Do not immediately exit to log all missing programs
 		err=1
 	fi
 
 	[[ $err ]] && exit 1
 done
+
+# Ensure minimum required storage is available, only run if new deployment will be made
+if [[ $1 == 'deploy'  ]]; then
+	declare boot_storage_available=($(df --output=avail /boot))
+	boot_storage_available=${boot_storage_available[1]}
+	declare root_storage_available=($(df --output=avail /))
+	root_storage_available=${root_storage_available[1]}
+
+	if [[ $boot_storage_available -lt $minimum_available_boot_storage ]]; then
+		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_boot_storage}Kib available on boot partition\e[0m\n"
+		exit 1
+	fi
+
+	if [[ $root_storage_available -lt $minimum_available_root_storage ]]; then
+		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_root_storage}Kib available on root partition\e[0m\n"
+		exit 1
+	fi
+fi
 
 ## Core functions
 #
@@ -217,8 +238,14 @@ init () {
 	always_healthcheck=1
 
 	# Perform a GPG signature check on remote sources
-	# 1 = enable, 2 = error on gpg key download fail
+	# 1 = enabled but optional, 2 = required
 	gpg_signature_check=1
+
+	# Minimum amount of storage which needs to be present on /boot in Kib
+	minimum_available_boot_storage=153600
+
+	# Minimum amount of storage which needs to be present on / in Kib
+	minimum_available_root_storage=12582912
 	END
 
 	# Add default bootloader config file
