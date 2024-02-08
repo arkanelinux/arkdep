@@ -241,10 +241,10 @@ init () {
 	# 1 = enabled but optional, 2 = required
 	gpg_signature_check=1
 
-	# Minimum amount of storage which needs to be present on /boot in Kib
+	# Minimum amount of storage which needs to be available on /boot in Kib
 	minimum_available_boot_storage=153600
 
-	# Minimum amount of storage which needs to be present on / in Kib
+	# Minimum amount of storage which needs to be available on / in Kib
 	minimum_available_root_storage=12582912
 	END
 
