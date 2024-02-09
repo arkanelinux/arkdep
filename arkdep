@@ -170,12 +170,14 @@ if [[ $1 == 'deploy'  ]]; then
 	declare root_storage_available=($(df --output=avail /))
 	root_storage_available=${root_storage_available[1]}
 
-	if [[ $boot_storage_available -lt $minimum_available_boot_storage ]]; then
+	# Check amount of available boot storage, do not run if set to 0
+	if [[ $boot_storage_available -lt $minimum_available_boot_storage ]] && [[ $minimum_available_boot_storage -ne 0 ]]; then
 		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_boot_storage}Kib available on boot partition\e[0m\n"
 		exit 1
 	fi
 
-	if [[ $root_storage_available -lt $minimum_available_root_storage ]]; then
+	# Check amount of available root storage, do not run if set to 0
+	if [[ $root_storage_available -lt $minimum_available_root_storage ]] && [[ $minimum_available_root_storage -ne 0 ]] ; then
 		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_root_storage}Kib available on root partition\e[0m\n"
 		exit 1
 	fi
