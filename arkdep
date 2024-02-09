@@ -252,7 +252,7 @@ init () {
 
 	# Add default bootloader config file
 	cat <<- END > $arkdep_dir/templates/systemd-boot
-	title Arkane GNU/Linux - arkdep
+	title Arkane GNU/Linux - Arkdep
 	linux /arkdep/%target%/vmlinuz
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
