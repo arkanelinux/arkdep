@@ -45,6 +45,11 @@ fi
 #
 declare -r arkdep_dir='/arkdep/'
 
+if [[ ! -d $arkdep_dir ]] && [[ ! $1 == 'init' ]]; then
+	printf "\e[1;31m<#>\e[0m\e[1m Arkep does not seem to be managing this system for $arkdep_dir was not found\e[0m\n"
+	exit 1
+fi
+
 ## Load config file
 #
 source $(readlink -m $arkdep_dir/config)
