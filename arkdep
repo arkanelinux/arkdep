@@ -152,10 +152,13 @@ healthcheck () {
 
 ## Error checking
 #
-# Quit if not root
-[[ ! $EUID -eq 0 ]] &&
-	printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
-	exit 1
+# Quit if not root, only run if required
+if [[ ! $1 =~ ^(get-available|healthcheck) ]]; then
+	if [[ ! $EUID -eq 0 ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
+		exit 1
+	fi
+fi
 
 # Check if all dependencies are installed, quit if not
 for prog in btrfs wget dracut bootctl curl gpg gpgv; do
