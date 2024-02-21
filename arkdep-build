@@ -131,11 +131,23 @@ if [[ $type == 'archlinux' ]]; then
 		cp -rv $configs_dir/$variant/overlay/* $workdir/
 	fi
 
+	# Run post-bootstrap script if exists
+	if [[ -f $configs_dir/$variant/scripts/post-bootstrap.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post-boostrap script\e[0m\n'
+		source $configs_dir/$variant/scripts/post-bootstrap.sh
+	fi
+
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e $configs_dir/$variant/package.list ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
 		readarray packages < $configs_dir/$variant/package.list
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
+	fi
+
+	# Run post-install script if exists
+	if [[ -f $configs_dir/$variant/scripts/post-install.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post-install script\e[0m\n'
+		source $configs_dir/$variant/scripts/post-install.sh
 	fi
 
 	# Clear pacman cache
