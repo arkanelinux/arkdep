@@ -506,13 +506,13 @@ deploy () {
 
 			fi
 		fi
+	fi
 
-		if [[ $gpg_signature_check -eq 2 ]] && [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
-			# if GPG check required but file not present error and quit
-			cleanup_and_quit 'GPG signature expected but none were provided'
-		elif [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
-			skip_gpg_check=1
-		fi
+	if [[ $gpg_signature_check -eq 2 ]] && [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
+		# if GPG check required but file not present error and quit
+		cleanup_and_quit 'GPG signature expected but none were provided'
+	elif [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
+		skip_gpg_check=1
 	fi
 
 	# If not configured to skip by previous error handeling check the signature to the downloaded image
