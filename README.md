@@ -84,7 +84,7 @@ arkdep-build.d
 |  ├── boostrap.list		# Plain text file containing list of packages installed by pacstrap, used for installing the base system
 |  ├── package.list		# (Optional) Plain text file containing list of packages installed by pacman in a chroot, used for aditional package installations
 |  ├── type         		# Plain text file, for configs of the Arch type should contain `archlinux`
-|  ├── extensions			# (Optional) Directory for custom scripts
+|  ├── extensions		# (Optional) Directory for custom scripts
 |     ├── post-bootstrap.sh	# (Optional) Custom bash script which runs after bootstrapping the system
 |     ├── post-install.sh	# (Optional) Custom bash script which runs after system installation is finished
 ```
