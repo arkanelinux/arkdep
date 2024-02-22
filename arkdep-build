@@ -133,7 +133,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Run post-bootstrap script if exists
 	if [[ -f $configs_dir/$variant/scripts/post-bootstrap.sh ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running post-boostrap script\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Running post-bootstrap script\e[0m\n'
 		source $configs_dir/$variant/scripts/post-bootstrap.sh
 	fi
 
