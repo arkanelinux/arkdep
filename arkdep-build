@@ -146,9 +146,9 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# Run post-bootstrap script if exists
-	if [[ -f $variantdir/scripts/post-bootstrap.sh ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running post-bootstrap script\e[0m\n'
-		(source $variantdir/scripts/post-bootstrap.sh)
+	if [[ -f $variantdir/extensions/post-bootstrap.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post-bootstrap extension\e[0m\n'
+		(source $variantdir/extensions/post-bootstrap.sh)
 	fi
 
 	# Read package list and install secondary system components, skip if not used
@@ -159,9 +159,9 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# Run post-install script if exists
-	if [[ -f $variantdir/scripts/post-install.sh ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running post-install script\e[0m\n'
-		(source $variantdir/scripts/post-install.sh)
+	if [[ -f $variantdir/extensions/post-install.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post-install extension\e[0m\n'
+		(source $variantdir/extensions/post-install.sh)
 	fi
 
 	# Clear pacman cache
