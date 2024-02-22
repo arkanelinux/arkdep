@@ -45,7 +45,9 @@ cleanup_and_quit () {
 		$workdir
 
 	# Quit program if argument provided to function
-	[[ -n $1 ]] && exit 1
+	if [[ -n $1 ]]; then
+		exit 1
+	fi
 
 	# Otherwise just quit, there is no error
 	exit 0
@@ -55,17 +57,27 @@ cleanup_and_quit () {
 ## Set common variables
 #
 declare -r workdir='/var/tmp/rootfs'
-[[ -v ARKDEP_CONFIGS ]] &&
-	declare -r configs_dir="$ARKDEP_CONFIGS" ||
-	declare -r configs_dir="$(readlink -m ./arkdep-build.d/)"
 declare -r variant="$1"
-declare -r type="$(cat $(readlink -m $configs_dir/$variant/type) 2> /dev/null || cleanup_and_quit 'Failed to get build type')"
-[[ -v ARKDEP_OUTPUT_TARGET ]] &&
-	declare -r output_target="$ARKDEP_OUTPUT_TARGET" ||
-	declare -r output_target="$(pwd)/target/"
 
-# Generate a 42 character long random string, used for generating psuedo-random
-# image names
+if [[ -v ARKDEP_CONFIGS ]]; then
+	declare -r configsdir="$ARKDEP_CONFIGS"
+else
+	declare -r configsdir="$(readlink -m ./arkdep-build.d/)"
+fi
+
+declare -r variantdir="$configsdir/$variant"
+declare -r type="$(cat $(readlink -m $variantdir/type) 2> /dev/null || cleanup_and_quit 'Failed to get build type')"
+
+if [[ -v ARKDEP_OUTPUT_TARGET ]]; then
+	declare -r output_target="$ARKDEP_OUTPUT_TARGET"
+else
+	declare -r output_target="$(pwd)/target/"
+fi
+
+## Set common functions
+#
+# Generate a 42 character long random string, used for generating psuedo-random image names
+# Unless overwritten with $ARKDEP_CUSTOM_NAME
 gen_random_string () {
 
 	if [[ -v ARKDEP_CUSTOM_NAME ]]; then
@@ -81,9 +93,10 @@ gen_random_string () {
 ## Error checking
 #
 # Quit if not root
-[[ ! $EUID -eq 0 ]] &&
+if [[ ! $EUID -eq 0 ]]; then
 	printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
 	exit 1
+fi
 
 # Check if all dependencies are installed, quit if not
 for prog in btrfs pacstrap; do
@@ -94,18 +107,19 @@ for prog in btrfs pacstrap; do
 done
 
 # Check if requested variant exists
-[[ ! -d $configs_dir/$variant ]] &&
+if [[ ! -d $variantdir ]]; then
 	printf '\e[1;31m<#>\e[0m\e[1m The requested variant does not exist\e[0m\n' &&
 	exit 1
+fi
 
 ## Variants
 #
 # Build archlinux type image
 if [[ $type == 'archlinux' ]]; then
 
-	# Ensure base.list exists, if not error and quit
-	if [[ ! -e $configs_dir/$variant/base.list ]]; then
-		printf "\e[1;31m<#>\e[0m\e[1m The required file 'base.list' is not preset in $(readlink -m $configs_dir/$variant)\e[0m\n" &&
+	# Ensure bootstrap.list exists, if not error and quit
+	if [[ ! -e $variantdir/bootstrap.list ]]; then
+		printf "\e[1;31m<#>\e[0m\e[1m The required file 'bootstrap.list' is not preset in $(readlink -m $variantdir)\e[0m\n" &&
 		exit 1
 	fi
 
@@ -121,33 +135,33 @@ if [[ $type == 'archlinux' ]]; then
 	mount --bind $workdir $workdir
 
 	# Read base package list and install base system
-	readarray base_packages < $configs_dir/$variant/base.list
+	readarray bootstrap_packages < $variantdir/bootstrap.list
 	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
-	pacstrap $workdir ${base_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+	pacstrap $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
-	if [[ -d $configs_dir/$variant/overlay ]]; then
+	if [[ -d $variantdir/overlay ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to root\e[0m\n'
-		cp -rv $configs_dir/$variant/overlay/* $workdir/
+		cp -rv $variantdir/overlay/* $workdir/
 	fi
 
 	# Run post-bootstrap script if exists
-	if [[ -f $configs_dir/$variant/scripts/post-bootstrap.sh ]]; then
+	if [[ -f $variantdir/scripts/post-bootstrap.sh ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running post-bootstrap script\e[0m\n'
-		source $configs_dir/$variant/scripts/post-bootstrap.sh
+		source $variantdir/scripts/post-bootstrap.sh
 	fi
 
 	# Read package list and install secondary system components, skip if not used
-	if [[ -e $configs_dir/$variant/package.list ]]; then
+	if [[ -e $variantdir/package.list ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
-		readarray packages < $configs_dir/$variant/package.list
+		readarray packages < $variantdir/package.list
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 	fi
 
 	# Run post-install script if exists
-	if [[ -f $configs_dir/$variant/scripts/post-install.sh ]]; then
+	if [[ -f $variantdir/scripts/post-install.sh ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running post-install script\e[0m\n'
-		source $configs_dir/$variant/scripts/post-install.sh
+		source $variantdir/scripts/post-install.sh
 	fi
 
 	# Clear pacman cache
