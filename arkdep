@@ -64,6 +64,7 @@ source $(readlink -m $arkdep_dir/config)
 [[ -z ${gpg_signature_check+x} ]] && gpg_signature_check=1 && printf '\e[1;33m<!>\e[0m\e[1m gpg_signature_check not defined in config, using default\e[0m\n'
 [[ -z ${minimum_available_boot_storage+x} ]] && minimum_available_boot_storage=153600 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_boot_storage not defined in config, using default\e[0m\n'
 [[ -z ${minimum_available_root_storage+x} ]] && minimum_available_root_storage=12582912 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_root_storage not defined in config, using default\e[0m\n'
+[[ -z ${update_cpu_microcode+x} ]] && update_cpu_microcode=1 && printf '\e[1;33m<!>\e[0m\e[1m update_cpu_microcode not defined in config, using default\e[0m\n'
 
 ## Common functions
 #
@@ -74,19 +75,24 @@ cleanup_and_quit () {
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
 	# Ensure we do not try to remove our current deployment
-	if grep "$(readlink -m $arkdep_dir/deployments/$deployment)" /proc/cmdline > /dev/null; then
-		printf '\e[1;33m<!>\e[0m\e[1m Cleanup target is current active deployment, skipping\e[0m\n'
-		exit 1
+	if [[ ! -z ${data[0]+x} ]]; then
+		if grep -q ${data[0]} /proc/cmdline; then
+			printf '\e[1;33m<!>\e[0m\e[1m Cleanup target is current active deployment, skipping\e[0m\n'
+			exit 1
+		fi
 	fi
 
 	# Remove the subvolume we were working on
 	# TODO: Make this a generic function and share with the removal of old images?
 	if [[ -n ${data[0]} ]]; then
+		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/etc) ro false
 		btrfs property set -f -ts $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs) ro false
-		rm -rf $arkdep_dir/deployments/${data[0]}
-		rm $arkdep_dir/cache/${data[0]}-*.img
-		rm -rf /boot/arkdep/${data[0]}
-		rm /boot/loader/entries/${data[0]}.conf
+		btrfs subvolume delete $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/etc)
+		btrfs subvolume delete $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs)
+		rm -rfv $(readlink -m $arkdep_dir/deployments/${data[0]}) \
+			/boot/arkdep/${data[0]}
+		rm -v $(readlink -m $arkdep_dir/cache/${data[0]}-*.img) \
+			/boot/loader/entries/${data[0]}.conf
 	fi
 
 	exit 1
@@ -256,6 +262,9 @@ init () {
 
 	# Minimum amount of storage which needs to be available on / in Kib
 	minimum_available_root_storage=12582912
+
+	# Update CPU firmware if newer version available
+	update_cpu_microcode=1
 	END
 
 	# Add default bootloader config file
@@ -635,6 +644,25 @@ deploy () {
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
 	cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) /boot/arkdep/${data[0]}/ ||
 		cleanup_and_quit 'Failed to copy kernel image'
+
+	# Deploy CPU firmware to boot
+	if [[ $update_cpu_microcode -eq 1 ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Checking for CPU microcode updates\e[0m\n'
+
+		for ucode in $(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/ | grep ucode); do
+			echo $ucode
+			sleep 1
+			# If CPU firmware present in both image and install
+			if [[ -f /boot/$ucode ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
+				# Check if they match, if not update
+				if ! cmp --silent /boot/$ucode $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
+					cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) /boot/$ucode ||
+						cleanup_and_quit 'Failed to copy microcode'
+				fi
+			fi
+		done
+
+	fi
 
 	# Install kernel and generate initramfs
 	printf '\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n'

@@ -209,7 +209,7 @@ if [[ $type == 'archlinux' ]]; then
 	mv $workdir/mnt $workdir/var/mnt || cleanup_and_quit 'Failed to move mnt to var/mnt'
 	ln -sv var/mnt $workdir/mnt || cleanup_and_quit 'Failed to create mnt symlink'
 
-	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to lib\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to usr/lib\e[0m\n'
 
 	# Create second passwd, group and shadow file in usr/lib and configure
 	for file in passwd group shadow; do
@@ -233,6 +233,10 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Remove passwd/group/shadow backup files
 	rm $workdir/etc/{passwd-,shadow-,group-}
+
+	printf '\e[1;34m-->\e[0m\e[1m Moving CPU microcode to usr/lib\e[0m\n'
+	# Move CPU firmware to /usr/lib if present
+	mv $workdir/boot/*-ucode.img $workdir/usr/lib/
 
 	# Make subvolume read-only
 	printf '\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n'
