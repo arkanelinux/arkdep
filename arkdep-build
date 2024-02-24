@@ -21,6 +21,7 @@ if [[ ! -n $1 || -n $2 ]]; then
 	  ARKDEP_CUSTOM_NAME		Define a custom image name
 	  ARKDEP_OUTPUT_TARGET		Overwrite location to which images will be written
 	  ARKDEP_CONFIGS		Define directory in which build will search for configuration files
+	  ARKDEP_NO_CLEANUP		Do not remove the temporary rootfs upon error or exit
 	END
 	exit 0
 fi
@@ -32,6 +33,11 @@ cleanup_and_quit () {
 
 	# If any paramters are passed we will assume it to be an error
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
+
+	if [[ $ARKDEP_NO_CLEANUP -eq 1 ]]; then
+		printf 'Cleanup disabled, not running cleanup\n'
+		exit 1
+	fi
 
 	umount $workdir
 
