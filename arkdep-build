@@ -22,6 +22,7 @@ if [[ ! -n $1 || -n $2 ]]; then
 	  ARKDEP_OUTPUT_TARGET		Overwrite location to which images will be written
 	  ARKDEP_CONFIGS		Define directory in which build will search for configuration files
 	  ARKDEP_NO_CLEANUP		Do not remove the temporary rootfs upon error or exit
+	  ARKDEP_STATIC_WORKDIR		Reset workdir back to workable state if still present
 	END
 	exit 0
 fi
@@ -131,11 +132,51 @@ if [[ $type == 'archlinux' ]]; then
 
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
 
-	# Create temporary Btrfs subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $(readlink -m $workdir)\e[0m\n"
-	btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir)"
-	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/etc)"
-	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/var)"
+	# Allow user to reuse subvolumes for testing
+	if [[ ! $ARKDEP_STATIC_WORKDIR -eq 1 ]] && [[ ! -d $workdir ]]; then
+		# Create temporary Btrfs subvolume
+		printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $(readlink -m $workdir)\e[0m\n"
+		btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir)"
+		btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/etc)"
+		btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/var)"
+	elif [[ ! $ARKDEP_STATIC_WORKDIR -eq 1 ]]; then
+		cleanup_and_quit "Failed to create btrfs subvolume $workdir for it already exists"
+	else
+		printf "\e[1;34m-->\e[0m\e[1m Returning $(readlink -m $workdir) to a workable state, this should be done for testing only\e[0m\n"
+
+		# Get the rootfs working again, this should only be done for testing
+		for file in passwd group shadow; do
+			mv $workdir/usr/lib/$file $workdir/etc/$file
+		done
+
+		btrfs property set -ts $workdir ro false || cleanup_and_quit 'Failed to set root to read-only'
+		btrfs property set -ts $workdir/etc ro false || cleanup_and_quit 'Failed to set etc to read-only'
+		btrfs property set -ts $workdir/var ro false || cleanup_and_quit 'Failed to set var to read-only'
+
+		echo 'root:x:0:0::/root:/bin/bash' | tee -a $workdir/etc/passwd
+		echo 'root:x:0:root' | tee -a $workdir/etc/group
+		echo 'root:!::::::' | tee -a $workdir/etc/shadow
+
+		rm $workdir/var/usr/local
+		mv $workdir/var/usrlocal $workdir/usr/local
+
+		rm $workdir/usr/lib/locale
+		mv $workdir/var/usrliblocale $workdir/usr/lib/locale
+
+		rm $workdir/var/roothome
+		mv $workdir/var/roothome $workdir/root
+
+		rm $workdir/opt
+		mv $workdir/var/opt $workdir/opt
+
+		# srv symlink
+		rm $workdir/srv
+		mv $workdir/var/srv $workdir/srv
+
+		# mnt symlink
+		rm $workdir/mnt
+		mv $workdir/var/mnt $workdir/mnt
+	fi
 
 	printf "\e[1;34m-->\e[0m\e[1m Creating bind mount at $(readlink -m $workdir)\e[0m\n"
 	mount --bind $workdir $workdir
