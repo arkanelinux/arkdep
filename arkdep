@@ -367,7 +367,7 @@ remove_deployment () {
 	declare -r target="${hits[0]}"
 
 	# Ensure deployment is not currently active
-	if grep "$(readlink -m $arkdep_dir/deployments/$target/rootfs)" /proc/cmdline > /dev/null; then
+	if grep -q "$(readlink -m $arkdep_dir/deployments/$target/rootfs)" /proc/cmdline; then
 		printf 'Target is currently active deployment\n'
 		exit 1
 	fi
