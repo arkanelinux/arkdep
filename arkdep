@@ -207,34 +207,37 @@ init () {
 
 	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
 
-	[[ -d $arkdep_dir ]] && cleanup_and_quit "$arkdep_dir already exists"
+	init_target="$(readlink -m $1/$arkdep_dir)"
+
+	[[ ! -d $1 ]] && cleanup_and_quit "$init_target target does not exist"
+	[[ -d $init_target ]] && cleanup_and_quit "$init_target already exists"
 
 	# Create the /arkdep subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $arkdep_dir) subvolume\e[0m\n"
-	btrfs subvolume create $arkdep_dir || cleanup_and_quit "Failed to create btrfs subvolume"
+	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $init_target) subvolume\e[0m\n"
+	btrfs subvolume create $init_target || cleanup_and_quit "Failed to create btrfs subvolume"
 
 	# Create directory structure
 	printf '\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n'
-	mkdir -pv $(readlink -m $arkdep_dir/deployments) \
-		$(readlink -m $arkdep_dir/deployments) \
-		$(readlink -m $arkdep_dir/cache) \
-		$(readlink -m $arkdep_dir/templates) \
-		$(readlink -m $arkdep_dir/overlay) \
-		$(readlink -m $arkdep_dir/keys) \
-		$(readlink -m $arkdep_dir/shared) ||
-		cleanup_and_quit "Failed to create $arkdep_dir and related directories"
+	mkdir -pv $(readlink -m $init_target/deployments) \
+		$(readlink -m $init_target/deployments) \
+		$(readlink -m $init_target/cache) \
+		$(readlink -m $init_target/templates) \
+		$(readlink -m $init_target/overlay) \
+		$(readlink -m $init_target/keys) \
+		$(readlink -m $init_target/shared) ||
+		cleanup_and_quit "Failed to create $init_target and related directories"
 
 	# Create empty database files
-	touch $(readlink -m $arkdep_dir/tracker)
-	touch $(readlink -m $arkdep_dir/keys/trusted-keys)
+	touch $(readlink -m $init_target/tracker)
+	touch $(readlink -m $init_target/keys/trusted-keys)
 
 	# Add home shared subvolume and make writable
-	btrfs subvolume create $(readlink -m $arkdep_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
-	btrfs property set -f -ts $(readlink -m  $arkdep_dir/shared/home) ro false
+	btrfs subvolume create $(readlink -m $init_target/shared/home) || cleanup_and_quit "Failed to create home subvolume"
+	btrfs property set -f -ts $(readlink -m  $init_target/shared/home) ro false
 
 	# Write default config file
 	printf '\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n'
-	cat <<- END > $arkdep_dir/config
+	cat <<- END > $init_target/config
 	# Write /arkdep/overlay overlay to new deployments
 	enable_overlay=1
 
@@ -268,7 +271,7 @@ init () {
 	END
 
 	# Add default bootloader config file
-	cat <<- END > $arkdep_dir/templates/systemd-boot
+	cat <<- END > $init_target/templates/systemd-boot
 	title Arkane GNU/Linux - Arkdep
 	linux /arkdep/%target%/vmlinuz
 	initrd /amd-ucode.img
@@ -714,7 +717,7 @@ deploy () {
 
 }
 
-[[ $1 == 'init' ]] && init
+[[ $1 == 'init' ]] && init $2
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'deploy' ]] && deploy $2 $3

@@ -27,6 +27,9 @@ System requirements for image building;
 The following command will initialize Arkdep, it will deploy a subvolume containing all Arkdep related files excluding kernels and initramfs to `/arkdep`. Kernel and initramfs will instead be stored in `/boot/arkdep` upon generation.
 ```shell
 sudo arkdep init
+
+# Alternatively to init in to a specific directory
+sudo arkdep init /target/dir
 ```
 
 Once ardep is installed you should prepare the overlay located at `/arkdep/overlay`. The overlay is copied directly on to the root filesystem of a new deployment, create directories inside of it as-if it were a root filesystem. For example, `/arkdep/overlay/etc` will be your `/etc` folder.
