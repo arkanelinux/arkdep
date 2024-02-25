@@ -351,8 +351,20 @@ remove_deployment () {
 	declare -r hits=($(grep $1 $arkdep_dir/tracker))
 
 	if [[ ${#hits[@]} -gt 1 ]]; then
-		printf 'Multiple deployments match target, be more specific\n'
-		exit 1
+
+		# Check if there is an exact match
+		for hit in ${hits[@]}; do
+			if [[ $1 == $hit ]]; then
+				declare -r exact_match_found=1
+				# Set first hit to exact match
+				${hits[0]}=$hit
+			fi
+		done
+
+		if [[ ! $exact_match_found -eq 1 ]]; then
+			printf 'Multiple deployments match target, be more specific or provide an exact match\n'
+			exit 1
+		fi
 	elif [[ ${#hits[@]} -lt 1 ]]; then
 		printf 'No deployments match target\n'
 		exit 1
