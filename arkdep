@@ -370,7 +370,18 @@ remove_deployment () {
 	rm -rf $(readlink -m $arkdep_dir/deployments/$target)
 
 	# Remove from tracker
-	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp || cleanup_and_quit 'Failed to update tracker file'
+	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
+	declare -r tracker_write_exit_code=$?
+
+	# Grep may return a 1 if the file is empty
+	if [[ $tracker_write_exit_code -eq 1 ]]; then
+		# No matches, this means file is now empty
+		truncate -s 0 $arkdep_dir/tracker
+	elif [[ $tracker_write_exit_code -eq 2 ]]; then
+		# An error occured in grep
+		cleanup_and_quit 'Failed to update tracker file'
+	fi
+
 	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker || cleanup_and_quit 'Failed to move tracker_tmp file to tracker'
 
 	# Remove images from cache if requested
