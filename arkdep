@@ -357,7 +357,7 @@ remove_deployment () {
 			if [[ $1 == $hit ]]; then
 				declare -r exact_match_found=1
 				# Set first hit to exact match
-				${hits[0]}=$hit
+				hits[0]=$hit
 			fi
 		done
 
