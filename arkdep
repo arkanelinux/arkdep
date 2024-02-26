@@ -37,16 +37,19 @@ if [[ ! -n $1 ]]; then
 
 	  arkdep remove stable_v1
 	      Remove the defined deployment
+
+	Variables:
+	  ARKDEP_ROOT		Append path to arkdep target directory
 	END
 	exit 0
 fi
 
 ## Set common variables
 #
-declare -r arkdep_dir='/arkdep/'
+declare -r arkdep_dir="$(readlink -m $ARKDEP_ROOT/arkdep/)"
 
 if [[ ! -d $arkdep_dir ]] && [[ ! $1 == 'init' ]]; then
-	printf "\e[1;31m<#>\e[0m\e[1m Arkep does not seem to be managing this system for $arkdep_dir was not found\e[0m\n"
+	printf "\e[1;31m<#>\e[0m\e[1m Arkep does not seem to be managing this system or the provided file path is incorrect for $arkdep_dir was not found\e[0m\n"
 	exit 1
 fi
 
@@ -90,9 +93,9 @@ cleanup_and_quit () {
 		btrfs subvolume delete $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/etc)
 		btrfs subvolume delete $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs)
 		rm -rfv $(readlink -m $arkdep_dir/deployments/${data[0]}) \
-			/boot/arkdep/${data[0]}
+			$(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]})
 		rm -v $(readlink -m $arkdep_dir/cache/${data[0]}-*.img) \
-			/boot/loader/entries/${data[0]}.conf
+			$(readlink -m $ARKDEP_ROOT/boot/loader/entries/${data[0]}.conf)
 	fi
 
 	exit 1
@@ -179,9 +182,9 @@ done
 
 # Ensure minimum required storage is available, only run if new deployment will be made
 if [[ $1 == 'deploy'  ]]; then
-	declare boot_storage_available=($(df --output=avail /boot))
+	declare boot_storage_available=($(df --output=avail $(readlink -m $ARKDEP_ROOT/boot)))
 	boot_storage_available=${boot_storage_available[1]}
-	declare root_storage_available=($(df --output=avail /))
+	declare root_storage_available=($(df --output=avail $(readlink -m $ARKDEP_ROOT/)))
 	root_storage_available=${root_storage_available[1]}
 
 	# Check amount of available boot storage, do not run if set to 0
@@ -207,37 +210,34 @@ init () {
 
 	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
 
-	init_target="$(readlink -m $1/$arkdep_dir)"
-
-	[[ ! -d $1 ]] && cleanup_and_quit "$init_target target does not exist"
-	[[ -d $init_target ]] && cleanup_and_quit "$init_target already exists"
+	[[ -d $arkdep_dir ]] && cleanup_and_quit "$arkdep_dir already exists"
 
 	# Create the /arkdep subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating $(readlink -m $init_target) subvolume\e[0m\n"
-	btrfs subvolume create $init_target || cleanup_and_quit "Failed to create btrfs subvolume"
+	printf "\e[1;34m-->\e[0m\e[1m Creating $arkdep_dir subvolume\e[0m\n"
+	btrfs subvolume create $arkdep_dir || cleanup_and_quit "Failed to create btrfs subvolume"
 
 	# Create directory structure
 	printf '\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n'
-	mkdir -pv $(readlink -m $init_target/deployments) \
-		$(readlink -m $init_target/deployments) \
-		$(readlink -m $init_target/cache) \
-		$(readlink -m $init_target/templates) \
-		$(readlink -m $init_target/overlay) \
-		$(readlink -m $init_target/keys) \
-		$(readlink -m $init_target/shared) ||
-		cleanup_and_quit "Failed to create $init_target and related directories"
+	mkdir -pv $(readlink -m $arkdep_dir/deployments) \
+		$(readlink -m $arkdep_dir/deployments) \
+		$(readlink -m $arkdep_dir/cache) \
+		$(readlink -m $arkdep_dir/templates) \
+		$(readlink -m $arkdep_dir/overlay) \
+		$(readlink -m $arkdep_dir/keys) \
+		$(readlink -m $arkdep_dir/shared) ||
+		cleanup_and_quit "Failed to create $arkdep_dir and related directories"
 
 	# Create empty database files
-	touch $(readlink -m $init_target/tracker)
-	touch $(readlink -m $init_target/keys/trusted-keys)
+	touch $(readlink -m $arkdep_dir/tracker)
+	touch $(readlink -m $arkdep_dir/keys/trusted-keys)
 
 	# Add home shared subvolume and make writable
-	btrfs subvolume create $(readlink -m $init_target/shared/home) || cleanup_and_quit "Failed to create home subvolume"
-	btrfs property set -f -ts $(readlink -m  $init_target/shared/home) ro false
+	btrfs subvolume create $(readlink -m $arkdep_dir/shared/home) || cleanup_and_quit "Failed to create home subvolume"
+	btrfs property set -f -ts $(readlink -m  $arkdep_dir/shared/home) ro false
 
 	# Write default config file
 	printf '\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n'
-	cat <<- END > $init_target/config
+	cat <<- END > $arkdep_dir/config
 	# Write /arkdep/overlay overlay to new deployments
 	enable_overlay=1
 
@@ -271,7 +271,7 @@ init () {
 	END
 
 	# Add default bootloader config file
-	cat <<- END > $init_target/templates/systemd-boot
+	cat <<- END > $arkdep_dir/templates/systemd-boot
 	title Arkane GNU/Linux - Arkdep
 	linux /arkdep/%target%/vmlinuz
 	initrd /amd-ucode.img
@@ -307,15 +307,15 @@ teardown () {
 
 		# Quit with error if $arkdep_dir does not exist
 		if [[ ! -d $arkdep_dir ]]; then
-			printf "\e[1;31m<#>\e[0m $(readlink -m $arkdep_dir) does not exist, there is nothing to tear down"
+			printf "\e[1;31m<#>\e[0m $arkdep_dir does not exist, there is nothing to tear down"
 			exit 1
 		fi
 
 		# Remove all bootloader entries
-		rm -v $(grep -ril arkdep /boot/loader/entries)
+		rm -v $(grep -ril arkdep $($ARKDEP_ROOT/boot/loader/entries))
 
 		# Remove kernels and initramfs deployed by Arkdep
-		rm -rfv /boot/arkdep
+		rm -rfv $(readlink -m $ARKDEP_ROOT/boot/arkdep)
 
 		# Ensure all nested volumes in arkdep are writable and remove
 		for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep "^$arkdep_dir" | tac); do
@@ -373,8 +373,8 @@ remove_deployment () {
 	fi
 
 	# Remove bootloader entry
-	rm -rfv /boot/loader/entries/$target.conf
-	rm -rfv /boot/arkdep/$target
+	rm -rfv $(readlink -m $ARKDEP_ROOT/boot/loader/entries/$target.conf)
+	rm -rfv $(readlink -m $ARKDEP_ROOT/boot/arkdep/$target)
 
 	# Ensure the deployment and all sub-volumes are writable
 	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
@@ -463,7 +463,7 @@ deploy () {
 	else
 
 		# Find full name in cache, exclude sig files, if no hit quit with error
-		declare cache_hits=($(ls $arkdep_dir/cache | grep -E "^$deploy_version" | grep -v '.sig$'))
+		declare cache_hits=($(ls $(readlink -m $arkdep_dir/cache) | grep -E "^$deploy_version" | grep -v '.sig$'))
 
 		# Temporary var to store the delimited file found in cache
 		declare data_inter=()
@@ -666,9 +666,9 @@ deploy () {
 	printf '\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n'
 	# Get list of all available kernels
 	kernels_installed=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
-	mkdir -pv /boot/arkdep/${data[0]}
+	mkdir -pv $(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]})
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
-	cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) /boot/arkdep/${data[0]}/ ||
+	cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) $(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]}/) ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
 	# Deploy CPU firmware to boot
@@ -679,10 +679,10 @@ deploy () {
 			echo $ucode
 			sleep 1
 			# If CPU firmware present in both image and install
-			if [[ -f /boot/$ucode ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
+			if [[ -f $(readlink -m $ARKDEP_ROOT/boot/$ucode) ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
 				# Check if they match, if not update
-				if ! cmp --silent /boot/$ucode $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
-					cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) /boot/$ucode ||
+				if ! cmp --silent $(readlink -m $ARKDEP_ROOT/boot/$ucode) $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
+					cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) $(readlink -m $ARKDED_ROOT/boot/$ucode) ||
 						cleanup_and_quit 'Failed to copy microcode'
 				fi
 			fi
@@ -693,10 +693,10 @@ deploy () {
 	# Install kernel and generate initramfs
 	printf '\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n'
 	dracut -q -k $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}) \
-		--kernel-image /boot/arkdep/${data[0]}/vmlinuz \
+		--kernel-image $(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]}/vmlinuz) \
 		--kver ${kernels_installed[0]} \
 		--force \
-		/boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
+		$(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]}/initramfs-linux.img) || cleanup_and_quit 'Failed to generate initramfs'
 
 	# Add to database
 	printf '\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n'
@@ -707,7 +707,7 @@ deploy () {
 	# Deploy bootloader configuration
 	# also insert newline
 	printf '\n\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n'
-	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > /boot/loader/entries/${data[0]}.conf
+	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > $(readlink -m $ARKDEP_ROOT/boot/loader/entries/${data[0]}.conf)
 
 	# Set new deployment as default bootloader entry
 	printf '\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n'
