@@ -39,7 +39,7 @@ if [[ ! -n $1 ]]; then
 	      Remove the defined deployment
 
 	Variables:
-	  ARKDEP_ROOT		Append path to arkdep target directory
+	  ARKDEP_ROOT		Prepend path to arkdep target directory
 	  ARKDEP_NO_BOOTCTL	Do not run bootctl commands
 	END
 	exit 0
