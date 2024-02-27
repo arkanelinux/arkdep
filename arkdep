@@ -688,8 +688,6 @@ deploy () {
 		printf '\e[1;34m-->\e[0m\e[1m Checking for CPU microcode updates\e[0m\n'
 
 		for ucode in $(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/ | grep ucode); do
-			echo $ucode
-			sleep 1
 			# If CPU firmware present in both image and install
 			if [[ -f $(readlink -m $ARKDEP_ROOT/boot/$ucode) ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
 				# Check if they match, if not update
