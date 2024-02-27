@@ -176,7 +176,7 @@ fi
 for prog in btrfs wget dracut bootctl curl gpg gpgv; do
 
 	# If ARKDEP_NO_BOOTCTL defined do not enforce bootctl requirement
-	if [[ $prog == 'bootctl' ]] && [[ ! -z $ARKDEP_NO_BOOTCTL ]]; then
+	if [[ $prog == 'bootctl' ]] && [[ $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
 		break
 	fi
 
@@ -216,7 +216,7 @@ init () {
 
 	# Ensure systemd-boot is installed before continuing, for it is the only thing we support
 	# Do not run if ARKDEP_NO_BOOTCTL defined
-	if [[ ! -z $ARKDEP_NO_BOOTCTL ]]; then
+	if [[ ! $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
 		bootctl is-installed || cleanup_and_quit 'systemd-boot seems to not be installed'
 	else
 		printf '\e[1;33m<!>\e[0m\e[1m Not running bootctl is-installed because overwritten with ARKDEP_NO_BOOTCTL\e[0m\n'
