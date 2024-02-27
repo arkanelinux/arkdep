@@ -326,7 +326,7 @@ teardown () {
 		fi
 
 		# Remove all bootloader entries
-		rm -v $(grep -ril arkdep $($ARKDEP_ROOT/boot/loader/entries))
+		rm -v $(grep -ril arkdep $(readlink -m $ARKDEP_ROOT/boot/loader/entries))
 
 		# Remove kernels and initramfs deployed by Arkdep
 		rm -rfv $(readlink -m $ARKDEP_ROOT/boot/arkdep)
