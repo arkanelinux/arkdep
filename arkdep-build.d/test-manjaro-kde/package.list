@@ -102,6 +102,7 @@ sddm-breath-theme
 sddm-kcm
 spectacle
 sshfs
+sudo
 systemd-kcm
 systemsettings
 terminus-font
