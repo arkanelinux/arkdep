@@ -1,6 +1,6 @@
-base
-linux
-linux-firmware
 amd-ucode
-intel-ucode
+base
 dracut
+linux66
+linux-firmware
+manjaro-keyring
