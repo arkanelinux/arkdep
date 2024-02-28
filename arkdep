@@ -40,6 +40,7 @@ if [[ ! -n $1 ]]; then
 
 	Variables:
 	  ARKDEP_ROOT		Prepend path to arkdep target directory
+	  ARKDEP_BOOT		Set custom /boot location, overwrites ARKDEP_ROOT on relevant tasks if set, implies ARKDEP_NO_BOOTCTL
 	  ARKDEP_NO_BOOTCTL	Do not run bootctl commands
 	END
 	exit 0
@@ -48,6 +49,16 @@ fi
 ## Set common variables
 #
 declare -r arkdep_dir="$(readlink -m $ARKDEP_ROOT/arkdep/)"
+
+# Override arkdep_boot if set, if not assume located inside of root
+if [[ -n $ARKDEP_BOOT ]]; then
+	declare -r arkdep_boot="$(readlink -m $ARKDEP_BOOT)"
+else
+	declare -r arkdep_boot="$(readlink -m $ARKDEP_ROOT/boot)"
+fi
+
+# if ARKDEP_BOOT is set also set ARKDEP_NO_BOOTCTL
+[[ -n $ARKDEP_BOOT ]] && declare -r ARKDEP_NO_BOOTCTL=1
 
 if [[ ! -d $arkdep_dir ]] && [[ ! $1 == 'init' ]]; then
 	printf "\e[1;31m<#>\e[0m\e[1m Arkep does not seem to be managing this system or the provided file path is incorrect for $arkdep_dir was not found\e[0m\n"
@@ -96,9 +107,9 @@ cleanup_and_quit () {
 		btrfs subvolume delete $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/etc)
 		btrfs subvolume delete $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs)
 		rm -rfv $(readlink -m $arkdep_dir/deployments/${data[0]}) \
-			$(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]})
+			$(readlink -m $arkdep_boot/arkdep/${data[0]})
 		rm -v $(readlink -m $arkdep_dir/cache/${data[0]}-*.img) \
-			$(readlink -m $ARKDEP_ROOT/boot/loader/entries/${data[0]}.conf)
+			$(readlink -m $arkdep_boot/loader/entries/${data[0]}.conf)
 	fi
 
 	exit 1
@@ -191,7 +202,7 @@ done
 
 # Ensure minimum required storage is available, only run if new deployment will be made
 if [[ $1 == 'deploy'  ]]; then
-	declare boot_storage_available=($(df --output=avail $(readlink -m $ARKDEP_ROOT/boot)))
+	declare boot_storage_available=($(df --output=avail $(readlink -m $arkdep_boot)))
 	boot_storage_available=${boot_storage_available[1]}
 	declare root_storage_available=($(df --output=avail $(readlink -m $ARKDEP_ROOT/)))
 	root_storage_available=${root_storage_available[1]}
@@ -326,10 +337,10 @@ teardown () {
 		fi
 
 		# Remove all bootloader entries
-		rm -v $(grep -ril arkdep $(readlink -m $ARKDEP_ROOT/boot/loader/entries))
+		rm -v $(grep -ril arkdep $(readlink -m $arkdep_boot/loader/entries))
 
 		# Remove kernels and initramfs deployed by Arkdep
-		rm -rfv $(readlink -m $ARKDEP_ROOT/boot/arkdep)
+		rm -rfv $(readlink -m $arkdep_boot/arkdep)
 
 		# Ensure all nested volumes in arkdep are writable and remove
 		for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep "^$arkdep_dir" | tac); do
@@ -387,8 +398,8 @@ remove_deployment () {
 	fi
 
 	# Remove bootloader entry
-	rm -rfv $(readlink -m $ARKDEP_ROOT/boot/loader/entries/$target.conf)
-	rm -rfv $(readlink -m $ARKDEP_ROOT/boot/arkdep/$target)
+	rm -rfv $(readlink -m $arkdep_boot/loader/entries/$target.conf)
+	rm -rfv $(readlink -m $arkdep_boot/arkdep/$target)
 
 	# Ensure the deployment and all sub-volumes are writable
 	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
@@ -680,9 +691,9 @@ deploy () {
 	printf '\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n'
 	# Get list of all available kernels
 	kernels_installed=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
-	mkdir -pv $(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]})
+	mkdir -pv $(readlink -m $arkdep_boot/arkdep/${data[0]})
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
-	cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) $(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]}/) ||
+	cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) $(readlink -m $arkdep_boot/arkdep/${data[0]}/) ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
 	# Deploy CPU firmware to boot
@@ -691,10 +702,10 @@ deploy () {
 
 		for ucode in $(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/ | grep ucode); do
 			# If CPU firmware present in both image and install
-			if [[ -f $(readlink -m $ARKDEP_ROOT/boot/$ucode) ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
+			if [[ -f $(readlink -m $arkdep_boot/$ucode) ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
 				# Check if they match, if not update
-				if ! cmp --silent $(readlink -m $ARKDEP_ROOT/boot/$ucode) $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
-					cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) $(readlink -m $ARKDED_ROOT/boot/$ucode) ||
+				if ! cmp --silent $(readlink -m $arkdep_boot/$ucode) $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
+					cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) $(readlink -m $arkdep_boot/$ucode) ||
 						cleanup_and_quit 'Failed to copy microcode'
 				fi
 			fi
@@ -705,10 +716,10 @@ deploy () {
 	# Install kernel and generate initramfs
 	printf '\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n'
 	dracut -q -k $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}) \
-		--kernel-image $(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]}/vmlinuz) \
+		--kernel-image $(readlink -m $arkdep_boot/arkdep/${data[0]}/vmlinuz) \
 		--kver ${kernels_installed[0]} \
 		--force \
-		$(readlink -m $ARKDEP_ROOT/boot/arkdep/${data[0]}/initramfs-linux.img) || cleanup_and_quit 'Failed to generate initramfs'
+		$(readlink -m $arkdep_boot/arkdep/${data[0]}/initramfs-linux.img) || cleanup_and_quit 'Failed to generate initramfs'
 
 	# Add to database
 	printf '\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n'
@@ -719,7 +730,7 @@ deploy () {
 	# Deploy bootloader configuration
 	# also insert newline
 	printf '\n\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n'
-	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > $(readlink -m $ARKDEP_ROOT/boot/loader/entries/${data[0]}.conf)
+	sed "s/%target%/${data[0]}/" $arkdep_dir/templates/systemd-boot > $(readlink -m $arkdep_boot/loader/entries/${data[0]}.conf)
 
 	# Set new deployment as default bootloader entry
 	printf '\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n'
