@@ -184,7 +184,12 @@ if [[ $type == 'archlinux' ]]; then
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
 	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
-	pacstrap -c $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+	# If pacman.conf is available in overlay, use it
+	if [[ -f $workdir/overlay/etc/pacman.conf ]]; then
+		pacstrap -c -C $workdir/overlay/etc/pacman.conf $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+	else
+		pacstrap -c $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+	fi
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
 	if [[ -d $variantdir/overlay ]]; then
