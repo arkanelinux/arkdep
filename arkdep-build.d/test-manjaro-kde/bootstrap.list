@@ -1,6 +1,7 @@
 amd-ucode
 base
 dracut
-linux66
+intel-ucode
 linux-firmware
+linux66
 manjaro-keyring

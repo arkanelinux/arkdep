@@ -35,6 +35,7 @@ kinit
 kio-extras
 kmenuedit
 konsole
+kpipewire
 kscreen
 kscreenlocker
 ksshaskpass
@@ -49,7 +50,10 @@ lib32-libva-vdpau-driver
 libcanberra
 libdvdcss
 libnss-extrausers
+libva-intel-driver
 libva-mesa-driver
+libva-mesa-driver
+libva-vdpau-driver
 libva-vdpau-driver
 manjaro-alsa
 manjaro-application-utility
@@ -113,6 +117,9 @@ udiskie
 udisks2
 unarchiver
 usb_modeswitch
+vulkan-intel
+vulkan-mesa-layers
+vulkan-radeon
 xdg-desktop-portal-kde
 xdg-user-dirs
 xdg-utils
