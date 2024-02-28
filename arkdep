@@ -702,12 +702,9 @@ deploy () {
 
 		for ucode in $(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/ | grep ucode); do
 			# If CPU firmware present in both image and install
-			if [[ -f $(readlink -m $arkdep_boot/$ucode) ]] && [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode ]]; then
-				# Check if they match, if not update
-				if ! cmp --silent $(readlink -m $arkdep_boot/$ucode) $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
-					cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) $(readlink -m $arkdep_boot/$ucode) ||
-						cleanup_and_quit 'Failed to copy microcode'
-				fi
+			if ! cmp --silent $(readlink -m $arkdep_boot/$ucode) $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
+				cp -v $(readlink -m $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode) $(readlink -m $arkdep_boot/$ucode) ||
+					cleanup_and_quit 'Failed to copy microcode'
 			fi
 		done
 
