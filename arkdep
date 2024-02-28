@@ -146,14 +146,14 @@ healthcheck () {
 	# Clean whitespaces
 	untracked=$(echo $untracked | xargs)
 
-	if [[ ! -z $untracked ]]; then
+	if [[ -n $untracked ]]; then
 		printf '\e[1;33m<!>\e[0m\e[1m The following deployments were found but are untracked\n\e[0m'
 		for t in ${untracked[@]}; do
 			printf "$t\n"
 		done
 	fi
 
-	if [[ ! -z $hanging_cache ]]; then
+	if [[ -n $hanging_cache ]]; then
 		printf '\e[1;33m<!>\e[0m\e[1m The following hanging images were found in cache\n\e[0m'
 		for t in ${hanging_cache[@]}; do
 			printf "$t\n"
@@ -363,7 +363,7 @@ remove_deployment () {
 		printf 'No deployment defined\n' && exit 1
 
 	# Ensure user only provided a single target
-	[[ ! -z $2 ]] && \
+	[[ -n $2 ]] && \
 		printf 'Multiple targets provided, remove only accepts a single target at a time\n' && exit 1
 
 	# Ensure requested deployment is tracked
