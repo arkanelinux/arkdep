@@ -81,7 +81,7 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${minimum_available_boot_storage+x} ]] && minimum_available_boot_storage=153600 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_boot_storage not defined in config, using default\e[0m\n'
 	[[ -z ${minimum_available_root_storage+x} ]] && minimum_available_root_storage=12582912 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_root_storage not defined in config, using default\e[0m\n'
 	[[ -z ${update_cpu_microcode+x} ]] && update_cpu_microcode=1 && printf '\e[1;33m<!>\e[0m\e[1m update_cpu_microcode not defined in config, using default\e[0m\n'
-	[[ -z ${backup_user_accounts+x} ]] && backup_user_accounts=1 && printf '\e[1;33m<!>\e[0m\e[1m backup_user_accounts not defined in config, using default\e[0m\n'
+	[[ -z ${backup_user_accounts+x} ]] && backup_user_accounts=0 && printf '\e[1;33m<!>\e[0m\e[1m backup_user_accounts not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -296,7 +296,7 @@ init () {
 	update_cpu_microcode=1
 
 	# Automatically make a copy of passwd, shadow and group files if they differ from overlay
-	backup_user_accounts=1
+	backup_user_accounts=0
 	END
 
 	# Add default bootloader config file
