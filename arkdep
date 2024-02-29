@@ -672,7 +672,7 @@ deploy () {
 		# If backup_user_accounts is enabled automatically perform a backup
 		if [[ $backup_user_accounts -eq 1 ]]; then
 
-			printf '\e[1;34m-->\e[0m\e[1m Copying user account files if changed\e[0m\n'
+			printf '\e[1;34m-->\e[0m\e[1m Copying user account files to overlay if changed\e[0m\n'
 
 			for file in passwd shadow group; do
 				if ! cmp --silent $arkdep_dir/overlay/etc/$file /etc/$file; then
