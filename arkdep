@@ -681,7 +681,7 @@ deploy () {
 			done
 
 			# Ensure shadow file permissions are set properly
-			chmod 600 $file/overlay/etc/shadow
+			chmod 600 $arkdep_dir/overlay/etc/shadow
 
 		fi
 
