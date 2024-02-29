@@ -206,8 +206,16 @@ if [[ $type == 'archlinux' ]]; then
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e $variantdir/package.list ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
+
+		# Mount the pacman cache
+		mount --bind /var/cache/pacman/pkg $workdir/var/cache/pacman/pkg
+
+		# Read package list and install
 		readarray packages < $variantdir/package.list
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
+
+		# Unmount pacman cache
+		umount $workdir/var/cache/pacman/pkg
 	fi
 
 	# Run post-install script if exists
