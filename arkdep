@@ -669,8 +669,8 @@ deploy () {
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
 
-		# If backup_user_accounts is enabled automatically perform a backup
-		if [[ $backup_user_accounts -eq 1 ]]; then
+		# If backup_user_accounts is enabled automatically perform a backup, do not run if custom root is defined
+		if [[ $backup_user_accounts -eq 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 
 			printf '\e[1;34m-->\e[0m\e[1m Copying user account files to overlay if changed\e[0m\n'
 
