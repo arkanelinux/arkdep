@@ -714,7 +714,7 @@ deploy () {
 	kernels_installed=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
 	mkdir -pv $arkdep_boot/arkdep/${data[0]}
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
-	cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz) $arkdep_boot/arkdep/${data[0]}/ ||
+	cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz $arkdep_boot/arkdep/${data[0]}/ ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
 	# Deploy CPU firmware to boot
