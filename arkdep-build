@@ -40,7 +40,7 @@ cleanup_and_quit () {
 		exit 1
 	fi
 
-	umount $workdir
+	umount -l $workdir
 
 	btrfs property set -ts $workdir ro false
 	btrfs property set -ts $workdir/etc ro false
@@ -215,7 +215,7 @@ if [[ $type == 'archlinux' ]]; then
 		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
 
 		# Unmount pacman cache
-		umount $workdir/var/cache/pacman/pkg
+		umount -l $workdir/var/cache/pacman/pkg
 	fi
 
 	# Run post-install script if exists
