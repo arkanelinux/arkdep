@@ -414,7 +414,7 @@ remove_deployment () {
 	rm -rf $arkdep_dir/deployments/$target
 
 	# Remove from tracker
-	grep -v $1 $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
+	grep -v $target $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
 	declare -r tracker_write_exit_code=$?
 
 	# Grep may return a 1 if the file is empty
@@ -431,8 +431,8 @@ remove_deployment () {
 	# Remove images from cache if requested
 	if [[ $clean_cache_on_remove -eq 1 ]]; then
 		# Only attempt remove if file exists
-		if ls $arkdep_dir/cache/ | grep $1; then
-			rm -v $arkdep_dir/cache/$1.tar.*
+		if ls $arkdep_dir/cache/ | grep $target; then
+			rm -v $arkdep_dir/cache/$target.tar.*
 		fi
 	fi
 
