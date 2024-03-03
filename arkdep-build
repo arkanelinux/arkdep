@@ -263,6 +263,12 @@ if [[ $type == 'archlinux' ]]; then
 	mv $workdir/mnt $workdir/var/mnt || cleanup_and_quit 'Failed to move mnt to var/mnt'
 	ln -sv var/mnt $workdir/mnt || cleanup_and_quit 'Failed to create mnt symlink'
 
+	# NetworkManager system-connections symlink if installed
+	if [[ -d $workdir/etc/NetworkManager ]]; then
+		mv $workdir/etc/NetworkManager/system-connections $workdir/var/nm-system-connections || cleanup_and_quit 'Failed to move Network to etc/NetworkManager/system-connections'
+		ln -sv ../../var/nm-system-connections $workdir/etc/NetworkManager/system-connections || cleanup_and_quit 'Failed to create nm-system-connections symlink'
+	fi
+
 	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to usr/lib\e[0m\n'
 
 	# Create second passwd, group and shadow file in usr/lib and configure
