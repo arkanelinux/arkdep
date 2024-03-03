@@ -265,7 +265,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# NetworkManager system-connections symlink if installed
 	if [[ -d $workdir/etc/NetworkManager ]]; then
-		mv $workdir/etc/NetworkManager/system-connections $workdir/var/nm-system-connections || cleanup_and_quit 'Failed to move Network to etc/NetworkManager/system-connections'
+		mv $workdir/etc/NetworkManager/system-connections $workdir/var/nm-system-connections || cleanup_and_quit 'Failed to move etc/NetworkManager/system-connections to var/nm-system-connections'
 		ln -sv ../../var/nm-system-connections $workdir/etc/NetworkManager/system-connections || cleanup_and_quit 'Failed to create nm-system-connections symlink'
 	fi
 
