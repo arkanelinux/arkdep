@@ -19,6 +19,7 @@ dosfstools
 efibootmgr
 f2fs-tools
 flatpak
+fwupd
 gdm
 git
 gnome-backgrounds
