@@ -8,8 +8,11 @@ Arkdep attempts to be as simple to use as possible and avoid unnecessary abstrac
 
 ## Usage
 ### Rolling out Arkdep on a new system
-> [!NOTE]
+> [!WARNING]
 > Arkdep has as of now only been tested on Arch Linux-based systems
+
+> [!NOTE]
+> If you are only intend on building images Arkdep does not have to be initted on the system
 
 Arkdep can be easily rolled out and torn down again, it is non-invasive by design. So it _should_ be safe to just toy around with it on your system.
 
