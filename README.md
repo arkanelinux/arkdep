@@ -155,6 +155,13 @@ A GPG signature is by default optional, if available Arkdep will use it instead 
 
 A keyring with trusted (private) keys is stored at `/arkdep/keys/trusted-keys`, keys are only accepted in binary format.
 
+Keys can be exported and added to the keyring like so, this process can be repeated to add multiple keys;
+```shell
+gpg --output example.gpg --export example@example.com
+
+cat example.gpg | sudo tee -a /arkdep/keys/trusted-keys
+```
+
 Arkdep assumes the signatures to be identical in name to their parent file with a .sig appended.
 
 Generate a signature like so;
