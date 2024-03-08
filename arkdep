@@ -15,7 +15,7 @@ if [[ ! -n $1 ]]; then
 	  deploy		Deploy a new or update an existing deployment
 	  init			Initialize arkdep on a new system
 	  teardown		Remove all arkdep-deploy related files and folders
-	  cleanup		Remove any hanging images and unfished downloads
+	  cleanup		Remove any hanging images and unfinished downloads
 	  healthcheck		Check for and report any config issues or untracked deployments
 	  get-available         List available packages in repo
 	  remove		Remove a specified deployment
