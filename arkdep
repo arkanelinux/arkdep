@@ -185,7 +185,7 @@ cleanup () {
 	if [[ -n $untracked ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Cleaning up untracked deployments\e[0m\n'
 		for target in ${untracked[@]}; do
-			if [[ $target == 'recovery' ]]; then
+			if [[ $target == *recovery* ]]; then
 				printf '\e[1;33m<!>\e[0m\e[1m Detected untracked recovery entry, ignoring\n\e[0m'
 				break
 			fi
