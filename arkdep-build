@@ -72,8 +72,15 @@ else
 	declare -r configsdir="$(readlink -m ./arkdep-build.d/)"
 fi
 
+# Before we continue setting variables, lets first ensure the configsdir actually exist
+# We do this now to give better error reporting to the user
+if [[ ! -d $configsdir ]]; then
+	printf "\e[1;31m<#>\e[0m\e[1m $configsdir does not exist, are you located inside of the configuration directory's parent directory?\n\e[0m"
+	exit 1
+fi
+
 declare -r variantdir="$configsdir/$variant"
-declare -r type="$(cat $(readlink -m $variantdir/type) 2> /dev/null || cleanup_and_quit 'Failed to get build type')"
+declare -r type="$(cat $(readlink -m $variantdir/type) 2> /dev/null || (printf '\e[1;31m<#>\e[0m\e[1m Failed to get build type\n\e[0m'; exit 1))"
 
 if [[ -v ARKDEP_OUTPUT_TARGET ]]; then
 	declare -r output_target="$ARKDEP_OUTPUT_TARGET"
@@ -101,7 +108,7 @@ gen_random_string () {
 #
 # Quit if not root
 if [[ ! $EUID -eq 0 ]]; then
-	printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
+	printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m'
 	exit 1
 fi
 
@@ -115,7 +122,7 @@ done
 
 # Check if requested variant exists
 if [[ ! -d $variantdir ]]; then
-	printf '\e[1;31m<#>\e[0m\e[1m The requested variant does not exist\e[0m\n' &&
+	printf '\e[1;31m<#>\e[0m\e[1m The requested variant does not exist\e[0m\n'
 	exit 1
 fi
 
@@ -126,7 +133,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Ensure bootstrap.list exists, if not error and quit
 	if [[ ! -e $variantdir/bootstrap.list ]]; then
-		printf "\e[1;31m<#>\e[0m\e[1m The required file 'bootstrap.list' is not preset in $(readlink -m $variantdir)\e[0m\n" &&
+		printf "\e[1;31m<#>\e[0m\e[1m The required file 'bootstrap.list' is not preset in $(readlink -m $variantdir)\e[0m\n"
 		exit 1
 	fi
 
