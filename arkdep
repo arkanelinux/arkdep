@@ -179,9 +179,6 @@ healthcheck () {
 
 cleanup () {
 
-	echo UN: ${untracked[@]}
-	echo A: ${hanging_cache[@]}
-
 	if [[ -n $untracked ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Cleaning up untracked deployments\e[0m\n'
 		for target in ${untracked[@]}; do
