@@ -147,7 +147,7 @@ if [[ always_healthcheck -eq 1 ]] || [[ $1 =~ ^(healthcheck|cleanup) ]]; then
 	done
 
 	# Clean whitespaces
-	untracked=$(echo $untracked | xargs)
+	untracked=($(echo ${untracked[@]} | xargs))
 fi
 
 # Check for and report on any issues such as untracked deployments or hanging files in cache
