@@ -32,7 +32,7 @@ The following command will initialize Arkdep, it will deploy a subvolume contain
 sudo arkdep init
 
 # Alternatively to init in to a specific directory
-sudo arkdep init /target/dir
+sudo ARKDEP_ROOT=/target/dir arkdep init
 ```
 
 Once ardep is installed you should prepare the overlay located at `/arkdep/overlay`. The overlay is copied directly on to the root filesystem of a new deployment, create directories inside of it as-if it were a root filesystem. For example, `/arkdep/overlay/etc` will be your `/etc` folder.
