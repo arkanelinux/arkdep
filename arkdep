@@ -651,10 +651,39 @@ deploy () {
 
 	elif [[ ${data[2]} != '-' ]]; then
 		# If GPG check not triggered instead check hash, unless defined as -
+
 		printf '\e[1;34m-->\e[0m\e[1m Validating integrity\e[0m\n'
-		sha1sum $arkdep_dir/cache/${data[0]}.tar.${data[1]} |
-			grep "${data[2]}" ||
-			cleanup_and_quit "Checksum does not match the one defined in database\e[0m\n"
+
+		# Identify used checksum method
+		if [[ ${#data[2]} -eq 40 ]]; then
+			# If it is a sha-1
+			sha1sum $arkdep_dir/cache/${data[0]}.tar.${data[1]} |
+				grep "${data[2]}" ||
+				cleanup_and_quit 'SHA-1 checksum does not match the one defined in database\e[0m\n'
+		elif [[ ${#data[2]} -eq 56 ]]; then
+			# If it is sha-224
+			sha224sum $arkdep_dir/cache/${data[0]}.tar.${data[1]} |
+				grep "${data[2]}" ||
+				cleanup_and_quit 'SHA-224 checksum does not match the one defined in database\e[0m\n'
+		elif [[ ${#data[2]} -eq 64 ]]; then
+			# If it is sha-256
+			sha256sum $arkdep_dir/cache/${data[0]}.tar.${data[1]} |
+				grep "${data[2]}" ||
+				cleanup_and_quit 'SHA-256 checksum does not match the one defined in database\e[0m\n'
+		elif [[ ${#data[2]} -eq 96 ]]; then
+			# If it is sha-384
+			sha384sum $arkdep_dir/cache/${data[0]}.tar.${data[1]} |
+				grep "${data[2]}" ||
+				cleanup_and_quit 'SHA-384 checksum does not match the one defined in database\e[0m\n'
+		elif [[ ${#data[2]} -eq 128 ]]; then
+			# If it is a sha-512
+			sha512sum $arkdep_dir/cache/${data[0]}.tar.${data[1]} |
+				grep "${data[2]}" ||
+				cleanup_and_quit 'SHA-512 Checksum does not match the one defined in database\e[0m\n'
+		else
+			cleanup_and_quit 'Failed to identify SHA checksum type'
+		fi
+
 	fi
 
 	# Extract the root image if not yet extracted

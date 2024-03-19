@@ -121,7 +121,7 @@ repo.example.com
 ├── arkdep
 |  ├── list		                # Plain text file containing names of all available image types
 |  ├── customlinux
-|  |  ├── database		        # Plain text file containing : delimited lists of all available images `image_name:compression_method:sha1sum`
+|  |  ├── database		        # Plain text file containing : delimited lists of all available images `image_name:compression_method:sha_sum`
 |  |  ├── customlinux_v1.0.tar.zst	# Compressed disk images
 |  |  ├── customlinux_v1.0.tar.zst.sig	# Detached GPG signature
 |  |  ├── customlinux_v2.0.tar.zst	# Compressed disk images
@@ -149,7 +149,7 @@ The image name is used to find the actual image, users can also manually refer t
 
 The compression method is flexible, any compression method tar can infer is supported. Some examples being `xz`, `gz` and `zst`.
 
-The sha1sum is used to ensure the file was downloaded properly.
+The SHA checksum is used to ensure the file was downloaded properly. sha1, sha224, sha256, sha384 and sha512 are all supported.
 
 Arkdep will assume the top most entry in the database is the latest one, when no image version is defined or `latest` is requested it will grab the top most entry.
 
