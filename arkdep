@@ -745,18 +745,17 @@ deploy () {
 
 		btrfs receive -f $arkdep_dir/cache/${data[0]}-var.img $arkdep_dir/shared/ ||
 			cleanup_and_quit 'Failed to receive var'
+
+		# Make var writable
+		btrfs property set -f -ts $arkdep_dir/shared/var ro false ||
+			cleanup_and_quit 'Failed to unlock var'
+
+		# Cleanup var image
+		rm $arkdep_dir/cache/${data[0]}-var.img
 	else
 		# Notify if var is not deployed
 		printf "\e[1;33m<!>\e[0m\e[1m var is already preset, skipping var deployment\e[0m\n"
 	fi
-
-	# Make var writable
-	btrfs property set -f -ts $arkdep_dir/shared/var ro false ||
-		cleanup_and_quit 'Failed to unlock var'
-
-	# Cleanup var image
-	rm $arkdep_dir/cache/${data[0]}-var.img
-
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
 
