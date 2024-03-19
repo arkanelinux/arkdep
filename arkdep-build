@@ -225,6 +225,12 @@ if [[ $type == 'archlinux' ]]; then
 		umount -l $workdir/var/cache/pacman/pkg
 	fi
 
+	# If postinstall overlay directory exists in variant copy it's contents to the temporary subvolume
+	if [[ -d $variantdir/overlay-postinstall ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Copying overlay-postinstall to root\e[0m\n'
+		cp -rv $variantdir/overlay-postinstall/* $workdir/
+	fi
+
 	# Run post-install script if exists
 	if [[ -f $variantdir/extensions/post-install.sh ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running post-install extension\e[0m\n'
