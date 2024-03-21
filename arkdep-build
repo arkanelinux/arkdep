@@ -192,22 +192,23 @@ if [[ $type == 'archlinux' ]]; then
 	readarray bootstrap_packages < $variantdir/bootstrap.list
 	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
 	# If pacman.conf is available in overlay, use it
-	if [[ -f $variantdir/overlay/etc/pacman.conf ]]; then
-		pacstrap -c -C $variantdir/overlay/etc/pacman.conf $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+	if [[ -f $variantdir/pacman.conf ]]; then
+		pacstrap -c -C $variantdir/pacman.conf $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+		cp -v $variantdir/pacman.conf $workdir/etc/pacman.conf
 	else
 		pacstrap -c $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 	fi
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
-	if [[ -d $variantdir/overlay ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to root\e[0m\n'
-		cp -rv $variantdir/overlay/* $workdir/
+	if [[ -d $variantdir/overlay/post_bootstrap ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Copying overlay/post_bootstrap to root\e[0m\n'
+		cp -rv $variantdir/overlay/post_bootstrap/* $workdir/
 	fi
 
-	# Run post-bootstrap script if exists
-	if [[ -f $variantdir/extensions/post-bootstrap.sh ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running post-bootstrap extension\e[0m\n'
-		(source $variantdir/extensions/post-bootstrap.sh)
+	# Run post_bootstrap script if exists
+	if [[ -f $variantdir/extensions/post_bootstrap.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post_bootstrap extension\e[0m\n'
+		(source $variantdir/extensions/post_bootstrap.sh)
 	fi
 
 	# Read package list and install secondary system components, skip if not used
@@ -226,15 +227,15 @@ if [[ $type == 'archlinux' ]]; then
 	fi
 
 	# If postinstall overlay directory exists in variant copy it's contents to the temporary subvolume
-	if [[ -d $variantdir/overlay-postinstall ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Copying overlay-postinstall to root\e[0m\n'
-		cp -rv $variantdir/overlay-postinstall/* $workdir/
+	if [[ -d $variantdir/overlay/post_install ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Copying overlay/post_install to root\e[0m\n'
+		cp -rv $variantdir/overlay/post_install/* $workdir/
 	fi
 
-	# Run post-install script if exists
-	if [[ -f $variantdir/extensions/post-install.sh ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running post-install extension\e[0m\n'
-		(source $variantdir/extensions/post-install.sh)
+	# Run post_install script if exists
+	if [[ -f $variantdir/extensions/post_install.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post_install extension\e[0m\n'
+		(source $variantdir/extensions/post_install.sh)
 	fi
 
 	# Clear pacman cache
