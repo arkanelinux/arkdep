@@ -15,6 +15,7 @@ btrfs-progs
 cups
 cups-pdf
 dbus-broker-units
+debugedit
 dosfstools
 efibootmgr
 f2fs-tools

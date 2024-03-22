@@ -16,6 +16,7 @@ cups
 cups-pdf
 dbus-broker-units
 dconf
+debugedit
 dosfstools
 efibootmgr
 elementary-icon-theme
