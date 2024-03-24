@@ -780,7 +780,7 @@ deploy () {
 
 		# Check if only /etc is present, if it is we do not have to unlock the root volume
 		for file in ${overlay_files[*]}; do
-			if [[ ! $file == 'etc' ]]; then
+			if [[ $file != 'etc' ]]; then
 				printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} Non /etc file or directory detected, root will be temporarily unlocked\e[0m\n"
 				overlay_unlock_root=1
 			fi
