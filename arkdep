@@ -788,14 +788,14 @@ deploy () {
 
 		# Unlock root if required
 		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]} ro false
+			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false
 		fi
 
 		cp -rv $arkdep_dir/overlay/* $arkdep_dir/deployments/${data[0]}/rootfs/
 
 		# Lock root again if required
 		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]} ro true
+			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true
 		fi
 	fi
 
