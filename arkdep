@@ -459,7 +459,6 @@ remove_deployment () {
 	# Ensure deployment is not currently active
 	if grep -q "$arkdep_dir/deployments/$target/rootfs" /proc/cmdline; then
 		printf 'Target is currently active deployment\n'
-		exit 1
 	fi
 
 	# Remove bootloader entry
