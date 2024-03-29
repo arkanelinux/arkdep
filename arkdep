@@ -804,7 +804,7 @@ deploy () {
 	fi
 
 	# Migrate specified files and directories
-	if [[ ${#var_migrate_files[@]} -ge 1 ]]; then
+	if [[ ${#var_migrate_files[@]} -ge 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Migrating local files to new deployment\e[0m\n'
 		for file in ${var_migrate_files[@]}; do
 			cp -rv /var/$file $arkdep_dir/deployments/${data[0]}/rootfs/var/
