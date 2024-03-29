@@ -84,6 +84,7 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${update_cpu_microcode+x} ]] && update_cpu_microcode=1 && printf '\e[1;33m<!>\e[0m\e[1m update_cpu_microcode not defined in config, using default\e[0m\n'
 	[[ -z ${backup_user_accounts+x} ]] && backup_user_accounts=0 && printf '\e[1;33m<!>\e[0m\e[1m backup_user_accounts not defined in config, using default\e[0m\n'
 	[[ -z ${latest_image_always_default+x} ]] && latest_image_always_default=0 && printf '\e[1;33m<!>\e[0m\e[1m latest_image_always_default not defined in config, using default\e[0m\n'
+	[[ -z ${var_migrate_files+x} ]] && var_migrate_files=('usrlocal' 'usrliblocale' 'opt' 'srv' 'nm-system-connections') && printf '\e[1;33m<!>\e[0m\e[1m var_migrate_files not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -106,8 +107,10 @@ cleanup_and_quit () {
 	# TODO: Make this a generic function and share with the removal of old images?
 	if [[ -n ${data[0]} ]]; then
 		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/etc ro false
+		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false
 		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false
 		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs/etc
+		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs/var
 		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs
 		rm -rfv $arkdep_dir/deployments/${data[0]} \
 			$arkdep_boot/arkdep/${data[0]}
@@ -203,7 +206,7 @@ cleanup () {
 			done
 
 			# Remove the deployment
-			rm -rfv $arkdep_dir/deployments/$target
+			rm -rf $arkdep_dir/deployments/$target
 		done
 	fi
 
@@ -304,7 +307,14 @@ init () {
 
 	# Add home shared subvolume and make writable
 	btrfs subvolume create $arkdep_dir/shared/home || cleanup_and_quit "Failed to create home subvolume"
+	btrfs subvolume create $arkdep_dir/shared/root || cleanup_and_quit "Failed to create root subvolume"
+	btrfs subvolume create $arkdep_dir/shared/flatpak || cleanup_and_quit "Failed to create flatpak subvolume"
 	btrfs property set -f -ts $arkdep_dir/shared/home ro false
+	btrfs property set -f -ts $arkdep_dir/shared/root ro false
+	btrfs property set -f -ts $arkdep_dir/shared/flatpak ro false
+
+	# Ensure permissions on root home directory are set properly
+	chmod 700 $arkdep_dir/shared/root
 
 	# Write default config file
 	printf '\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n'
@@ -345,6 +355,9 @@ init () {
 
 	# Ensure latest image as defined in the external database is always the default systemd-boot boot entry
 	latest_image_always_default=0
+
+	# List of files and folders to be recursively copied over from var to new var
+	var_migrate_files=('usrlocal' 'usrliblocale' 'opt' 'srv' 'nm-system-connections')
 	END
 
 	# Add default bootloader config file
@@ -718,14 +731,6 @@ deploy () {
 	btrfs receive -f $arkdep_dir/cache/${data[0]}-etc.img $arkdep_dir/deployments/${data[0]}/rootfs/ ||
 		cleanup_and_quit 'Failed to receive etc'
 
-	printf '\e[1;34m-->\e[0m\e[1m Ensure var, root and arkdep mountpoints exist\e[0m\n'
-	mkdir -pv $arkdep_dir/deployments/${data[0]}/rootfs/var
-	mkdir -pv $arkdep_dir/deployments/${data[0]}/rootfs/arkdep
-
-	# Lock the root volume again
-	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true ||
-		cleanup_and_quit 'Failed to lock root'
-
 	# Unlock the etc deployment
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/etc ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
@@ -734,28 +739,28 @@ deploy () {
 	rm $arkdep_dir/cache/${data[0]}-etc.img
 
 	# Write the var image
-	if [[ ! -e $arkdep_dir/shared/var ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n'
 
-		# Extract the var image if not yet extracted
-		if [[ ! -e $arkdep_dir/cache/${data[0]}-var.img ]]; then
-			tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ "./${data[0]}-var.img" ||
-				cleanup_and_quit 'failed to extract var'
-		fi
-
-		btrfs receive -f $arkdep_dir/cache/${data[0]}-var.img $arkdep_dir/shared/ ||
-			cleanup_and_quit 'Failed to receive var'
-
-		# Make var writable
-		btrfs property set -f -ts $arkdep_dir/shared/var ro false ||
-			cleanup_and_quit 'Failed to unlock var'
-
-		# Cleanup var image
-		rm $arkdep_dir/cache/${data[0]}-var.img
-	else
-		# Notify if var is not deployed
-		printf "\e[1;33m<!>\e[0m\e[1m var is already preset, skipping var deployment\e[0m\n"
+	# Extract the var image if not yet extracted
+	if [[ ! -e $arkdep_dir/cache/${data[0]}-var.img ]]; then
+		tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ "./${data[0]}-var.img" ||
+			cleanup_and_quit 'failed to extract var'
 	fi
+
+	btrfs receive -f $arkdep_dir/cache/${data[0]}-var.img $arkdep_dir/deployments/${data[0]}/rootfs/ ||
+		cleanup_and_quit 'Failed to receive var'
+
+	# Make var writable
+	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false ||
+		cleanup_and_quit 'Failed to unlock var'
+
+	# Lock the root volume again
+	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true ||
+		cleanup_and_quit 'Failed to lock root'
+
+	# Cleanup var image
+	rm $arkdep_dir/cache/${data[0]}-var.img
+
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
 
@@ -797,6 +802,14 @@ deploy () {
 		if [[ $overlay_unlock_root -eq 1 ]]; then
 			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true
 		fi
+	fi
+
+	# Migrate specified files and directories
+	if [[ ${#var_migrate_files[@]} -ge 1 ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Migrating local files to new deployment\e[0m\n'
+		for file in ${var_migrate_files[@]}; do
+			cp -rv /var/$file $arkdep_dir/deployments/${data[0]}/rootfs/var/
+		done
 	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n'
