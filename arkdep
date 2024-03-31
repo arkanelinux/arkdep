@@ -187,13 +187,13 @@ cleanup () {
 		for target in ${untracked[@]}; do
 			if [[ $target == *recovery* ]]; then
 				printf '\e[1;33m<!>\e[0m\e[1m Detected untracked recovery entry, ignoring\n\e[0m'
-				break
+				continue
 			fi
 
 			# Ensure deployment is not currently active
 			if grep -q "$arkdep_dir/deployments/$target/rootfs" /proc/cmdline; then
 				printf '\e[1;33m<!>\e[0m\e[1m Target is currently active deployment\n\e[0m'
-				break
+				continue
 			fi
 
 			# Remove bootloader entry
@@ -398,7 +398,7 @@ teardown () {
 
 		# Quit with error if $arkdep_dir does not exist
 		if [[ ! -d $arkdep_dir ]]; then
-			printf "\e[1;31m<#>\e[0m $arkdep_dir does not exist, there is nothing to tear down"
+			printf "\e[1;31m<#>\e[0m $arkdep_dir does not exist, there is nothing to tear down\n\e[0m"
 			exit 1
 		fi
 
@@ -425,80 +425,89 @@ teardown () {
 remove_deployment () {
 
 	# Ensure required vars are set
-	[[ -z $1  ]] && \
-		printf 'No deployment defined\n' && exit 1
-
-	# Ensure user only provided a single target
-	[[ -n $2 ]] && \
-		printf 'Multiple targets provided, remove only accepts a single target at a time\n' && exit 1
-
-	# Ensure requested deployment is tracked
-	declare -r hits=($(grep $1 $arkdep_dir/tracker))
-
-	if [[ ${#hits[@]} -gt 1 ]]; then
-
-		# Check if there is an exact match
-		for hit in ${hits[@]}; do
-			if [[ $1 == $hit ]]; then
-				declare -r exact_match_found=1
-				# Set first hit to exact match
-				hits[0]=$hit
-			fi
-		done
-
-		if [[ ! $exact_match_found -eq 1 ]]; then
-			printf 'Multiple deployments match target, be more specific or provide an exact match\n'
-			exit 1
-		fi
-	elif [[ ${#hits[@]} -lt 1 ]]; then
-		printf 'No deployments match target\n'
+	if [[ -z $1  ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
 		exit 1
 	fi
 
-	declare -r target="${hits[0]}"
+	for deployment in ${@:2}; do
 
-	# Ensure deployment is not currently active
-	if grep -q "$arkdep_dir/deployments/$target/rootfs" /proc/cmdline; then
-		printf 'Target is currently active deployment\n'
-		exit 0
-	fi
+		# Ensure requested deployment is tracked
+		declare hits=($(grep $deployment $arkdep_dir/tracker))
 
-	# Remove bootloader entry
-	rm -rfv $arkdep_boot/loader/entries/$target.conf
-	rm -rfv $arkdep_boot/arkdep/$target
+		if [[ ${#hits[@]} -gt 1 ]]; then
 
-	# Ensure the deployment and all sub-volumes are writable
-	for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
-		btrfs property set -f -ts $(readlink -m $ARKDEP_ROOT/$volume) ro false || printf "failed to make subvol $volume writable\n"
+			# Check if there is an exact match
+			for hit in ${hits[@]}; do
+				if [[ $1 == $hit ]]; then
+					declare -r exact_match_found=1
+					# Set first hit to exact match
+					hits[0]=$hit
+				fi
+			done
+
+			if [[ ! $exact_match_found -eq 1 ]]; then
+				printf '\e[1;33m<!>\e[0m\e[1m Multiple deployments match target, be more specific or provide an exact match\e[0m\n'
+				continue
+			fi
+
+		elif [[ ${#hits[@]} -lt 1 ]]; then
+			printf '\e[1;33m<!>\e[0m\e[1m No deployments match target\e[0m\n'
+			continue
+		fi
+
+		declare target=${hits[0]}
+
+		printf "Removing $target\n"
+
+		# Ensure deployment is not currently active
+		if grep -q "$arkdep_dir/deployments/$target/rootfs" /proc/cmdline; then
+			printf '\e[1;33m<!>\e[0m\e[1m Target is current active deployment\e[0m\n'
+			continue
+		fi
+
+		# Remove bootloader entry
+		rm -rfv $arkdep_boot/loader/entries/$target.conf
+		rm -rfv $arkdep_boot/arkdep/$target
+
+		# Ensure the deployment and all sub-volumes are writable
+		for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
+			btrfs property set -f -ts $(readlink -m $ARKDEP_ROOT/$volume) ro false \
+				|| printf "\e[1;33m<!>\e[0m\e[1m Failed to make subvolume $volume writable\e[0m\n"
+		done
+
+		# Remove the deployment
+		rm -rf $arkdep_dir/deployments/$target
+
+		# Remove from tracker
+		grep -v $target $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
+		declare tracker_write_exit_code=$?
+
+		# Grep may return a 1 if the file is empty
+		if [[ $tracker_write_exit_code -eq 1 ]]; then
+			# No matches, this means file is now empty
+			truncate -s 0 $arkdep_dir/tracker
+		elif [[ $tracker_write_exit_code -eq 2 ]]; then
+			# An error occured in grep
+			cleanup_and_quit 'Failed to update tracker file'
+		fi
+
+		mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker \
+			|| cleanup_and_quit 'Failed to move tracker_tmp file to tracker'
+
+		# Remove images from cache if requested
+		if [[ $clean_cache_on_remove -eq 1 ]]; then
+			# Only attempt remove if file exists
+			if ls $arkdep_dir/cache/ | grep $target; then
+				rm -v $arkdep_dir/cache/$target.tar.*
+			fi
+		fi
+
 	done
 
-	# Remove the deployment
-	rm -rf $arkdep_dir/deployments/$target
-
-	# Remove from tracker
-	grep -v $target $arkdep_dir/tracker > $arkdep_dir/tracker_tmp
-	declare -r tracker_write_exit_code=$?
-
-	# Grep may return a 1 if the file is empty
-	if [[ $tracker_write_exit_code -eq 1 ]]; then
-		# No matches, this means file is now empty
-		truncate -s 0 $arkdep_dir/tracker
-	elif [[ $tracker_write_exit_code -eq 2 ]]; then
-		# An error occured in grep
-		cleanup_and_quit 'Failed to update tracker file'
+	if [[ $remove_no_quit -ne 1 ]]; then
+		exit 0
 	fi
-
-	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker || cleanup_and_quit 'Failed to move tracker_tmp file to tracker'
-
-	# Remove images from cache if requested
-	if [[ $clean_cache_on_remove -eq 1 ]]; then
-		# Only attempt remove if file exists
-		if ls $arkdep_dir/cache/ | grep $target; then
-			rm -v $arkdep_dir/cache/$target.tar.*
-		fi
-	fi
-
-	exit 0
 
 }
 
@@ -849,8 +858,8 @@ deploy () {
 	# Add to database
 	printf '\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n'
 	printf "${data[0]}\n$(cat $(readlink -m $arkdep_dir/tracker))" |
-		tee $arkdep_dir/tracker.tmp
-	mv $arkdep_dir/tracker.tmp $arkdep_dir/tracker
+		tee $arkdep_dir/tracker_tmp
+	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
 
 	# Deploy bootloader configuration
 	# also insert newline
@@ -870,13 +879,11 @@ deploy () {
 	declare -r remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
 
 	# Remove old deployments
-	for deployment in ${remove_deployments[@]}; do
-		printf "\e[1;34m-->\e[0m\e[1m Cleaning up old deployment $deployment\e[0m\n"
-		remove_deployment $deployment
-		grep -v $deployment $arkdep_dir/tracker |
-			tee $arkdep_dir/tracker.tmp
-		mv $arkdep_dir/tracker.tmp $arkdep_dir/tracker
-	done
+	if [[ ${#remove_deployments[@]} -ge 1 ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Cleaning up old deployments\e[0m\n'
+		declare -r remove_no_quit=1
+		remove_deployment ${remove_deployments[@]}
+	fi
 
 	exit 0
 
@@ -886,7 +893,7 @@ deploy () {
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'deploy' ]] && deploy $2 $3
-[[ $1 == 'remove' ]] && remove_deployment $2 $3
+[[ $1 == 'remove' ]] && remove_deployment $@
 [[ $1 == 'healthcheck' ]] && healthcheck $1
 [[ $1 == 'cleanup' ]] && cleanup
 
