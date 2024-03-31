@@ -45,7 +45,6 @@ mesa
 mesa-vdpau
 mkinitcpio
 mkinitcpio-archiso
-mutter-dynamic-buffering
 neovim
 networkmanager
 networkmanager-openconnect
