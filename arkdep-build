@@ -64,7 +64,6 @@ cleanup_and_quit () {
 ## Set common variables
 #
 declare -r workdir='/var/tmp/rootfs'
-declare -r arkdep_dir='/arkdep'
 declare -r variant="$1"
 
 if [[ -v ARKDEP_CONFIGS ]]; then
