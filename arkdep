@@ -217,6 +217,7 @@ cleanup () {
 		done
 	fi
 
+	exit 0
 }
 
 # Always healthcheck on run if requested in config, unless the user explicitely called it
@@ -890,4 +891,5 @@ deploy () {
 [[ $1 == 'cleanup' ]] && cleanup
 
 # No valid params were provided
+printf '\e[1;31m<#>\e[0m\e[1m No valid parameters provided\e[0m\n'
 exit 3
