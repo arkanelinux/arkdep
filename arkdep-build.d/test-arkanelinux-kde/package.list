@@ -56,7 +56,6 @@ mesa
 mesa-vdpau
 mkinitcpio
 mkinitcpio-archiso
-mutter-dynamic-buffering
 neovim
 networkmanager
 networkmanager-openconnect
@@ -76,12 +75,9 @@ pipewire-jack
 pipewire-pulse
 plasma-desktop
 plasma-integration
-plasma-settings
 plasma-systemmonitor
 plasma-thunderbolt
 plasma-vault
-plasma-wayland-session
-plasma-welcome
 plasma-welcome
 plasma-workspace
 plymouth
