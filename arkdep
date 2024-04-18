@@ -526,6 +526,9 @@ get_available () {
 # Deploy a new or update an existing deployment
 deploy () {
 
+	# Allow for a clean shutdown, later this is blocked once deployment starts
+	trap 'echo "User interupt received, interupting download"; exit 4' INT TERM
+
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkdep/config and latest
 	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
@@ -714,6 +717,9 @@ deploy () {
 
 	fi
 
+	# We will now start writing the images to disk, prevent the user from shutting down the script
+	trap '' INT TERM
+
 	# Extract the root image if not yet extracted
 	printf '\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n'
 
@@ -889,6 +895,9 @@ deploy () {
 	else
 		printf '\e[1;33m<!>\e[0m\e[1m Not running bootctl set-default because overwritten with ARKDEP_NO_BOOTCTL\e[0m\n'
 	fi
+
+	# Image deployment finished, allow for interupts again
+	trap 'echo "User interupt received, canceling cleanup step"; exit 4' INT TERM
 
 	# Remove entries outside of keep
 	declare -r remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
