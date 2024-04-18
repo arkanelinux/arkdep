@@ -641,7 +641,8 @@ deploy () {
 		if [[ ! $gpg_signature_check -eq 0 ]] && [[ -s $arkdep_dir/keys/trusted-keys ]]; then
 
 			# Start the download
-			wget -c -q --show-progress -P $arkdep_dir/cache/ "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
+			systemd-inhibit --who='arkdep deploy' --what='idle:sleep:shutdown' --why='Arkdep is downloading an image' \
+				wget -c -q --show-progress -P $arkdep_dir/cache/ "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
 				cleanup_and_quit 'Failed to download tarball'
 
 			# Download gpg signature if not yet in cache
