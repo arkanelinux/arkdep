@@ -7,46 +7,6 @@
 
 set -o pipefail
 
-# Print manual if no parameters provided or invalid amount of parameters is provided
-if [[ ! -n $1 ]]; then
-	cat <<- END
-	Usage: arkdep <action> [variant] [version]
-	Actions:
-	  deploy		Deploy a new or update an existing deployment
-	  init			Initialize arkdep on a new system
-	  teardown		Remove all arkdep-deploy related files and folders
-	  cleanup		Remove any hanging images and unfinished downloads
-	  healthcheck		Check for and report any config issues or untracked deployments
-	  get-available         List available packages in repo
-	  remove		Remove a specified deployment
-
-	Examples:
-	  arkdep deploy
-	      Check for updates, if available download and deploy
-
-	  arkdep deploy test-arkanelinux-kde
-	      Download and deploy the latest release of the defined image variant
-
-	  arkdep deploy - stable_v1
-	      Download the defined image release from the default variant
-
-	  arkdep deploy test-arkanelinux-kde stable_v1
-	      Download the defined image release from the specified variant
-
-	  arkdep deploy cache stable_v1
-	      Deploy an image from the cache directly skipping database download and checksum check
-
-	  arkdep remove stable_v1
-	      Remove the defined deployment
-
-	Variables:
-	  ARKDEP_ROOT		Prepend path to arkdep target directory
-	  ARKDEP_BOOT		Set custom /boot location, overwrites ARKDEP_ROOT on relevant tasks if set, implies ARKDEP_NO_BOOTCTL
-	  ARKDEP_NO_BOOTCTL	Do not run bootctl commands
-	END
-	exit 0
-fi
-
 ## Set common variables
 #
 declare -r arkdep_dir="$(readlink -m $ARKDEP_ROOT/arkdep)"

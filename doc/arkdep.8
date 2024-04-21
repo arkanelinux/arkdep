@@ -1,0 +1,46 @@
+.TH ARKDEP 8 "21 April 2024"
+.SH NAME
+arkdep - Manage arkdep deployments
+.SH SYNOPSIS
+\fBarkdep\fR {option} [version]
+.br
+\fBarkdep\fR {option} [variant] [version]
+.SH DESCRIPTION
+Arkdep is a utility which downloads, deploys and manages Btrfs subvolume exports.
+
+It is able to perform atomic and immutable system updates, migrate local data to new deployments, update the systemd-boot bootloader configuration and switch the by default booted root subvolume through EFI variables.
+.SH OPTIONS
+.SS deploy
+Deploy a new or update an existing deployment.
+.SS init
+Initialize arkdep on a new system.
+.SS teardown
+Remove all arkdep-deploy related files and folders.
+.SS cleanup
+Remove any hanging images and unfinished downloads.
+.SS healthcheck
+Check for and report any config issues or untracked deployments.
+.SS get-available
+Get and print available variants in repo.
+.SS remove
+Remove specified deployments.
+.SH ENVIRONMENT
+.SS ARKDEP_ROOT
+Prepend path to arkdep target directory.
+.SS ARKDEP_BOOT
+Set custom /boot location, overwrites ARKDEP_ROOT on relevant tasks if set, implies ARKDEP_NO_BOOTCTL.
+.SS ARKDEP_NO_BOOTCTL
+Do not run bootctl commands, this includes installing systemd-boot and setting the new deployment as the default boot entry.
+.SH EXAMPLES
+.SS arkdep deploy
+Check for updates, if available download and deploy.
+.SS arkdep deploy test-arkanelinux-kde
+Download and deploy the latest version of the defined image variant.
+.SS arkdep deploy - stable_v1
+Download the defined image version from the default variant.
+.SS arkdep deploy test-arkanelinux-kde stable_v1
+Download the defined image version from the specified variant.
+.SS arkdep deploy cache stable_v1
+Deploy an image from the local cache skipping database download and checksum check.
+.SS arkdep remove stable_v1
+Remove the defined deployment.

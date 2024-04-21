@@ -1,0 +1,25 @@
+.TH ARKDEP-BUILD 8 "21 April 2024"
+.SH NAME
+arkdep-build - Build root filesystem Btrfs subvolume exports in Arkdep format
+.SH SYNOPSIS
+\fBarkdep-build\fR {variant}
+.SH DESCRIPTION
+Arkdep-build utilizes traditional distro-specific system installation tools to build and configure an new root filesystem installation to Btrfs subvolumes, afterwards these subvolumes are exported in a format \fIArkdep\fR will accept for deployement.
+
+The tool has to be run from \fIarkdep-build.d\fR's parent directory, the completed images in both packaged and unpackages format will be outputted to the \fItarget\fR directory.
+.SH ENVIRONMENT
+.SS ARKDEP_NO_TAR
+Do no create a compressed tarball, only create the images.
+.SS ARKDEP_CUSTOM_NAME
+Define a custom image name overwriting the default random 42 character hexadecimal string.
+.SS ARKDEP_OUTPUT_TARGET
+Overwrite the location to which images will be written.
+.SS ARKDEP_CONFIGS
+Define a directory in which arkdep-build will search for variant configuration files.
+.SS ARKDEP_NO_CLEANUP
+Do not remove the temporary rootfs upon error or completion.
+.SS ARKDEP_STATIC_WORKDIR
+Reset workdir back to workable state if still present.
+.SH EXAMPLES
+.SS arkdep-build arkanelinux
+Build the arkanelinux variant in \fB./arkdep-build.d/arkanelinux\fR.

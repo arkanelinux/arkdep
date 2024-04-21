@@ -5,28 +5,6 @@
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 
-# Print manual if no parameters provided or invalid amount of parameters is provided
-if [[ ! -n $1 || -n $2 ]]; then
-	cat <<- END
-	Usage: arkdep-build [variant]
-	Variants:
-	  archlinux		Plain Arch Linux TTY image
-	  arkanelinux		Arkane Linux GNOME image
-
-	Variants are loaded based on their directory names, the ones listed here
-	 are included by default.
-
-	Variables:
-	  ARKDEP_NO_TAR			Do not create a compressed tarball, only create the images
-	  ARKDEP_CUSTOM_NAME		Define a custom image name
-	  ARKDEP_OUTPUT_TARGET		Overwrite location to which images will be written
-	  ARKDEP_CONFIGS		Define directory in which build will search for configuration files
-	  ARKDEP_NO_CLEANUP		Do not remove the temporary rootfs upon error or exit
-	  ARKDEP_STATIC_WORKDIR		Reset workdir back to workable state if still present
-	END
-	exit 0
-fi
-
 ## Common functions
 #
 # Cleanup and quit if error
