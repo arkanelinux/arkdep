@@ -685,7 +685,7 @@ deploy () {
 	printf '\e[1;34m-->\e[0m\e[1m Writing root\e[0m\n'
 
 	# Create directory using unique deployment name
-	mkdir -pv $arkdep_dir/deployments/${data[0]} || cleanup_and_quit 'Failed to create deployment directory'
+	mkdir -p $arkdep_dir/deployments/${data[0]} || cleanup_and_quit 'Failed to create deployment directory'
 
 	if [[ ! -e $arkdep_dir/cache/${data[0]}-rootfs.img ]]; then
 		tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ "./${data[0]}-rootfs.img" ||
@@ -795,12 +795,13 @@ deploy () {
 		done
 	fi
 
-	printf '\e[1;34m-->\e[0m\e[1m Copying kernel image\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m Installing kernel image to boot\e[0m\n'
 	# Get list of all available kernels
 	kernels_installed=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
-	mkdir -pv $arkdep_boot/arkdep/${data[0]}
+	mkdir -p $arkdep_boot/arkdep/${data[0]}
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
-	cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz $arkdep_boot/arkdep/${data[0]}/ ||
+	printf "Copying ${kernels_installed[0]}/vmlinuz\n"
+	cp $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz $arkdep_boot/arkdep/${data[0]}/ ||
 		cleanup_and_quit 'Failed to copy kernel image'
 
 	# Deploy CPU firmware to boot
@@ -810,7 +811,8 @@ deploy () {
 		for ucode in $(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/ | grep ucode); do
 			# If CPU firmware present in both image and install
 			if ! cmp --silent $arkdep_boot/$ucode $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
-				cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode $arkdep_boot/$ucode ||
+				printf "Copying $ucode\n"
+				cp $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode $arkdep_boot/$ucode ||
 					cleanup_and_quit 'Failed to copy microcode'
 			fi
 		done
