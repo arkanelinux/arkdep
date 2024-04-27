@@ -82,6 +82,8 @@ gen_random_string () {
 
 }
 
+declare -r image_name=$(gen_random_string)
+
 ## Error checking
 #
 # Quit if not root
@@ -106,6 +108,31 @@ fi
 
 ## Variants
 #
+# Build migration type image
+if [[ $type == 'migration' ]]; then
+
+	printf '\e[1;34m-->\e[0m\e[1m Started migration image build\e[0m\n'
+
+	# Create output directory structure
+	mkdir -p $output_target/$image_name
+
+	# Copy migration contents to compression target dir
+	cp -v $variantdir/migration.sh $output_target/$image_name/$image_name-migration.sh \
+		|| cleanup_and_quit 'No primary migration script found'
+
+	# Copy migration related files if they are provided
+	if [[ -d $variantdir/migration ]]; then
+		cp -rv $variantdir/migration $output_target/$image_name/$image_name-migration
+	fi
+
+	# Compress migration files
+	tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst -C $output_target/$image_name .
+
+	# We can just exit, no need to do a cleanup
+	exit 0
+
+fi
+
 # Build archlinux type image
 if [[ $type == 'archlinux' ]]; then
 
@@ -300,13 +327,8 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs property set -ts $workdir/etc ro true || cleanup_and_quit 'Failed to set etc to read-only'
 	btrfs property set -ts $workdir/var ro true || cleanup_and_quit 'Failed to set var to read-only'
 
-	# Generate random name for new image
-	printf '\e[1;34m-->\e[0m\e[1m Generating psuedo-random image name\e[0m\n'
-	declare -r image_name=$(gen_random_string)
-	printf "$image_name\n"
-
 	# Create dir for storing the images
-	mkdir -vp $(readlink -m $output_target/$image_name)
+	mkdir -p $output_target/$image_name
 
 	# Write subvolume to image
 	printf '\e[1;34m-->\e[0m\e[1m Creating images\e[0m\n'
