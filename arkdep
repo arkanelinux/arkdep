@@ -682,7 +682,7 @@ deploy () {
 	trap '' INT TERM
 
 	# Check if there is a migration script available
-	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-migration.sh; then
+	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-migration.sh 2> /dev/null; then
 		printf '\e[1;34m-->\e[0m\e[1m Running migration script\e[0m\n'
 		# Run the migration script if provided
 		(source $arkdep_dir/cache/${data[0]}-migration.sh)
