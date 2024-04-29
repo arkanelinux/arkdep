@@ -46,6 +46,7 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${latest_image_always_default+x} ]] && latest_image_always_default=0 && printf '\e[1;33m<!>\e[0m\e[1m latest_image_always_default not defined in config, using default\e[0m\n'
 	[[ -z ${var_migrate_files+x} ]] && var_migrate_files=('/usrlocal' '/usrliblocale' '/opt' '/srv' '/nm-system-connections' '/lib/AccountsService' '/lib/bluetooth' '/lib/NetworkManager' '/lib/arkane') && printf '\e[1;33m<!>\e[0m\e[1m var_migrate_files not defined in config, using default\e[0m\n'
 	[[ -z ${load_extensions+x} ]] && load_extensions=0 && printf '\e[1;33m<!>\e[0m\e[1m load_extensions not defined in config, using default\e[0m\n'
+	[[ -z ${remove_tar_after_deployment+x} ]] && remove_tar_after_deployment=1 && printf '\e[1;33m<!>\e[0m\e[1m remove_tar_after_deployment not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -324,6 +325,9 @@ init () {
 
 	# Load script extensions from /arkdep/extensions
 	load_extensions=0
+
+	# Remove tarball from cache once deployment is finished
+	remove_tar_after_deployment=1
 	END
 
 	# Add default bootloader config file
@@ -857,6 +861,12 @@ deploy () {
 
 	# Image deployment finished, allow for interupts again
 	trap 'echo "User interupt received, canceling cleanup step"; exit 4' INT TERM
+
+	# Remove tarball if configured to remove
+	if [[ $remove_tar_after_deployment -eq 1 ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Removing tarball from cache\e[0m\n'
+		rm $arkdep_dir/cache/${data[0]}.tar.${data[1]}
+	fi
 
 	# Remove entries outside of keep
 	declare -r remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
