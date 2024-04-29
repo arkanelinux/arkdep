@@ -699,13 +699,8 @@ deploy () {
 	# Create directory using unique deployment name
 	mkdir -p $arkdep_dir/deployments/${data[0]} || cleanup_and_quit 'Failed to create deployment directory'
 
-	if [[ ! -e $arkdep_dir/cache/${data[0]}-rootfs.img ]]; then
-		tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ "./${data[0]}-rootfs.img" ||
-			cleanup_and_quit 'Failed to extract root'
-	fi
-
-	# Write the root image
-	btrfs receive -f $arkdep_dir/cache/${data[0]}-rootfs.img $arkdep_dir/deployments/${data[0]} ||
+	tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-rootfs.img" |
+		btrfs receive $arkdep_dir/deployments/${data[0]} ||
 		cleanup_and_quit 'Failed to receive root'
 
 	# Cleanup root image
@@ -713,16 +708,13 @@ deploy () {
 
 	# Extract the etc image if not yet extracted
 	printf '\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n'
-	if [[ ! -e $arkdep_dir/cache/${data[0]}-etc.img ]]; then
-		tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ "./${data[0]}-etc.img" ||
-			cleanup_and_quit 'failed to extract etc'
-	fi
 
 	# Write the etc image and create var directory, we have to unlock rootfs temporarily to do this
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
 
-	btrfs receive -f $arkdep_dir/cache/${data[0]}-etc.img $arkdep_dir/deployments/${data[0]}/rootfs/ ||
+	tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-etc.img" |
+		btrfs receive $arkdep_dir/deployments/${data[0]}/rootfs/ ||
 		cleanup_and_quit 'Failed to receive etc'
 
 	# Unlock the etc deployment
@@ -736,13 +728,9 @@ deploy () {
 	printf '\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n'
 
 	# Extract the var image if not yet extracted
-	if [[ ! -e $arkdep_dir/cache/${data[0]}-var.img ]]; then
-		tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ "./${data[0]}-var.img" ||
-			cleanup_and_quit 'failed to extract var'
-	fi
-
-	btrfs receive -f $arkdep_dir/cache/${data[0]}-var.img $arkdep_dir/deployments/${data[0]}/rootfs/ ||
-		cleanup_and_quit 'Failed to receive var'
+		tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-var.img" |
+			btrfs receive $arkdep_dir/deployments/${data[0]}/rootfs/ ||
+			cleanup_and_quit 'Failed to receive var'
 
 	# Make var writable
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false ||
@@ -802,7 +790,7 @@ deploy () {
 	if [[ ${#var_migrate_files[@]} -ge 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Migrating local files to new deployment\e[0m\n'
 		for file in ${var_migrate_files[@]}; do
-			printf "Copying /var/$file\n"
+			printf "Copying /var$file\n"
 			cp -r /var/$file $arkdep_dir/deployments/${data[0]}/rootfs/var/${file%/*}
 		done
 	fi
