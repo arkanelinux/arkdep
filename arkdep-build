@@ -117,8 +117,8 @@ if [[ $type == 'migration' ]]; then
 	mkdir -p $output_target/$image_name
 
 	# Copy migration contents to compression target dir
-	cp -v $variantdir/migration.sh $output_target/$image_name/$image_name-migration.sh \
-		|| cleanup_and_quit 'No primary migration script found'
+	cp -v $variantdir/migration.sh $output_target/$image_name/$image_name-migration.sh ||
+		cleanup_and_quit 'No primary migration script found'
 
 	# Copy migration related files if they are provided
 	if [[ -d $variantdir/migration ]]; then
