@@ -704,9 +704,6 @@ deploy () {
 		btrfs receive $arkdep_dir/deployments/${data[0]} ||
 		cleanup_and_quit 'Failed to receive root'
 
-	# Cleanup root image
-	rm $arkdep_dir/cache/${data[0]}-rootfs.img
-
 	# Extract the etc image if not yet extracted
 	printf '\e[1;34m-->\e[0m\e[1m Writing etc\e[0m\n'
 
@@ -722,9 +719,6 @@ deploy () {
 	# Unlock the etc deployment
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/etc ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
-
-	# Cleanup etc image
-	rm $arkdep_dir/cache/${data[0]}-etc.img
 
 	# Write the var image
 	printf '\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n'
