@@ -699,6 +699,7 @@ deploy () {
 	# Create directory using unique deployment name
 	mkdir -p $arkdep_dir/deployments/${data[0]} || cleanup_and_quit 'Failed to create deployment directory'
 
+	# Extra image from tarball to stdin and receive
 	tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-rootfs.img" |
 		btrfs receive $arkdep_dir/deployments/${data[0]} ||
 		cleanup_and_quit 'Failed to receive root'
@@ -713,6 +714,7 @@ deploy () {
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false ||
 		cleanup_and_quit 'Failed to unlock root to write etc'
 
+	# Extra image from tarball to stdin and receive
 	tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-etc.img" |
 		btrfs receive $arkdep_dir/deployments/${data[0]}/rootfs/ ||
 		cleanup_and_quit 'Failed to receive etc'
@@ -727,10 +729,10 @@ deploy () {
 	# Write the var image
 	printf '\e[1;34m-->\e[0m\e[1m Writing var\e[0m\n'
 
-	# Extract the var image if not yet extracted
-		tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-var.img" |
-			btrfs receive $arkdep_dir/deployments/${data[0]}/rootfs/ ||
-			cleanup_and_quit 'Failed to receive var'
+	# Extra image from tarball to stdin and receive
+	tar -xOf $arkdep_dir/cache/${data[0]}.tar.${data[1]} "./${data[0]}-var.img" |
+		btrfs receive $arkdep_dir/deployments/${data[0]}/rootfs/ ||
+		cleanup_and_quit 'Failed to receive var'
 
 	# Make var writable
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false ||
