@@ -865,7 +865,7 @@ deploy () {
 	# Remove tarball if configured to remove
 	if [[ $remove_tar_after_deployment -eq 1 ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Removing tarball from cache\e[0m\n'
-		rm $arkdep_dir/cache/${data[0]}.tar.${data[1]}
+		rm $arkdep_dir/cache/${data[0]}.tar.*
 	fi
 
 	# Remove entries outside of keep
