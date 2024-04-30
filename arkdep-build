@@ -18,16 +18,10 @@ cleanup_and_quit () {
 		exit 1
 	fi
 
-	umount -l $workdir
+	umount -l $build_image_mountpoint
 
-	btrfs property set -ts $workdir ro false
-	btrfs property set -ts $workdir/etc ro false
-	btrfs property set -ts $workdir/var ro false
-
-	# Remove temporary btrfs volumes
-	rm -rf $workdir/etc \
-		$workdir/var \
-		$workdir
+	rm $build_image
+	rm -rf $build_image_mountpoint
 
 	# Quit program if argument provided to function
 	if [[ -n $1 ]]; then
@@ -41,8 +35,11 @@ cleanup_and_quit () {
 
 ## Set common variables
 #
-declare -r workdir='/var/tmp/rootfs'
+declare -r build_image='/var/tmp/arkdep-build.img'
+declare -r build_image_mountpoint='/var/tmp/arkdep-build'
+declare -r workdir="$build_image_mountpoint/rootfs"
 declare -r variant="$1"
+declare -r build_image_size='15G'
 
 if [[ -v ARKDEP_CONFIGS ]]; then
 	declare -r configsdir="$ARKDEP_CONFIGS"
@@ -137,58 +134,29 @@ fi
 if [[ $type == 'archlinux' ]]; then
 
 	# Ensure bootstrap.list exists, if not error and quit
+	# This is the mimimum requirement to perform a build and this checked first
 	if [[ ! -e $variantdir/bootstrap.list ]]; then
-		printf "\e[1;31m<#>\e[0m\e[1m The required file 'bootstrap.list' is not preset in $(readlink -m $variantdir)\e[0m\n"
+		printf "\e[1;31m<#>\e[0m\e[1m The required file 'bootstrap.list' is not preset in $variantdir\e[0m\n"
 		exit 1
 	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
 
-	# Allow user to reuse subvolumes for testing
-	if [[ ! $ARKDEP_STATIC_WORKDIR -eq 1 ]] && [[ ! -d $workdir ]]; then
-		# Create temporary Btrfs subvolume
-		printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $(readlink -m $workdir)\e[0m\n"
-		btrfs subvolume create $workdir || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir)"
-		btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/etc)"
-		btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $(readlink -m $workdir/var)"
-	elif [[ ! $ARKDEP_STATIC_WORKDIR -eq 1 ]]; then
-		cleanup_and_quit "Failed to create btrfs subvolume $workdir for it already exists"
-	else
-		printf "\e[1;34m-->\e[0m\e[1m Returning $(readlink -m $workdir) to a workable state, this should be done for testing only\e[0m\n"
+	printf '\e[1;34m-->\e[0m\e[1m Creating disk image\e[0m\n'
+	fallocate -l $build_image_size $build_image || cleanup_and_quit "Failed to create disk image at $build_image"
+	mkfs.btrfs -f $build_image || cleanup_and_quit "Failed to partition $build_image"
 
-		# Get the rootfs working again, this should only be done for testing
-		for file in passwd group shadow; do
-			mv $workdir/usr/lib/$file $workdir/etc/$file
-		done
+	printf "\e[1;34m-->\e[0m\e[1m Mounting $build_image at $workdir\e[0m\n"
+	# The data is compressed to minimize writes to the disk, the actual export does not maintain this compression
+	mount -m -t btrfs -o loop,compress=zstd $build_image $build_image_mountpoint || cleanup_and_quit "Failed to mount disk image to $workdir"
 
-		btrfs property set -ts $workdir ro false || cleanup_and_quit 'Failed to set root to read-only'
-		btrfs property set -ts $workdir/etc ro false || cleanup_and_quit 'Failed to set etc to read-only'
-		btrfs property set -ts $workdir/var ro false || cleanup_and_quit 'Failed to set var to read-only'
+	# Create temporary Btrfs subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $workdir\e[0m\n"
+	btrfs subvolume create $workdir/ || cleanup_and_quit "Failed to create btrfs subvolume $workdir)"
+	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc)"
+	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var)"
 
-		echo 'root:x:0:0::/root:/bin/bash' | tee -a $workdir/etc/passwd
-		echo 'root:x:0:root' | tee -a $workdir/etc/group
-		echo 'root:!::::::' | tee -a $workdir/etc/shadow
-
-		rm $workdir/var/usr/local
-		mv $workdir/var/usrlocal $workdir/usr/local
-
-		rm $workdir/usr/lib/locale
-		mv $workdir/var/usrliblocale $workdir/usr/lib/locale
-
-		rm $workdir/opt
-		mv $workdir/var/opt $workdir/opt
-
-		# srv symlink
-		rm $workdir/srv
-		mv $workdir/var/srv $workdir/srv
-
-		# mnt symlink
-		rm $workdir/mnt
-		mv $workdir/var/mnt $workdir/mnt
-	fi
-
-	printf "\e[1;34m-->\e[0m\e[1m Creating bind mount at $(readlink -m $workdir)\e[0m\n"
-	mount --bind $workdir $workdir
+	printf "\e[1;34m-->\e[0m\e[1m Mounting $build_image at $workdir\e[0m\n"
 
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
