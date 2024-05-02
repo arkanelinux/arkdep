@@ -156,8 +156,6 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc)"
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var)"
 
-	printf "\e[1;34m-->\e[0m\e[1m Mounting $build_image at $workdir\e[0m\n"
-
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
 	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
@@ -166,7 +164,7 @@ if [[ $type == 'archlinux' ]]; then
 		pacstrap -c -C $variantdir/pacman.conf $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
 		cp -v $variantdir/pacman.conf $workdir/etc/pacman.conf
 	else
-		pacstrap -c $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+		pacstrap -c $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to bootstrap system'
 	fi
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
@@ -190,7 +188,7 @@ if [[ $type == 'archlinux' ]]; then
 
 		# Read package list and install
 		readarray packages < $variantdir/package.list
-		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install base packages'
+		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install packages'
 
 		# Unmount pacman cache
 		umount -l $workdir/var/cache/pacman/pkg
