@@ -60,7 +60,7 @@ declare -r type="$(cat $(readlink -m $variantdir/type) 2> /dev/null || (printf '
 if [[ -v ARKDEP_OUTPUT_TARGET ]]; then
 	declare -r output_target="$ARKDEP_OUTPUT_TARGET"
 else
-	declare -r output_target="$(pwd)/target/"
+	declare -r output_target="$(pwd)/target"
 fi
 
 ## Set common functions
