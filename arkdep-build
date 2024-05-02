@@ -18,7 +18,7 @@ cleanup_and_quit () {
 		exit 1
 	fi
 
-	umount -l $build_image_mountpoint
+	umount -Rl $build_image_mountpoint
 
 	rm $build_image
 	rm -rf $build_image_mountpoint
