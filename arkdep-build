@@ -298,6 +298,9 @@ if [[ $type == 'archlinux' ]]; then
 	# Create dir for storing the images
 	mkdir -p $output_target/$image_name
 
+	# Generate package list
+	pacman -Q --root=$workdir > $output_target/$image_name.pkgs
+
 	# Write subvolume to image
 	printf '\e[1;34m-->\e[0m\e[1m Creating images\e[0m\n'
 	btrfs send -f $output_target/$image_name/$image_name-rootfs.img $workdir
