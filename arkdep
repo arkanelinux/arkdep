@@ -293,7 +293,7 @@ init () {
 	repo_default_image='arkanelinux'
 
 	# Keep the latest N deployments, remove anything older
-	deploy_keep=4
+	deploy_keep=3
 
 	# Remove images from the cache when their deployments are removed
 	clean_cache_on_remove=1
