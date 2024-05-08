@@ -41,6 +41,10 @@ declare -r workdir="$build_image_mountpoint/rootfs"
 declare -r variant="$1"
 declare -r build_image_size='15G'
 
+# Minimum required storage in KiB
+declare -r minimum_available_root_storage='31457280' # 30G
+declare -r minimum_available_var_storage='20971520' # 20G
+
 if [[ -v ARKDEP_CONFIGS ]]; then
 	declare -r configsdir="$ARKDEP_CONFIGS"
 else
@@ -101,6 +105,25 @@ done
 if [[ ! -d $variantdir ]]; then
 	printf '\e[1;31m<#>\e[0m\e[1m The requested variant does not exist\e[0m\n'
 	exit 1
+fi
+
+# Run the storage check only if we are not building a migration
+if [[ $type != 'migraton' ]]; then
+	# Ensure we have the required storage available on both /var/tmp and root
+	declare root_storage_available=($(df --output=avail /))
+	root_storage_available=${root_storage_available[1]}
+	declare var_storage_available=($(df --output=avail /var/tmp))
+	var_storage_available=${root_storage_available[1]}
+
+	if [[ $root_storage_available -lt $minimum_available_root_storage ]]; then
+		printf 'Not enough storage available on root to export image\n'
+		exit 1
+	fi
+
+	if [[ $var_storage_available -lt $minimum_available_var_storage ]]; then
+		printf 'Not enough storage available on var to create image\n'
+		exit 1
+	fi
 fi
 
 ## Variants
