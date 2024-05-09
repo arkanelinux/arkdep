@@ -601,13 +601,13 @@ deploy () {
 		# Write .run file to indicate process is ongoing and not yet finished, can be used to resume download later
 		touch $arkdep_dir/cache/${data[0]}.tar.${data[1]}.run
 
+		# Start the download
+		systemd-inhibit --who='arkdep deploy' --what='idle:sleep:shutdown' --why='Arkdep is downloading an image' \
+			wget -c -q --show-progress -P $arkdep_dir/cache/ "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
+			cleanup_and_quit 'Failed to download tarball'
+
 		# Download GPG signature, only perform check if not disabled by user and keychain exists
 		if [[ ! $gpg_signature_check -eq 0 ]] && [[ -s $arkdep_dir/keys/trusted-keys ]]; then
-
-			# Start the download
-			systemd-inhibit --who='arkdep deploy' --what='idle:sleep:shutdown' --why='Arkdep is downloading an image' \
-				wget -c -q --show-progress -P $arkdep_dir/cache/ "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
-				cleanup_and_quit 'Failed to download tarball'
 
 			# Download gpg signature if not yet in cache
 			if [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
