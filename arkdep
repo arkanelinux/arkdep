@@ -59,7 +59,7 @@ cleanup_and_quit () {
 
 	# Ensure we do not try to remove our current deployment
 	if [[ ! -z ${data[0]+x} ]]; then
-		if grep -q ${data[0]} /proc/cmdline; then
+		if grep -r ${data[0]} /proc/cmdline; then
 			printf '\e[1;33m<!>\e[0m\e[1m Cleanup target is current active deployment, skipping\e[0m\n'
 			exit 1
 		fi
