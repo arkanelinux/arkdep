@@ -26,6 +26,7 @@ evince
 f2fs-tools
 firefox
 flatpak
+fuse
 git
 gst-plugin-pipewire
 gst-plugins-base
