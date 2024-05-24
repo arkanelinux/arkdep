@@ -108,7 +108,7 @@ if [[ ! -d $variantdir ]]; then
 fi
 
 # Run the storage check only if we are not building a migration
-if [[ $type != 'migraton' ]]; then
+if [[ $type != 'migration' ]]; then
 	# Ensure we have the required storage available on both /var/tmp and root
 	declare root_storage_available=($(df --output=avail /))
 	root_storage_available=${root_storage_available[1]}
