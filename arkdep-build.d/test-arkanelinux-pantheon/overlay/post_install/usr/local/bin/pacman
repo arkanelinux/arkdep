@@ -6,7 +6,7 @@ if [[ ! $EUID -eq 0 ]]; then
 fi
 
 # If -r is defined do not check, we may be running pacstrap
-if [[ ! $@ =~ '-r' ]]; then
+if [[ ! $@ =~ (-r|--root) ]]; then
 	# Check if the disk is ro'ed using subvolume properties
 	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
 		cat <<- END
