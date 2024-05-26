@@ -230,12 +230,6 @@ if [[ $type == 'archlinux' ]]; then
 		(source $variantdir/extensions/post_install.sh)
 	fi
 
-	# Clear pacman cache
-	printf '\e[1;34m-->\e[0m\e[1m Clearing pacman cache\e[0m\n'
-	arch-chroot $workdir pacman -Scc <<< Y <<< Y
-	# Insert a new line to clean, the previous command fails to do so
-	printf '\n'
-
 	# Remove subvolumes created by systemd
 	[[ -d $workdir/var/lib/portables ]] &&
 		printf '\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/portables\e[0m\n'
