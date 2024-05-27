@@ -31,6 +31,16 @@ git
 gst-plugin-pipewire
 gst-plugins-base
 gst-plugins-good
+gvfs
+gvfs-afc
+gvfs-dnssd
+gvfs-dnssd
+gvfs-goa
+gvfs-gphoto2
+gvfs-mtp
+gvfs-nfs
+gvfs-smb
+gvfs-wsdd
 gwenview
 ibus-typing-booster
 kamera
@@ -107,7 +117,6 @@ wireplumber
 xdg-desktop-portal-kde
 xdg-user-dirs
 xdg-utils
-yt-dlp
 zsh
 zsh-autosuggestions
 zsh-completions

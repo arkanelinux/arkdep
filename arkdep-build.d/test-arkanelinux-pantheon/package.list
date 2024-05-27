@@ -36,6 +36,16 @@ gst-plugin-pipewire
 gst-plugins-base
 gst-plugins-good
 gtk-theme-elementary
+gvfs
+gvfs-afc
+gvfs-dnssd
+gvfs-dnssd
+gvfs-goa
+gvfs-gphoto2
+gvfs-mtp
+gvfs-nfs
+gvfs-smb
+gvfs-wsdd
 ibus-typing-booster
 libnss-extrausers
 libva-mesa-driver
@@ -144,7 +154,6 @@ wireplumber
 xdg-user-dirs
 xdg-user-dirs-gtk
 xdg-utils
-yt-dlp
 zsh
 zsh-autosuggestions
 zsh-completions
