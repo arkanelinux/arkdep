@@ -24,9 +24,11 @@ dosfstools
 efibootmgr
 evince
 f2fs-tools
+fakeroot
 firefox
 flatpak
 fuse
+gcc
 git
 gst-plugin-pipewire
 gst-plugins-base

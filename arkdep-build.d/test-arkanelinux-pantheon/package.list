@@ -23,9 +23,11 @@ elementary-icon-theme
 elementary-wallpapers
 epiphany
 f2fs-tools
+fakeroot
 flatpak
 fuse
 gala
+gcc
 git
 gnome-keyring
 gnome-session

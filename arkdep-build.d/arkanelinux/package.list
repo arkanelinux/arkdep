@@ -18,9 +18,11 @@ debugedit
 dosfstools
 efibootmgr
 f2fs-tools
+fakeroot
 flatpak
 fuse
 fwupd
+gcc
 gdm
 git
 gnome-backgrounds
