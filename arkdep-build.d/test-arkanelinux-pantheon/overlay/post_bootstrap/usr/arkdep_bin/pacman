@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-if [[ ! $EUID -eq 0 ]]; then
-	printf 'You have to be root to perform this action.\n'
-	exit 1
-fi
+# Elevate permissions to root
+[[ $EUID -eq 0 ]] || exec sudo bash $0 $@
 
-# If -r is defined do not check, we may be running pacstrap
-if [[ ! $@ =~ (-r|--root) ]]; then
+[[ $@ =~ (-r|--root) ]] && no_check=1 # Do not check if custom root is defined
+[[ $LD_LIBRARY_PATH =~ (libfakeroot) ]] && no_check=1 # Do not check if running as fakeroot
+
+if [[ ! $no_check ]]; then
 	# Check if the disk is ro'ed using subvolume properties
 	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
 		cat <<- END
@@ -28,4 +28,3 @@ fi
 
 # No exit statement here, we return pacman's exit code
 /usr/bin/pacman $@
-
