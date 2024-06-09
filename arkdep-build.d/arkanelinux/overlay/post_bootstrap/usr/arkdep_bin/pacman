@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-if [[ ! $EUID -eq 0 ]]; then
-	printf 'You have to be root to perform this action.\n'
-	exit 1
-fi
+# Elevate permissions to root
+[[ $EUID -eq 0 ]] || exec sudo bash $0 $@
 
 [[ $@ =~ (-r|--root) ]] && no_check=1 # Do not check if custom root is defined
 [[ $LD_LIBRARY_PATH =~ (libfakeroot) ]] && no_check=1 # Do not check if running as fakeroot
