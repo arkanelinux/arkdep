@@ -314,6 +314,13 @@ if [[ $type == 'archlinux' ]]; then
 	# Create dir for storing the images
 	mkdir -p $output_target/$image_name
 
+	# Add update script, utilized to perform minor system changes and updates
+	if [[ -f $variantdir/update.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Including update script\e[0m\n'
+		cp -v $variantdir/update.sh $output_target/$image_name/$image_name-update.sh ||
+			cleanup_and_quit 'Failed copying update script to image'
+	fi
+
 	# Generate package list
 	pacman -Q --root=$workdir > $output_target/$image_name.pkgs
 
