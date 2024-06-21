@@ -863,7 +863,7 @@ deploy () {
 	trap 'echo "User interupt received, canceling cleanup step"; exit 4' INT TERM
 
 	# Check if there is an update script available
-	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null || [[ ! -n $ARKDEP_ROOT ]]; then
+	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null && [[ ! -n $ARKDEP_ROOT ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running update script\e[0m\n'
 		# Run the migration script if provided
 		(source $arkdep_dir/cache/${data[0]}-update.sh)
