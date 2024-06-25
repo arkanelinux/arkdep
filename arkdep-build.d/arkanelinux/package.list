@@ -22,7 +22,6 @@ fakeroot
 flatpak
 fuse
 fwupd
-gcc
 gdm
 git
 gnome-backgrounds

@@ -27,7 +27,6 @@ fakeroot
 flatpak
 fuse
 gala
-gcc
 git
 gnome-keyring
 gnome-session
