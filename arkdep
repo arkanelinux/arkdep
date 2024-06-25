@@ -740,9 +740,6 @@ deploy () {
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true ||
 		cleanup_and_quit 'Failed to lock root'
 
-	# Cleanup var image
-	rm $arkdep_dir/cache/${data[0]}-var.img
-
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
 
