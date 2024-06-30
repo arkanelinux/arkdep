@@ -15,6 +15,7 @@ cups
 cups-pdf
 dbus-broker-units
 debugedit
+distrobox
 dosfstools
 efibootmgr
 f2fs-tools
