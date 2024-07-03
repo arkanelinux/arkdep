@@ -480,10 +480,37 @@ remove_deployment () {
 
 }
 
-# List all available packages defined in the repo's list file
+# Scrape all variants from from the repo index page
 get_available () {
-	printf "\e[1;34m-->\e[0m\e[1m Downloading list file from $repo_url\e[0m\n"
-	curl -sf "${repo_url}/list" || printf '\e[1;33m<!>\e[0m\e[1m Failed to download list file\e[0m\n'
+	printf "\e[1;34m-->\e[0m\e[1m Scraping index from $repo_url/\e[0m\n"
+
+	# Lets first check for server errors, curl does not return an non-zero exit code on server errors
+	declare -r status_code=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/)
+
+	# Error if server returned a status code other than 200
+	if [[ $status_code -ne 200 ]]; then
+		printf "\e[1;31m<#>\e[0m Server returned a $status_code status code instead of the expected 200 indicating some type of server error\e[0m\n"
+		exit 1
+	fi
+
+	# Assumes indexing is available and provided by the webserver is in a non-weird format
+	declare index=($(curl -s $repo_url/ |
+		grep -o 'href=".*"' | # Match only anchor tags
+		grep -v '"/' | # Exclude root and parent directories
+		grep '/"')) # Exclude files
+
+	# Ensure we had at least a single match
+	if [[ ${#index} -lt 1 ]]; then
+		printf '\e[1;31m<#>\e[0m Index found no matches\e[0m\n'
+		exit 1
+	fi
+
+	# Extract variant names from index hits and print
+	for i in ${index[*]}; do
+		i=${i#*\"}
+		echo ${i%/*}
+	done
+
 	exit 0
 }
 
