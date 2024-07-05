@@ -30,11 +30,13 @@ gnome-calendar
 gnome-console
 gnome-control-center
 gnome-disk-utility
+gnome-initial-setup
 gnome-menus
 gnome-screenshot
 gnome-shell
 gnome-software
 gnome-system-monitor
+gnome-tour
 gst-plugin-pipewire
 gst-plugins-base
 gst-plugins-good
