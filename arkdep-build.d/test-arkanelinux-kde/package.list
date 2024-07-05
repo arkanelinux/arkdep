@@ -110,6 +110,9 @@ sudo
 svgpart
 switcheroo-control
 terminus-font
+tpm2-tools
+tpm2-tss
+tpm2-tss-engine
 vulkan-intel
 vulkan-mesa-layers
 vulkan-radeon

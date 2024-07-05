@@ -133,6 +133,9 @@ switchboard-plug-user-accounts
 switchboard-plug-wacom
 switcheroo-control
 terminus-font
+tpm2-tools
+tpm2-tss
+tpm2-tss-engine
 ttf-droid
 ttf-opensans
 ttf-roboto
