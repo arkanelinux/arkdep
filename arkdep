@@ -893,10 +893,17 @@ deploy () {
 		(source $arkdep_dir/cache/${data[0]}-update.sh)
 	fi
 
-	# Remove tarball if configured to remove
-	if [[ $remove_tar_after_deployment -eq 1 ]]; then
+	# Get list of all tarballs in cache
+	declare -r tarball_hits=($(ls $arkdep_dir/cache/ | grep -E '.*.tar..*'))
+
+	# Remove tarball if configured to remove we have hits
+	if [[ $remove_tar_after_deployment -eq 1 ]] && [[ ${#tarball_hits[@]} -gt 0 ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Removing tarball from cache\e[0m\n'
-		rm $arkdep_dir/cache/${data[0]}.tar.*
+
+		for tarball in ${tarball_hits[@]}; do
+			printf "Removing $tarball\n"
+			rm $arkdep_dir/cache/$tarball
+		done
 	fi
 
 	# Remove entries outside of keep
