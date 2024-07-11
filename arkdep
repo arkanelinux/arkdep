@@ -54,7 +54,7 @@ fi
 # Cleanup and quit if error
 cleanup_and_quit () {
 
-	# If any paramters are passed we will assume it to be an error message
+	# If any parameters are passed we will assume it to be an error message
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
 	# Ensure we do not try to remove our current deployment
@@ -180,6 +180,7 @@ cleanup () {
 	fi
 
 	exit 0
+
 }
 
 # Always healthcheck on run if requested in config, unless the user explicitely called it
@@ -400,12 +401,10 @@ remove_deployment () {
 	fi
 
 	for deployment in ${@:2}; do
-
 		# Ensure requested deployment is tracked
 		declare hits=($(grep $deployment $arkdep_dir/tracker))
 
 		if [[ ${#hits[@]} -gt 1 ]]; then
-
 			# Check if there is an exact match
 			for hit in ${hits[@]}; do
 				if [[ $1 == $hit ]]; then
@@ -471,7 +470,6 @@ remove_deployment () {
 				rm -v $arkdep_dir/cache/$target.tar.*
 			fi
 		fi
-
 	done
 
 	if [[ $remove_no_quit -ne 1 ]]; then
@@ -769,7 +767,6 @@ deploy () {
 
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
-
 		# If backup_user_accounts is enabled automatically perform a backup, do not run if custom root is defined
 		if [[ $backup_user_accounts -eq 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 
@@ -840,7 +837,6 @@ deploy () {
 					cleanup_and_quit 'Failed to copy microcode'
 			fi
 		done
-
 	fi
 
 	# Install kernel and generate initramfs
