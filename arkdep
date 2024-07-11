@@ -395,12 +395,19 @@ teardown () {
 remove_deployment () {
 
 	# Ensure required vars are set
-	if [[ -z $1  ]]; then
+	if [[ -z $1 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
 		exit 1
 	fi
 
-	for deployment in ${@:2}; do
+	# Check if remove is called in scriptmode
+	if [[ $remove_scriptmode -eq 1 ]]; then
+		declare -r remove_targets=(${@:1})
+	else
+		declare -r remove_targets=(${@:2})
+	fi
+
+	for deployment in ${remove_targets[@]}; do
 		# Ensure requested deployment is tracked
 		declare hits=($(grep $deployment $arkdep_dir/tracker))
 
@@ -472,7 +479,7 @@ remove_deployment () {
 		fi
 	done
 
-	if [[ $remove_no_quit -ne 1 ]]; then
+	if [[ $remove_scriptmode -ne 1 ]]; then
 		exit 0
 	fi
 
@@ -917,13 +924,15 @@ deploy () {
 		done
 	fi
 
-	# Remove entries outside of keep
-	declare -r remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
+	# Remove entries outside of keep, ignore first hit to allow N in config file
+	# instead of requiring N+1 to be configured
+	declare remove_deployments=($(tail -n +$deploy_keep $arkdep_dir/tracker))
+	remove_deployments=(${remove_deployments[@]:1})
 
 	# Remove old deployments
 	if [[ ${#remove_deployments[@]} -ge 1 ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Cleaning up old deployments\e[0m\n'
-		declare -r remove_no_quit=1
+		declare -r remove_scriptmode=1
 		remove_deployment ${remove_deployments[@]}
 	fi
 
