@@ -561,7 +561,6 @@ get_update () {
 	declare new_ver=()
 	declare removed=()
 	declare added=()
-	declare added_ver=()
 
 	for pkg in "${new_pkgs[@]}"; do
 		# Split package name and package versions in to list
@@ -588,9 +587,11 @@ get_update () {
 				fi
 			fi
 		done
-
 	done
+
+	# Temporary hard code setting
 	update_print_mode='list'
+
 	# Loop and print changed packages and diff
 	if [[ $update_print_mode == 'list' ]]; then
 		num=0
@@ -603,7 +604,7 @@ get_update () {
 	fi
 
 	if [[ ${#added[@]} -ne 0 ]]; then
-		printf '\nRemoved:\n'
+		printf '\nNew:\n'
 		for add in "${added[@]}"; do
 			printf "$add\n"
 		done
