@@ -535,6 +535,17 @@ get_update () {
 	mountinfo=${mountinfo%/*} # Remove everything after ID
 	declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
 
+	# Check if pkgs files actually available
+	for id in "$deployment_id_old" "$deployment_id_new"; do
+		declare status_code=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$repo_default_image/$id.pkgs)
+
+		# Error if server returned a status code other than 200
+		if [[ $status_code -ne 200 ]]; then
+			printf "\e[1;31m<#>\e[0m Failed to download $id.pkgs file, server returned a status code of $status_code\e[0m\n"
+			exit 1
+		fi
+	done
+
 	if [[ $deployment_id_old == $deployment_id_new ]]; then
 		printf 'Already on latest version\n'
 		exit 0
