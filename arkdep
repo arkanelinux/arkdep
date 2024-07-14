@@ -189,7 +189,7 @@ cleanup () {
 ## Error checking
 #
 # Quit if not root, only run if required
-if [[ ! $1 =~ ^(get-available|healthcheck) ]]; then
+if [[ ! $1 =~ ^(get-available|get-update|healthcheck) ]]; then
 	if [[ ! $EUID -eq 0 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
 		exit 1
@@ -517,6 +517,89 @@ get_available () {
 	done
 
 	exit 0
+}
+
+# Process .pkgs files in provided by server and generate update diff between current and another deployment version
+get_update () {
+
+	# TODO: Very basic implementation, expand later
+
+	# Process database, get latest entry and extract ID
+	declare -r database_hit=$(curl -sf "$repo_url/$repo_default_image/database" | head -n 1)
+	readarray -d : -t data <<< "$database_hit"
+	declare -r deployment_id_new=${data[0]}
+
+	# Process mountinfo to determine current deployment ID
+	declare mountinfo=($(cat /proc/self/mountinfo | head -n 1))
+	mountinfo=${mountinfo[3]} # Get subvol location
+	mountinfo=${mountinfo%/*} # Remove everything after ID
+	declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
+
+	if [[ $deployment_id_old == $deployment_id_new ]]; then
+		printf 'Already on latest version\n'
+		exit 0
+	fi
+
+	# Get new package list
+	mapfile new_pkgs < <(curl -s $repo_url/$repo_default_image/$deployment_id_new.pkgs)
+	# Get old package list
+	mapfile old_pkgs < <(curl -s $repo_url/$repo_default_image/$deployment_id_old.pkgs)
+
+	declare changed=()
+	declare old_ver=()
+	declare new_ver=()
+	declare removed=()
+	declare added=()
+	declare added_ver=()
+
+	for pkg in "${new_pkgs[@]}"; do
+		# Split package name and package versions in to list
+		declare spaced=($pkg)
+
+		if [[ ! "${old_pkgs[@]}" =~ "${spaced[0]}" ]]; then
+			added+=("${spaced[0]}")
+			continue
+		fi
+
+		for old_pkg in "${old_pkgs[@]}"; do
+			# Split package name and package versions in to list
+			declare old_spaced=($old_pkg)
+
+			# Find matchings packages, compare versions
+			if [[ ${spaced[0]} == ${old_spaced[0]} ]]; then
+				if [[ ${spaced[1]} != ${old_spaced[1]} ]]; then
+					#printf "DIFF ${spaced[1]} >> ${old_spaced[1]}\n"
+					changed+=("${spaced[0]}")
+					old_ver+=("${old_spaced[1]}")
+					new_ver+=("${spaced[1]}")
+
+					break
+				fi
+			fi
+		done
+
+	done
+	update_print_mode='list'
+	# Loop and print changed packages and diff
+	if [[ $update_print_mode == 'list' ]]; then
+		num=0
+
+		printf 'Changed:\n'
+		while [[ $num -lt ${#changed[@]} ]]; do
+			printf "${changed[$num]}  \e[34m${new_ver[$num]}\e[0m -> \e[32m${old_ver[$num]}\e[0m\n"
+			num=$(($num + 1))
+		done
+	fi
+
+	if [[ ${#added[@]} -ne 0 ]]; then
+		printf '\nRemoved:\n'
+		for add in "${added[@]}"; do
+			printf "$add\n"
+		done
+	fi
+
+	exit 0
+
 }
 
 # Deploy a new or update an existing deployment
@@ -943,6 +1026,7 @@ deploy () {
 [[ $1 == 'init' ]] && init $2
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
+[[ $1 == 'get-update' ]] && get_update
 [[ $1 == 'deploy' ]] && deploy $2 $3
 [[ $1 == 'remove' ]] && remove_deployment $@
 [[ $1 == 'healthcheck' ]] && healthcheck $1
