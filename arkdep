@@ -524,27 +524,53 @@ get_update () {
 
 	# TODO: Very basic implementation, expand later
 
+	# Set default variant as update_target unless param provided
+	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
+		declare -r new_update_target=$1
+	else
+		declare -r new_update_target=$repo_default_image
+	fi
+
+	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
+		declare -r old_update_target=$2
+	else
+		declare -r old_update_target=$repo_default_image
+	fi
+
 	# Process database, get latest entry and extract ID
-	declare -r database_hit=$(curl -sf "$repo_url/$repo_default_image/database" | head -n 1)
+	declare -r database_hit=$(curl -sf "$repo_url/$new_update_target/database" | head -n 1)
 	readarray -d : -t data <<< "$database_hit"
 	declare -r deployment_id_new=${data[0]}
 
-	# Process mountinfo to determine current deployment ID
-	declare mountinfo=($(cat /proc/self/mountinfo | head -n 1))
-	mountinfo=${mountinfo[3]} # Get subvol location
-	mountinfo=${mountinfo%/*} # Remove everything after ID
-	declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
+	# If $2 provided compare to specified deployment, otherwise default to current deployment
+	if [[ $2 ]]; then
+		declare -r database_hit_old=$(curl -sf "$repo_url/$old_update_target/database" | head -n 1)
+		readarray -d : -t data <<< "$database_hit_old"
+		declare -r deployment_id_old=${data[0]}
+	else
+		# Process mountinfo to determine current deployment ID
+		declare mountinfo=($(cat /proc/self/mountinfo | head -n 1))
+		mountinfo=${mountinfo[3]} # Get subvol location
+		mountinfo=${mountinfo%/*} # Remove everything after ID
+		declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
+	fi
+
+	declare status_code_new=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$new_update_target/$deployment_id_new.pkgs)
+
+	# Error if server returned a status code other than 200
+	if [[ $status_code_new -ne 200 ]]; then
+		printf "\e[1;31m<#>\e[0m Failed to download new $deployment_id_new.pkgs file, server returned a status code of $status_code_new\e[0m\n"
+		exit 1
+	fi
 
 	# Check if pkgs files actually available
-	for id in "$deployment_id_old" "$deployment_id_new"; do
-		declare status_code=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$repo_default_image/$id.pkgs)
+	declare status_code_old=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$old_update_target/$deployment_id_old.pkgs)
 
-		# Error if server returned a status code other than 200
-		if [[ $status_code -ne 200 ]]; then
-			printf "\e[1;31m<#>\e[0m Failed to download $id.pkgs file, server returned a status code of $status_code\e[0m\n"
-			exit 1
-		fi
-	done
+	# Error if server returned a status code other than 200
+	if [[ $status_code_old -ne 200 ]]; then
+		printf "\e[1;31m<#>\e[0m Failed to download old $deployment_id_old.pkgs file, server returned a status code of $status_code_old\e[0m\n"
+		exit 1
+	fi
 
 	if [[ $deployment_id_old == $deployment_id_new ]]; then
 		printf 'Already on latest version\n'
@@ -552,9 +578,9 @@ get_update () {
 	fi
 
 	# Get new package list
-	mapfile new_pkgs < <(curl -s $repo_url/$repo_default_image/$deployment_id_new.pkgs)
+	mapfile new_pkgs < <(curl -s $repo_url/$new_update_target/$deployment_id_new.pkgs)
 	# Get old package list
-	mapfile old_pkgs < <(curl -s $repo_url/$repo_default_image/$deployment_id_old.pkgs)
+	mapfile old_pkgs < <(curl -s $repo_url/$old_update_target/$deployment_id_old.pkgs)
 
 	declare changed=()
 	declare old_ver=()
@@ -598,7 +624,7 @@ get_update () {
 
 		printf 'Changed:\n'
 		while [[ $num -lt ${#changed[@]} ]]; do
-			printf "${changed[$num]}  \e[34m${new_ver[$num]}\e[0m -> \e[32m${old_ver[$num]}\e[0m\n"
+			printf "${changed[$num]}  \e[34m${old_ver[$num]}\e[0m -> \e[32m${new_ver[$num]}\e[0m\n"
 			num=$(($num + 1))
 		done
 	fi
@@ -1038,7 +1064,7 @@ deploy () {
 [[ $1 == 'init' ]] && init $2
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
-[[ $1 == 'get-update' ]] && get_update
+[[ $1 == 'get-update' ]] && get_update $2 $3
 [[ $1 == 'deploy' ]] && deploy $2 $3
 [[ $1 == 'remove' ]] && remove_deployment $@
 [[ $1 == 'healthcheck' ]] && healthcheck $1
