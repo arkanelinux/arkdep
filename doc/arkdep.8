@@ -5,6 +5,8 @@ arkdep - Manage arkdep deployments
 \fBarkdep\fR {option} <version>...
 .br
 \fBarkdep\fR {option} [variant] [version]
+.br
+\fBarkdep\fR {option} [variant] [variant]
 .SH DESCRIPTION
 Arkdep is a utility which downloads, deploys and manages Btrfs subvolume exports.
 
@@ -23,7 +25,7 @@ Check for and report any config issues or untracked deployments.
 .SS get-available
 Get and print available variants in repo.
 .SS get-update
-Get and print diff between current active development and the latest one provided by the repository.
+Get and print diff between current active development and the latest default one provided by the repository or up to two specified variants.
 .SS remove
 Remove specified deployments.
 .SH ENVIRONMENT
