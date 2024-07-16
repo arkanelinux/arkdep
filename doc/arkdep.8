@@ -30,11 +30,13 @@ Generate and print diff between two deployments.
 Remove specified deployments.
 .SH ENVIRONMENT
 .SS ARKDEP_ROOT
-Prepend path to arkdep target directory.
+Prepend path to arkdep target directory, implies ARKDEP_CONFIRM.
 .SS ARKDEP_BOOT
 Set custom /boot location, overwrites ARKDEP_ROOT on relevant tasks if set, implies ARKDEP_NO_BOOTCTL.
 .SS ARKDEP_NO_BOOTCTL
 Do not run bootctl commands, this includes installing systemd-boot and setting the new deployment as the default boot entry.
+.SS ARKDEP_CONFIRM
+Skip interactive prompts.
 .SH EXAMPLES
 .SS arkdep deploy
 Check for updates, if available download and deploy.
