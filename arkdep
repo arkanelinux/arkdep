@@ -630,7 +630,7 @@ get_update () {
 
 		printf 'Changed:\n'
 		while [[ $num -lt ${#changed[@]} ]]; do
-			printf "${changed[$num]}  \e[34m${old_ver[$num]}\e[0m -> \e[32m${new_ver[$num]}\e[0m\n"
+			printf "  ${changed[$num]}  \e[34m${old_ver[$num]}\e[0m -> \e[32m${new_ver[$num]}\e[0m\n"
 			num=$(($num + 1))
 		done
 	fi
@@ -639,7 +639,7 @@ get_update () {
 	if [[ ${#added[@]} -ne 0 ]]; then
 		printf '\nNew:\n'
 		for add in "${added[@]}"; do
-			printf "$add\n"
+			printf "  $add\n"
 		done
 	fi
 
