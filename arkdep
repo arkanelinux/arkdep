@@ -524,13 +524,14 @@ get_update () {
 
 	# TODO: Very basic implementation, expand later
 
-	# Set default variant as update_target unless param provided
+	# Set default new variant as new_update_target unless param provided
 	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
 		declare -r new_update_target=$1
 	else
 		declare -r new_update_target=$repo_default_image
 	fi
 
+	# Set default old variant as old_update_target unless param provided
 	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
 		declare -r old_update_target=$2
 	else
@@ -555,6 +556,7 @@ get_update () {
 		declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
 	fi
 
+	# Check if pkgs files actually available
 	declare status_code_new=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$new_update_target/$deployment_id_new.pkgs)
 
 	# Error if server returned a status code other than 200
@@ -572,6 +574,7 @@ get_update () {
 		exit 1
 	fi
 
+	# Check if we are already running the latest update
 	if [[ $deployment_id_old == $deployment_id_new ]]; then
 		printf 'Already on latest version\n'
 		exit 0
@@ -588,6 +591,7 @@ get_update () {
 	declare removed=()
 	declare added=()
 
+	# Process new_pkgs list to generate update diff
 	for pkg in "${new_pkgs[@]}"; do
 		# Split package name and package versions in to list
 		declare spaced=($pkg)
@@ -597,6 +601,7 @@ get_update () {
 			continue
 		fi
 
+		# Compare new pkgs to old ones
 		for old_pkg in "${old_pkgs[@]}"; do
 			# Split package name and package versions in to list
 			declare old_spaced=($old_pkg)
@@ -618,7 +623,7 @@ get_update () {
 	# Temporary hard code setting
 	update_print_mode='list'
 
-	# Loop and print changed packages and diff
+	# Print changed packages and diff
 	if [[ $update_print_mode == 'list' ]]; then
 		num=0
 
@@ -629,6 +634,7 @@ get_update () {
 		done
 	fi
 
+	# Print new packages as added
 	if [[ ${#added[@]} -ne 0 ]]; then
 		printf '\nNew:\n'
 		for add in "${added[@]}"; do
