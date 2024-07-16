@@ -93,7 +93,7 @@ cleanup_and_quit () {
 #
 # Set common variables for healthcheck and cleanup,
 # only set all these vars if they will actually be used
-if [[ always_healthcheck -eq 1 ]] || [[ $1 =~ ^(healthcheck|cleanup) ]]; then
+if [[ always_healthcheck -eq 1 ]] || [[ $1 =~ ^(healthcheck|cleanup)$ ]]; then
 	# Gather tracked deployments
 	declare -r tracker=($(cat $arkdep_dir/tracker))
 	declare -r deployed=($(ls $arkdep_dir/deployments/))
@@ -215,7 +215,7 @@ cleanup () {
 ## Error checking
 #
 # Quit if not root, only run if required
-if [[ ! $1 =~ ^(get-available|get-update|healthcheck) ]]; then
+if [[ ! $1 =~ ^(get-available|get-update|healthcheck)$ ]]; then
 	if [[ ! $EUID -eq 0 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
 		exit 1
