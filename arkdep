@@ -215,7 +215,7 @@ cleanup () {
 ## Error checking
 #
 # Quit if not root, only run if required
-if [[ ! $1 =~ ^(get-available|get-update|healthcheck)$ ]]; then
+if [[ ! $1 =~ ^(get-available|diff|healthcheck)$ ]]; then
 	if [[ ! $EUID -eq 0 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
 		exit 1
@@ -561,7 +561,7 @@ get_available () {
 }
 
 # Process .pkgs files in provided by server and generate update diff between current and another deployment version
-get_update () {
+diff () {
 
 	# TODO: Very basic implementation, expand later
 
@@ -1117,7 +1117,7 @@ deploy () {
 [[ $1 == 'init' ]] && init $2
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
-[[ $1 == 'get-update' ]] && get_update $2 $3
+[[ $1 == 'diff' ]] && diff $2 $3
 [[ $1 == 'deploy' ]] && deploy $2 $3
 [[ $1 == 'remove' ]] && remove_deployment $@
 [[ $1 == 'healthcheck' ]] && healthcheck $1
