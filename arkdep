@@ -21,6 +21,9 @@ fi
 # if ARKDEP_BOOT is set also set ARKDEP_NO_BOOTCTL
 [[ -n $ARKDEP_BOOT ]] && declare -r ARKDEP_NO_BOOTCTL=1
 
+# If ARKDEP_ROOT is defined we imply confirm
+[[ -n $ARKDEP_ROOT ]] && declare -r ARKDEP_CONFIRM=1
+
 if [[ ! -d $arkdep_dir ]] && [[ ! $1 == 'init' ]]; then
 	printf "\e[1;31m<#>\e[0m\e[1m Arkep does not seem to be managing this system or the provided file path is incorrect for $arkdep_dir was not found\e[0m\n"
 	exit 1
@@ -48,6 +51,7 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${load_extensions+x} ]] && load_extensions=0 && printf '\e[1;33m<!>\e[0m\e[1m load_extensions not defined in config, using default\e[0m\n'
 	[[ -z ${remove_tar_after_deployment+x} ]] && remove_tar_after_deployment=1 && printf '\e[1;33m<!>\e[0m\e[1m remove_tar_after_deployment not defined in config, using default\e[0m\n'
 	[[ -z ${update_diff_style+x} ]] && update_diff_style='list' && printf '\e[1;33m<!>\e[0m\e[1m update_diff_style not defined in config, using default\e[0m\n'
+	[[ -z ${interactive_mode+x} ]] && interactive_mode=1 && printf '\e[1;33m<!>\e[0m\e[1m interactive_mode not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -145,8 +149,27 @@ healthcheck () {
 
 cleanup () {
 
+	# Run healthcheck, if always_healthcheck is enabled it will have previously not run
+	healthcheck
+
+	# Ensure there is actually something to clean up
+	if [[ ${#untracked[@]} -eq 0 ]] && [[ ${#hanging_cache[@]} -eq 0 ]]; then
+		printf '\e[1;33m<!>\e[0m\e[1m There is nothing to clean up\n\e[0m'
+		exit 0
+	fi
+
+	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
+		printf "The above listed items will be removed.\n\n"
+		read -p 'Proceed with removal? [Y/n] ' remove_confirm
+
+		if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
+			exit 1
+		fi
+	fi
+
 	if [[ -n $untracked ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Cleaning up untracked deployments\e[0m\n'
+
 		for target in ${untracked[@]}; do
 			if [[ $target == *recovery* ]]; then
 				printf '\e[1;33m<!>\e[0m\e[1m Detected untracked recovery entry, ignoring\n\e[0m'
@@ -184,8 +207,10 @@ cleanup () {
 
 }
 
-# Always healthcheck on run if requested in config, unless the user explicitely called it
-[[ $always_healthcheck -eq 1 ]] && [[ ! $1 == 'healthcheck' ]] && healthcheck
+# Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
+[[ $always_healthcheck -eq 1 ]] &&
+	[[ ! $1 =~ ^(healthcheck|cleanup)$ ]] &&
+	healthcheck
 
 ## Error checking
 #
@@ -333,6 +358,9 @@ init () {
 
 	# Update diff styling, available styles: 'list'
 	update_diff_style='list'
+
+	# Before making changes to the system show diff and ask for confirmation
+	interactive_mode=1
 	END
 
 	# Add default bootloader config file
@@ -436,6 +464,15 @@ remove_deployment () {
 		fi
 
 		declare target=${hits[0]}
+
+		if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
+			printf "$target will be removed.\n\n"
+			read -p 'Proceed with removal? [Y/n] ' remove_confirm
+
+			if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
+				exit 1
+			fi
+		fi
 
 		printf "Removing $target\n"
 
@@ -749,6 +786,15 @@ deploy () {
 
 		printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} is already deployed, canceling deployment\e[0m\n"
 		exit 0
+	fi
+
+	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
+		printf "${data[0]} from $deploy_target will be deployed.\n\n"
+		read -p 'Proceed with deployment? [Y/n] ' remove_confirm
+
+		if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
+			exit 1
+		fi
 	fi
 
 	# Check if requested version is already downloaded
