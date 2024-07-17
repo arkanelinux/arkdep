@@ -661,6 +661,15 @@ diff () {
 		done
 	done
 
+	# Find removed packages
+	for old_pkg in "${old_pkgs[@]}"; do
+		declare old_spaced=($old_pkg)
+
+		if [[ ! "${new_pkgs[@]}" =~ "${old_spaced[0]}" ]]; then
+			removed+=("${old_spaced[0]}")
+		fi
+	done
+
 	# Print changed packages and diff
 	if [[ $update_diff_style == 'list' ]]; then
 		num=0
@@ -677,6 +686,13 @@ diff () {
 		printf '\nNew:\n'
 		for add in "${added[@]}"; do
 			printf "  $add\n"
+		done
+	fi
+
+	if [[ ${#removed[@]} -ne 0 ]]; then
+		printf '\nRemoved:\n'
+		for rem in "${removed[@]}"; do
+			printf "  $rem\n"
 		done
 	fi
 
