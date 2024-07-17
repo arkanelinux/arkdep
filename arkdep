@@ -597,6 +597,12 @@ diff () {
 		declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
 	fi
 
+	# Check if we are already running the latest update
+	if [[ $deployment_id_old == $deployment_id_new ]]; then
+		printf 'Already on latest version\n'
+		exit 0
+	fi
+
 	# Check if pkgs files actually available
 	declare status_code_new=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$new_update_target/$deployment_id_new.pkgs)
 
@@ -613,12 +619,6 @@ diff () {
 	if [[ $status_code_old -ne 200 ]]; then
 		printf "\e[1;31m<#>\e[0m Failed to download old $deployment_id_old.pkgs file, server returned a status code of $status_code_old\e[0m\n"
 		exit 1
-	fi
-
-	# Check if we are already running the latest update
-	if [[ $deployment_id_old == $deployment_id_new ]]; then
-		printf 'Already on latest version\n'
-		exit 0
 	fi
 
 	# Get new package list
