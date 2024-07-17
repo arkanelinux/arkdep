@@ -5,8 +5,6 @@ arkdep - Manage arkdep deployments
 \fBarkdep\fR {option} <version>...
 .br
 \fBarkdep\fR {option} [variant] [version]
-.br
-\fBarkdep\fR {option} [variant] [variant]
 .SH DESCRIPTION
 Arkdep is a utility which downloads, deploys and manages Btrfs subvolume exports.
 
@@ -51,8 +49,8 @@ Deploy an image from the local cache skipping database download and checksum che
 .SS arkdep remove stable_v1
 Remove the defined deployment.
 .SS arkdep diff
-Generate diff between currently active deployment and latest default variant.
+Generate diff between currently active deployment and latest version of the default variant.
 .SS arkdep diff test-arkanelinux-kde
-Generate diff between current deployment and specified variant.
-.SS arkdep diff test-arkanelinux-kde arkanelinux
-Generate diff between two specified variants.
+Generate diff between current deployment and latest version of the specified variant.
+.SS arkdep diff test-arkanelinux-kde aabbcc123
+Generate diff between specified variant and defined version.
