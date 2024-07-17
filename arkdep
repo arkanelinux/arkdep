@@ -630,7 +630,7 @@ diff () {
 	declare old_ver=()
 	declare new_ver=()
 	declare removed=()
-	declare added=()
+	declare new=()
 
 	# Process new_pkgs list to generate update diff
 	for pkg in "${new_pkgs[@]}"; do
@@ -638,7 +638,7 @@ diff () {
 		declare spaced=($pkg)
 
 		if [[ ! "${old_pkgs[@]}" =~ "${spaced[0]}" ]]; then
-			added+=("${spaced[0]}")
+			new+=("${spaced[0]}")
 			continue
 		fi
 
@@ -672,28 +672,31 @@ diff () {
 
 	# Print changed packages and diff
 	if [[ $update_diff_style == 'list' ]]; then
-		num=0
 
-		printf 'Changed:\n'
-		while [[ $num -lt ${#changed[@]} ]]; do
-			printf "  ${changed[$num]}  \e[34m${old_ver[$num]}\e[0m -> \e[32m${new_ver[$num]}\e[0m\n"
-			num=$(($num + 1))
-		done
-	fi
+		if [[ ${#changed} -ne 0 ]]; then
+			declare num=0
+			printf 'Changed:\n'
+			while [[ $num -lt ${#changed[@]} ]]; do
+				printf "  ${changed[$num]}  \e[34m${old_ver[$num]}\e[0m -> \e[32m${new_ver[$num]}\e[0m\n"
+				num=$(($num + 1))
+			done
+		fi
 
-	# Print new packages as added
-	if [[ ${#added[@]} -ne 0 ]]; then
-		printf '\nNew:\n'
-		for add in "${added[@]}"; do
-			printf "  $add\n"
-		done
-	fi
+		# Print new packages
+		if [[ ${#new[@]} -ne 0 ]]; then
+			printf '\nNew:\n'
+			for n in "${new[@]}"; do
+				printf "  $n\n"
+			done
+		fi
 
-	if [[ ${#removed[@]} -ne 0 ]]; then
-		printf '\nRemoved:\n'
-		for rem in "${removed[@]}"; do
-			printf "  $rem\n"
-		done
+		# Print removed packages
+		if [[ ${#removed[@]} -ne 0 ]]; then
+			printf '\nRemoved:\n'
+			for rem in "${removed[@]}"; do
+				printf "  $rem\n"
+			done
+		fi
 	fi
 
 	exit 0
