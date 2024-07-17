@@ -565,37 +565,37 @@ diff () {
 
 	# TODO: Very basic implementation, expand later
 
-	# Set default new variant as new_update_target unless param provided
+	# Set default new variant as diff_target unless param provided
 	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
-		declare -r new_update_target=$1
+		declare -r diff_target=$1
 	else
-		declare -r new_update_target=$repo_default_image
+		declare -r diff_target=$repo_default_image
 	fi
 
-	# Set default old variant as old_update_target unless param provided
+	# Set default variant version if not provided, otherwise override of provided
 	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
-		declare -r old_update_target=$2
+		# Get ID of (partially) defined entry
+		declare -r database_hit=$(curl -sf "$repo_url/$diff_target/database" | grep -E "^$2" | head -1)
 	else
-		declare -r old_update_target=$repo_default_image
+		# Get ID of latest entry
+		declare -r database_hit=$(curl -sf "$repo_url/$diff_target/database" | head -n 1)
 	fi
 
-	# Process database, get latest entry and extract ID
-	declare -r database_hit=$(curl -sf "$repo_url/$new_update_target/database" | head -n 1)
+	# Ensure data properly received
+	if [[ ${#database_hit} -eq 0 ]]; then
+		printf 'Failed to find any matching database entries\n'
+		exit 1
+	fi
+
+	# Process returned data from database
 	readarray -d : -t data <<< "$database_hit"
 	declare -r deployment_id_new=${data[0]}
 
-	# If $2 provided compare to specified deployment, otherwise default to current deployment
-	if [[ $2 ]]; then
-		declare -r database_hit_old=$(curl -sf "$repo_url/$old_update_target/database" | head -n 1)
-		readarray -d : -t data <<< "$database_hit_old"
-		declare -r deployment_id_old=${data[0]}
-	else
-		# Process mountinfo to determine current deployment ID
-		declare mountinfo=($(cat /proc/self/mountinfo | head -n 1))
-		mountinfo=${mountinfo[3]} # Get subvol location
-		mountinfo=${mountinfo%/*} # Remove everything after ID
-		declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
-	fi
+	# Process mountinfo to determine current deployment ID
+	declare mountinfo=($(cat /proc/self/mountinfo | head -n 1))
+	mountinfo=${mountinfo[3]} # Get subvol location
+	mountinfo=${mountinfo%/*} # Remove everything after ID
+	declare -r deployment_id_old=${mountinfo##*/} # Remove everything before ID
 
 	# Check if we are already running the latest update
 	if [[ $deployment_id_old == $deployment_id_new ]]; then
@@ -604,7 +604,7 @@ diff () {
 	fi
 
 	# Check if pkgs files actually available
-	declare status_code_new=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$new_update_target/$deployment_id_new.pkgs)
+	declare status_code_new=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$diff_target/$deployment_id_new.pkgs)
 
 	# Error if server returned a status code other than 200
 	if [[ $status_code_new -ne 200 ]]; then
@@ -613,7 +613,7 @@ diff () {
 	fi
 
 	# Check if pkgs files actually available
-	declare status_code_old=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$old_update_target/$deployment_id_old.pkgs)
+	declare status_code_old=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$repo_default_image/$deployment_id_old.pkgs)
 
 	# Error if server returned a status code other than 200
 	if [[ $status_code_old -ne 200 ]]; then
@@ -622,9 +622,9 @@ diff () {
 	fi
 
 	# Get new package list
-	mapfile new_pkgs < <(curl -s $repo_url/$new_update_target/$deployment_id_new.pkgs)
+	mapfile new_pkgs < <(curl -s $repo_url/$diff_target/$deployment_id_new.pkgs)
 	# Get old package list
-	mapfile old_pkgs < <(curl -s $repo_url/$old_update_target/$deployment_id_old.pkgs)
+	mapfile old_pkgs < <(curl -s $repo_url/$repo_default_image/$deployment_id_old.pkgs)
 
 	declare changed=()
 	declare old_ver=()
