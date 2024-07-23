@@ -916,9 +916,11 @@ deploy () {
 		# Run the migration script if provided
 		(source $arkdep_dir/cache/${data[0]}-migration.sh)
 
-		# TODO: Evaluate if this is how we would really like to do this
-		#
-		# Cancel the update once migration is finished, we are assuming the migration script did all the work for us
+		# It is assumed that the migration script will do its own cleanup on migration related files
+
+		printf '\e[1;34m-->\e[0m\e[1m Removing migration script\e[0m\n'
+		rm $arkdep_dir/cache/${data[0]}-migration.sh
+
 		exit 0
 	fi
 
@@ -1102,6 +1104,9 @@ deploy () {
 		printf '\e[1;34m-->\e[0m\e[1m Running update script\e[0m\n'
 		# Run the migration script if provided
 		(source $arkdep_dir/cache/${data[0]}-update.sh)
+
+		printf '\e[1;34m-->\e[0m\e[1m Removing update script\e[0m\n'
+		rm $arkdep_dir/cache/${data[0]}-update.sh
 	fi
 
 	# Get list of all tarballs in cache
