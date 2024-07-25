@@ -465,7 +465,7 @@ remove_deployment () {
 
 		declare target=${hits[0]}
 
-		if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
+		if [[ $interactive_mode -eq 1 ]] && [[ $cleanup_no_confirm -ne 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
 			printf "$target will be removed.\n\n"
 			read -p 'Proceed with removal? [Y/n] ' remove_confirm
 
@@ -810,6 +810,9 @@ deploy () {
 	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
 		printf "${data[0]} from $deploy_target will be deployed.\n\n"
 		read -p 'Proceed with deployment? [Y/n] ' remove_confirm
+
+		# To skip confirmation on the cleanup step later
+		declare -r cleanup_no_confirm=1
 
 		if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
 			exit 1
