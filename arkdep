@@ -697,6 +697,9 @@ diff () {
 				printf "  $rem\n"
 			done
 		fi
+	else
+		printf "Update diff style \"$update_diff_style\" does not exist\n"
+		exit 1
 	fi
 
 	exit 0
