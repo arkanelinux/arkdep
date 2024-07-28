@@ -347,7 +347,7 @@ init () {
 	# Ensure latest image as defined in the external database is always the default systemd-boot boot entry
 	latest_image_always_default=0
 
-	# List of files and folders to be recursively copied over from var to new var, path should start with /
+	# List of files and folders to be recursively copied over from root to new root, path should start with /
 	migrate_files=('/var/usrlocal' '/var/usrliblocale' '/var/opt' '/var/srv' '/var/nm-system-connections' '/var/lib/AccountsService' '/var/lib/bluetooth' '/var/lib/NetworkManager' '/var/lib/arkane' '/etc/localtime' '/etc/locale.gen' '/etc/locale.conf')
 
 	# Load script extensions from /arkdep/extensions
