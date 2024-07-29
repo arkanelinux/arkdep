@@ -7,6 +7,14 @@
 
 set -o pipefail
 
+## Check if program is locked, if yes do not run
+if [[ -f /tmp/arkdep.lock ]]; then
+	printf '\e[1;31m<#>\e[0m\e[1m /tmp/arkdep.lock exists, another instance of the program might be running\e[0m\n'
+	exit 5
+fi
+
+touch /tmp/arkdep.lock
+
 ## Set common variables
 #
 declare -r arkdep_dir="$(readlink -m $ARKDEP_ROOT/arkdep)"
@@ -25,7 +33,7 @@ fi
 [[ -n $ARKDEP_ROOT ]] && declare -r ARKDEP_CONFIRM=1
 
 if [[ ! -d $arkdep_dir ]] && [[ ! $1 == 'init' ]]; then
-	printf "\e[1;31m<#>\e[0m\e[1m Arkep does not seem to be managing this system or the provided file path is incorrect for $arkdep_dir was not found\e[0m\n"
+	printf "\e[1;31m<#>\e[0m\e[1m Arkdep does not seem to be managing this system or the provided file path is incorrect for $arkdep_dir was not found\e[0m\n"
 	exit 1
 fi
 
@@ -66,7 +74,7 @@ cleanup_and_quit () {
 	if [[ ! -z ${data[0]+x} ]]; then
 		if grep -q ${data[0]} /proc/cmdline; then
 			printf '\e[1;33m<!>\e[0m\e[1m Cleanup target is current active deployment, skipping\e[0m\n'
-			exit 1
+			unlock_and_quit 1
 		fi
 	fi
 
@@ -85,8 +93,15 @@ cleanup_and_quit () {
 			$arkdep_boot/loader/entries/${data[0]}.conf
 	fi
 
-	exit 1
+	unlock_and_quit 1
 
+}
+
+# Exit and release lock file
+# Takes exit code as $1
+unlock_and_quit () {
+	rm /tmp/arkdep.lock
+	exit $1
 }
 
 ## Healthcheck
@@ -143,7 +158,7 @@ healthcheck () {
 	fi
 
 	# If $1 is healthcheck it was manually called by the user
-	[[ $1 == 'healthcheck' ]] && exit 0
+	[[ $1 == 'healthcheck' ]] && unlock_and_quit 1
 
 }
 
@@ -155,7 +170,7 @@ cleanup () {
 	# Ensure there is actually something to clean up
 	if [[ ${#untracked[@]} -eq 0 ]] && [[ ${#hanging_cache[@]} -eq 0 ]]; then
 		printf '\e[1;33m<!>\e[0m\e[1m There is nothing to clean up\n\e[0m'
-		exit 0
+		unlock_and_quit 1
 	fi
 
 	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
@@ -163,7 +178,7 @@ cleanup () {
 		read -p 'Proceed with removal? [Y/n] ' remove_confirm
 
 		if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
-			exit 1
+			unlock_and_quit 1
 		fi
 	fi
 
@@ -203,7 +218,7 @@ cleanup () {
 		done
 	fi
 
-	exit 0
+	unlock_and_quit 0
 
 }
 
@@ -218,7 +233,7 @@ cleanup () {
 if [[ ! $1 =~ ^(get-available|diff|healthcheck)$ ]]; then
 	if [[ ! $EUID -eq 0 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
-		exit 1
+		unlock_and_quit 1
 	fi
 fi
 
@@ -236,7 +251,7 @@ for prog in btrfs wget dracut bootctl curl gpg gpgv; do
 		err=1
 	fi
 
-	[[ $err ]] && exit 1
+	[[ $err ]] && unlock_and_quit 1
 done
 
 # Ensure minimum required storage is available, only run if new deployment will be made
@@ -249,13 +264,13 @@ if [[ $1 == 'deploy'  ]]; then
 	# Check amount of available boot storage, do not run if set to 0
 	if [[ $boot_storage_available -lt $minimum_available_boot_storage ]] && [[ $minimum_available_boot_storage -ne 0 ]]; then
 		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_boot_storage}Kib available on boot partition\e[0m\n"
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Check amount of available root storage, do not run if set to 0
 	if [[ $root_storage_available -lt $minimum_available_root_storage ]] && [[ $minimum_available_root_storage -ne 0 ]] ; then
 		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_root_storage}Kib available on root partition\e[0m\n"
-		exit 1
+		unlock_and_quit 1
 	fi
 fi
 
@@ -373,7 +388,7 @@ init () {
 	options root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw
 	END
 
-	exit 0
+	unlock_and_quit 0
 
 }
 
@@ -401,7 +416,7 @@ teardown () {
 		# Quit with error if $arkdep_dir does not exist
 		if [[ ! -d $arkdep_dir ]]; then
 			printf "\e[1;31m<#>\e[0m $arkdep_dir does not exist, there is nothing to tear down\n\e[0m"
-			exit 1
+			unlock_and_quit 1
 		fi
 
 		# Remove all bootloader entries
@@ -420,7 +435,7 @@ teardown () {
 		printf '\e[1;33m<!>\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
 	fi
 
-	exit 0
+	unlock_and_quit 0
 
 }
 
@@ -429,7 +444,7 @@ remove_deployment () {
 	# Ensure required vars are set
 	if [[ -z $1 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Check if remove is called in scriptmode
@@ -478,7 +493,7 @@ remove_deployment () {
 			read -p 'Proceed with removal? [Y/n] ' remove_confirm
 
 			if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
-				exit 1
+				unlock_and_quit 1
 			fi
 		fi
 
@@ -520,8 +535,9 @@ remove_deployment () {
 		fi
 	done
 
+	# Do not exit if run in scriptmode
 	if [[ $remove_scriptmode -ne 1 ]]; then
-		exit 0
+		unlock_and_quit 0
 	fi
 
 }
@@ -536,7 +552,7 @@ get_available () {
 	# Error if server returned a status code other than 200
 	if [[ $status_code -ne 200 ]]; then
 		printf "\e[1;31m<#>\e[0m Server returned a $status_code status code instead of the expected 200 indicating some type of server error\e[0m\n"
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Assumes indexing is available and provided by the webserver is in a non-weird format
@@ -548,7 +564,7 @@ get_available () {
 	# Ensure we had at least a single match
 	if [[ ${#index} -lt 1 ]]; then
 		printf '\e[1;31m<#>\e[0m Index found no matches\e[0m\n'
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Extract variant names from index hits and print
@@ -557,7 +573,7 @@ get_available () {
 		echo ${i%/*}
 	done
 
-	exit 0
+	unlock_and_quit 0
 }
 
 # Process .pkgs files in provided by server and generate update diff between current and another deployment version
@@ -584,7 +600,7 @@ diff () {
 	# Ensure data properly received
 	if [[ ${#database_hit} -eq 0 ]]; then
 		printf 'Failed to find any matching database entries\n'
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Process returned data from database
@@ -600,7 +616,7 @@ diff () {
 	# Check if we are already running the latest update
 	if [[ $deployment_id_old == $deployment_id_new ]]; then
 		printf 'Already on latest version\n'
-		exit 0
+		unlock_and_quit 0
 	fi
 
 	# Check if pkgs files actually available
@@ -609,7 +625,7 @@ diff () {
 	# Error if server returned a status code other than 200
 	if [[ $status_code_new -ne 200 ]]; then
 		printf "\e[1;31m<#>\e[0m Failed to download new $deployment_id_new.pkgs file, server returned a status code of $status_code_new\e[0m\n"
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Check if pkgs files actually available
@@ -618,7 +634,7 @@ diff () {
 	# Error if server returned a status code other than 200
 	if [[ $status_code_old -ne 200 ]]; then
 		printf "\e[1;31m<#>\e[0m Failed to download old $deployment_id_old.pkgs file, server returned a status code of $status_code_old\e[0m\n"
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	# Get new package list
@@ -699,10 +715,10 @@ diff () {
 		fi
 	else
 		printf "Update diff style \"$update_diff_style\" does not exist\n"
-		exit 1
+		unlock_and_quit 1
 	fi
 
-	exit 0
+	unlock_and_quit 0
 
 }
 
@@ -710,7 +726,7 @@ diff () {
 deploy () {
 
 	# Allow for a clean shutdown, later this is blocked once deployment starts
-	trap 'echo "User interupt received, interupting download"; exit 4' INT TERM
+	trap 'echo "User interupt received, interupting download"; unlock_and_quit 4' INT TERM
 
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkdep/config and latest
@@ -781,19 +797,19 @@ deploy () {
 	# Lets do a bunch of checks to ensure the data is all present
 	if [[ -z ${data[0]+x} ]] || [[ ! -n ${data[0]} ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m No target found\n\e[0m'
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	if [[ -z ${data[1]+x} ]] || [[ ! -n ${data[1]} ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m No compression method found\n\e[0m'
-		exit 1
+		unlock_and_quit 1
 	fi
 
 	if [[ -z ${data[2]+x} ]] || [[ ! -n ${data[2]} ]]; then
 		# Do not trigger if hash is -, is used for cache deployments
 		if [[ $deploy_target != '-' ]]; then
 			printf '\e[1;31m<#>\e[0m\e[1m No checksum found\n\e[0m'
-			exit 1
+			unlock_and_quit 1
 		fi
 	fi
 
@@ -807,7 +823,7 @@ deploy () {
 		fi
 
 		printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} is already deployed, canceling deployment\e[0m\n"
-		exit 0
+		unlock_and_quit 0
 	fi
 
 	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
@@ -818,7 +834,7 @@ deploy () {
 		declare -r cleanup_no_confirm=1
 
 		if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
-			exit 1
+			unlock_and_quit 1
 		fi
 	fi
 
@@ -927,7 +943,7 @@ deploy () {
 		printf '\e[1;34m-->\e[0m\e[1m Removing migration script\e[0m\n'
 		rm $arkdep_dir/cache/${data[0]}-migration.sh
 
-		exit 0
+		unlock_and_quit 0
 	fi
 
 	# Extract the root image if not yet extracted
@@ -1103,7 +1119,7 @@ deploy () {
 	fi
 
 	# Image deployment finished, allow for interupts again
-	trap 'echo "User interupt received, canceling cleanup step"; exit 4' INT TERM
+	trap 'echo "User interupt received, canceling cleanup step"; unlock_and_quit 4' INT TERM
 
 	# Check if there is an update script available
 	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null && [[ ! -n $ARKDEP_ROOT ]]; then
@@ -1140,7 +1156,7 @@ deploy () {
 		remove_deployment ${remove_deployments[@]}
 	fi
 
-	exit 0
+	unlock_and_quit 0
 
 }
 
@@ -1155,4 +1171,4 @@ deploy () {
 
 # No valid params were provided
 printf '\e[1;31m<#>\e[0m\e[1m No valid parameters provided\e[0m\n'
-exit 3
+unlock_and_quit 3
