@@ -141,6 +141,7 @@ ttf-opensans
 ttf-roboto
 vulkan-intel
 vulkan-mesa-layers
+vulkan-nouveau
 vulkan-radeon
 webp-pixbuf-loader
 wget
