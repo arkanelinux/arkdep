@@ -343,3 +343,7 @@ if [[ $type == 'archlinux' ]]; then
 	cleanup_and_quit
 
 fi
+
+# No valid variant was found
+printf 'No valid type set in configuration\n'
+exit 2
