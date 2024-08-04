@@ -546,17 +546,8 @@ remove_deployment () {
 get_available () {
 	printf "\e[1;34m-->\e[0m\e[1m Scraping index from $repo_url/\e[0m\n"
 
-	# Lets first check for server errors, curl does not return an non-zero exit code on server errors
-	declare -r status_code=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/)
-
-	# Error if server returned a status code other than 200
-	if [[ $status_code -ne 200 ]]; then
-		printf "\e[1;31m<#>\e[0m Server returned a $status_code status code instead of the expected 200 indicating some type of server error\e[0m\n"
-		unlock_and_quit 1
-	fi
-
 	# Assumes indexing is available and provided by the webserver is in a non-weird format
-	declare index=($(curl -s $repo_url/ |
+	declare index=($(curl -sf $repo_url/ |
 		grep -o 'href=".*"' | # Match only anchor tags
 		grep -v '"/' | # Exclude root and parent directories
 		grep '/"')) # Exclude files
@@ -591,10 +582,24 @@ diff () {
 	# Set default variant version if not provided, otherwise override of provided
 	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
 		# Get ID of (partially) defined entry
-		declare -r database_hit=$(curl -sf "$repo_url/$diff_target/database" | grep -E "^$2" | head -1)
+		declare database_hit=$(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR')
+
+		if [[ $index == 'ERROR' ]]; then
+			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
+			exit 1
+		fi
+
+		database_hit=$(printf $database_hit | grep -E "^$2" | head -1)
 	else
 		# Get ID of latest entry
-		declare -r database_hit=$(curl -sf "$repo_url/$diff_target/database" | head -n 1)
+		declare database_hit=$(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR')
+
+		if [[ $index == 'ERROR' ]]; then
+			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
+			exit 1
+		fi
+
+		database_hit=$(printf $database_hit | head -n 1)
 	fi
 
 	# Ensure data properly received
@@ -619,28 +624,20 @@ diff () {
 		unlock_and_quit 0
 	fi
 
-	# Check if pkgs files actually available
-	declare status_code_new=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$diff_target/$deployment_id_new.pkgs)
-
-	# Error if server returned a status code other than 200
-	if [[ $status_code_new -ne 200 ]]; then
-		printf "\e[1;31m<#>\e[0m Failed to download new $deployment_id_new.pkgs file, server returned a status code of $status_code_new\e[0m\n"
-		unlock_and_quit 1
-	fi
-
-	# Check if pkgs files actually available
-	declare status_code_old=$(curl -s -o /dev/null --write-out "%{http_code}" $repo_url/$repo_default_image/$deployment_id_old.pkgs)
-
-	# Error if server returned a status code other than 200
-	if [[ $status_code_old -ne 200 ]]; then
-		printf "\e[1;31m<#>\e[0m Failed to download old $deployment_id_old.pkgs file, server returned a status code of $status_code_old\e[0m\n"
-		unlock_and_quit 1
-	fi
-
 	# Get new package list
-	mapfile new_pkgs < <(curl -s $repo_url/$diff_target/$deployment_id_new.pkgs)
+	mapfile new_pkgs < <(curl -sf $repo_url/$diff_target/$deployment_id_new.pkgs || printf 'ERROR')
 	# Get old package list
-	mapfile old_pkgs < <(curl -s $repo_url/$repo_default_image/$deployment_id_old.pkgs)
+	mapfile old_pkgs < <(curl -sf $repo_url/$repo_default_image/$deployment_id_old.pkgs || printf 'ERROR')
+
+	if [[ $new_pkgs == 'ERROR' ]]; then
+		printf '\e[1;31m<#>\e[0m Failed to download new pkgs file\e[0m\n'
+		unlock_and_quit 1
+	fi
+
+	if [[ $old_pkgs == 'ERROR' ]]; then
+		printf '\e[1;31m<#>\e[0m Failed to download old pkgs file\e[0m\n'
+		unlock_and_quit 1
+	fi
 
 	declare changed=()
 	declare old_ver=()
@@ -756,10 +753,18 @@ deploy () {
 		# If latest is requested grab database and get first line
 		printf '\e[1;34m-->\e[0m\e[1m Downloading database\e[0m\n'
 		if [[ $deploy_version == 'latest' ]]; then
-			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | head -n 1)
+			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR')
+
+			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
+
+			curl_data=$(printf $curl_data | head -n 1)
 		elif [[ $deploy_target != 'cache' ]]; then
 			# Only return first hit
-			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" | grep -E "^$2" | head -1)
+			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR')
+
+			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
+
+			curl_data=$(printf $curl_data | grep -E "^$2" | head -1)
 		else
 			declare curl_data='cache'
 		fi
