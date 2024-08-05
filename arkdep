@@ -55,7 +55,7 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${update_cpu_microcode+x} ]] && update_cpu_microcode=1 && printf '\e[1;33m<!>\e[0m\e[1m update_cpu_microcode not defined in config, using default\e[0m\n'
 	[[ -z ${backup_user_accounts+x} ]] && backup_user_accounts=1 && printf '\e[1;33m<!>\e[0m\e[1m backup_user_accounts not defined in config, using default\e[0m\n'
 	[[ -z ${latest_image_always_default+x} ]] && latest_image_always_default=0 && printf '\e[1;33m<!>\e[0m\e[1m latest_image_always_default not defined in config, using default\e[0m\n'
-	[[ -z ${migrate_files+x} ]] && migrate_files=('/var/usrlocal' '/var/usrliblocale' '/var/opt' '/var/srv' '/var/nm-system-connections' '/var/lib/AccountsService' '/var/lib/bluetooth' '/var/lib/NetworkManager' '/var/lib/arkane' '/etc/localtime' '/etc/locale.gen' '/etc/locale.conf') && printf '\e[1;33m<!>\e[0m\e[1m migrate_files not defined in config, using default\e[0m\n'
+	[[ -z ${migrate_files+x} ]] && migrate_files=('var/usrlocal' 'var/usrliblocale' 'var/opt' 'var/srv' 'var/nm-system-connections' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf') && printf '\e[1;33m<!>\e[0m\e[1m migrate_files not defined in config, using default\e[0m\n'
 	[[ -z ${load_extensions+x} ]] && load_extensions=0 && printf '\e[1;33m<!>\e[0m\e[1m load_extensions not defined in config, using default\e[0m\n'
 	[[ -z ${remove_tar_after_deployment+x} ]] && remove_tar_after_deployment=1 && printf '\e[1;33m<!>\e[0m\e[1m remove_tar_after_deployment not defined in config, using default\e[0m\n'
 	[[ -z ${update_diff_style+x} ]] && update_diff_style='list' && printf '\e[1;33m<!>\e[0m\e[1m update_diff_style not defined in config, using default\e[0m\n'
@@ -362,8 +362,8 @@ init () {
 	# Ensure latest image as defined in the external database is always the default systemd-boot boot entry
 	latest_image_always_default=0
 
-	# List of files and folders to be recursively copied over from root to new root, path should start with /
-	migrate_files=('/var/usrlocal' '/var/usrliblocale' '/var/opt' '/var/srv' '/var/nm-system-connections' '/var/lib/AccountsService' '/var/lib/bluetooth' '/var/lib/NetworkManager' '/var/lib/arkane' '/etc/localtime' '/etc/locale.gen' '/etc/locale.conf')
+	# List of files and folders to be recursively copied over from root tree to new root filesystem
+	migrate_files=('var/usrlocal' 'var/usrliblocale' 'var/opt' 'var/srv' 'var/nm-system-connections' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf')
 
 	# Load script extensions from /arkdep/extensions
 	load_extensions=0
@@ -1040,9 +1040,9 @@ deploy () {
 	if [[ ${#migrate_files[@]} -ge 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Migrating local files to new deployment\e[0m\n'
 		for file in ${migrate_files[@]}; do
-			[ ! -f $file ] && continue
+			[ ! -f /$file ] && continue
 			printf "Copying $file\n"
-			cp -r $file $arkdep_dir/deployments/${data[0]}/rootfs/${file%/*}
+			cp -r /$file $arkdep_dir/deployments/${data[0]}/rootfs/${file%/*}
 		done
 	fi
 
