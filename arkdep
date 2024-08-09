@@ -198,23 +198,31 @@ cleanup () {
 			fi
 
 			# Remove bootloader entry
-			rm -rfv $arkdep_boot/loader/entries/$target.conf
-			rm -rfv $arkdep_boot/arkdep/$target
+			[[ -f $arkdep_boot/loader/entries/$target.conf ]] &&
+				printf "Removing $arkdep_boot/loader/entries/$target.conf\n" &&
+				rm -rf $arkdep_boot/loader/entries/$target.conf
+			[[ -f $arkdep_boot/arkdep/$target ]] &&
+				printf "Removing $arkdep_boot/arkdep/$target\n" &&
+				rm -rf $arkdep_boot/arkdep/$target
 
 			# Ensure the deployment and all sub-volumes are writable
 			for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
-				btrfs property set -f -ts $(readlink -m $ARKDEP_ROOT/$volume) ro false || printf "failed to make subvol $volume writable\n"
+				printf "Unlocking $volume\n"
+				btrfs property set -f -ts $(readlink -m $ARKDEP_ROOT/$volume) ro false ||
+					printf "failed to make subvol $volume writable\n"
 			done
 
 			# Remove the deployment
-			rm -rf $arkdep_dir/deployments/$target
+			printf "Removing $arkdep_dir/deployments/$target\n" &&
+				rm -rf $arkdep_dir/deployments/$target
 		done
 	fi
 
 	if [[ -n $hanging_cache ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Cleaning up hanging cache\e[0m\n'
 		for target in ${hanging_cache[@]}; do
-			rm -v $arkdep_dir/cache/$target
+			printf "Removing $arkdep_dir/cache/$target\n" &&
+				rm $arkdep_dir/cache/$target
 		done
 	fi
 
