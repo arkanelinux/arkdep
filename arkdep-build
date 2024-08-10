@@ -113,7 +113,7 @@ if [[ $type != 'migration' ]]; then
 	declare root_storage_available=($(df --output=avail /))
 	root_storage_available=${root_storage_available[1]}
 	declare var_storage_available=($(df --output=avail /var/tmp))
-	var_storage_available=${root_storage_available[1]}
+	var_storage_available=${var_storage_available[1]}
 
 	if [[ $root_storage_available -lt $minimum_available_root_storage ]]; then
 		printf 'Not enough storage available on root to export image\n'
