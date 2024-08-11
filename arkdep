@@ -246,7 +246,7 @@ if [[ ! $1 =~ ^(get-available|diff|healthcheck)$ ]]; then
 fi
 
 # Check if all dependencies are installed, quit if not
-for prog in btrfs wget dracut bootctl curl gpg gpgv; do
+for prog in btrfs wget dracut bootctl curl gpg gpgv cmp; do
 
 	# If ARKDEP_NO_BOOTCTL defined do not enforce bootctl requirement
 	if [[ $prog == 'bootctl' ]] && [[ $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
