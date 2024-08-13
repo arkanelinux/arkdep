@@ -182,13 +182,30 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
+	# Used to store bootstrap packages list without escape characters and whitespaces
+	declare bootstrap_packages_clean=()
+
+	# Process package list, remove code comments
+	for bootstrap_package in "${bootstrap_packages[@]}"; do
+		# If line starts with escape character, ignore it
+		[[ $bootstrap_package == \#* ]] &&
+			continue
+
+		# If line is whitespace, ignore it
+		[[ ${bootstrap_package//[$'\t\r\n']} == '' ]] &&
+			continue
+
+		# Remove escape character at end of line and add to bootstrap_packages_clean
+		bootstrap_packages_clean+=(${bootstrap_package%%#*})
+	done
+
 	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
 	# If pacman.conf is available in overlay, use it
 	if [[ -f $variantdir/pacman.conf ]]; then
-		pacstrap -c -C $variantdir/pacman.conf $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to install secondary package list'
+		pacstrap -c -C $variantdir/pacman.conf $workdir ${bootstrap_packages_clean[@]} || cleanup_and_quit 'Failed to install secondary package list'
 		cp -v $variantdir/pacman.conf $workdir/etc/pacman.conf
 	else
-		pacstrap -c $workdir ${bootstrap_packages[*]} || cleanup_and_quit 'Failed to bootstrap system'
+		pacstrap -c $workdir ${bootstrap_packages_clean[@]} || cleanup_and_quit 'Failed to bootstrap system'
 	fi
 
 	# If overlay directory exists in variant copy it's contents to the temporary subvolume
@@ -212,7 +229,25 @@ if [[ $type == 'archlinux' ]]; then
 
 		# Read package list and install
 		readarray packages < $variantdir/package.list
-		arch-chroot $workdir pacman -S --noconfirm ${packages[*]} || cleanup_and_quit 'Failed to install packages'
+		# Used to store packages list without escape characters and whitespaces
+		declare packages_clean=()
+
+		# Process package list, remove code comments
+		for package in "${packages[@]}"; do
+			# If line starts with escape character, ignore it
+			[[ $package == \#* ]] &&
+				continue
+
+			# If line is whitespace, ignore it
+			[[ ${package//[$'\t\r\n']} == '' ]] &&
+				continue
+
+			# Remove escape character at end of line and add to packages_clean
+			packages_clean+=(${package%%#*})
+		done
+
+		# Install packages to new root
+		arch-chroot $workdir pacman -S --noconfirm ${packages_clean[@]} || cleanup_and_quit 'Failed to install packages'
 
 		# Unmount pacman cache
 		umount -l $workdir/var/cache/pacman/pkg
