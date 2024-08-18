@@ -371,7 +371,7 @@ init () {
 	latest_image_always_default=0
 
 	# List of files and folders to be recursively copied over from root tree to new root filesystem
-	migrate_files=('var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections')
+	migrate_files=('var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'var/lib/power-profiles-daemon/state.ini' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections')
 
 	# Load script extensions from /arkdep/extensions
 	load_extensions=0
