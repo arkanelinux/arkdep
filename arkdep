@@ -1048,7 +1048,7 @@ deploy () {
 	if [[ ${#migrate_files[@]} -ge 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Migrating local files to new deployment\e[0m\n'
 		for file in ${migrate_files[@]}; do
-			[ ! -f /$file ] && continue
+			[[ ! -e /$file ]] && continue
 			printf "Copying $file\n"
 			cp -r /$file $arkdep_dir/deployments/${data[0]}/rootfs/${file%/*}
 		done
