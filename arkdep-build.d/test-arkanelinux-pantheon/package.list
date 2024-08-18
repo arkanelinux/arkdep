@@ -29,6 +29,7 @@ flatpak
 fuse
 gala
 git
+glibc-locales
 gnome-keyring
 gnome-session
 gnome-settings-daemon

@@ -278,10 +278,6 @@ if [[ $type == 'archlinux' ]]; then
 	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
 	ln -sv ../var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
 
-	# locale symlink
-	mv $workdir/usr/lib/locale $workdir/var/usrliblocale || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
-	ln -sv ../../../var/usrliblocale $workdir/usr/lib/locale || cleanup_and_quit 'Failed to create usrlocal symlink'
-
 	# Opt symlink
 	mv $workdir/opt $workdir/var/ || cleanup_and_quit 'Failed to move opt to var/opt'
 	ln -sv var/opt $workdir/opt || cleanup_and_quit 'Failed to create opt symlink'

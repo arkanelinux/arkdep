@@ -1,5 +1,4 @@
 alsa-firmware
-fuse
 alsa-utils
 arkdep
 audiocd-kio
@@ -14,6 +13,8 @@ dolphin-plugins
 ffmpeg
 ffmpegthumbs
 flatpak
+fuse
+glibc-locales
 gnome-themes-standard
 gst-libav
 gst-plugins-bad

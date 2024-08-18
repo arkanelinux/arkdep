@@ -26,10 +26,10 @@ efibootmgr
 evince
 f2fs-tools
 fakeroot
-firefox
 flatpak
 fuse
 git
+glibc-locales
 gst-plugin-pipewire
 gst-plugins-base
 gst-plugins-good

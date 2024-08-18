@@ -25,6 +25,7 @@ fuse
 fwupd
 gdm
 git
+glibc-locales
 gnome-backgrounds
 gnome-console
 gnome-control-center
