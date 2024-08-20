@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Elevate permissions to root
+[[ $EUID -eq 0 ]] || exec sudo bash $0 $@
+
+[[ $@ =~ (-r|--root) ]] && no_check=1 # Do not check if custom root is defined
+[[ $LD_LIBRARY_PATH =~ (libfakeroot) ]] && no_check=1 # Do not check if running as fakeroot
+
+if [[ ! $no_check ]]; then
+	# Check if the disk is ro'ed using subvolume properties
+	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
+		cat <<- END
+			The root partition is currently in read-only mode, to run pacman it will have to be switched over to read-write mode.
+
+			Note that any changes made to the system will not carry over to future OS image updates.
+
+		END
+		read -p 'Do you want to unlock the root partition? (y/N) ' ans
+
+		if [[ $ans =~ ^(y|Y|yes|YES)$ ]]; then
+			btrfs property set / ro false
+		else
+			printf 'Quitting... no changes have been made to the system.\n'
+			exit 1
+		fi
+	fi
+fi
+
+# No exit statement here, we return pacman's exit code
+/usr/bin/pacman $@

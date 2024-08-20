@@ -1,1 +1,1 @@
-Defaults secure_path="/usr/arkdep_bin:/usr/local/sbin:/usr/local/bin:/usr/bin"
+Defaults secure_path="/usr/abin:/usr/local/sbin:/usr/local/bin:/usr/bin"
