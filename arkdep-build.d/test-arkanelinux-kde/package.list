@@ -8,6 +8,7 @@ arkane-wallpapers
 arkdep
 baobab
 bind
+bluedevil
 bluez
 bluez-cups
 bluez-plugins
@@ -61,6 +62,8 @@ kmouth
 koko
 konsole
 kpipewire
+kscreen
+kscreenlocker
 ksystemlog
 libnss-extrausers
 libva-mesa-driver
