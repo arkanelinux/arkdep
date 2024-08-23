@@ -3,7 +3,7 @@
 # Elevate permissions to root
 [[ $EUID -eq 0 ]] || exec sudo bash $0 $@
 
-[[ $@ =~ (-r|--root|-Q*|-F*) ]] && no_check=1 # Do not check if custom root is defined
+[[ $@ =~ (-r|--root|-Q*|-F*) ]] && no_check=1 # Do not check if custom root or -Q/-F are defined
 [[ $LD_LIBRARY_PATH =~ (libfakeroot) ]] && no_check=1 # Do not check if running as fakeroot
 
 if [[ ! $no_check ]]; then
