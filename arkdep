@@ -13,8 +13,6 @@ if [[ -f /tmp/arkdep.lock ]]; then
 	exit 5
 fi
 
-touch /tmp/arkdep.lock
-
 ## Set common variables
 #
 declare -r arkdep_dir="$(readlink -m $ARKDEP_ROOT/arkdep)"
@@ -117,6 +115,8 @@ unlock_and_quit () {
 	rm /tmp/arkdep.lock
 	exit $1
 }
+
+touch /tmp/arkdep.lock
 
 ## Healthcheck
 #
