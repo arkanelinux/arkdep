@@ -1,7 +1,6 @@
 apparmor
 arch-install-scripts
 archiso
-arkdep
 bind
 btrfs-progs
 dbus-broker-units
