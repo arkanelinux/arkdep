@@ -40,7 +40,21 @@ fi
 ## Load config file, unless we are running init
 #
 if [[ ! $1 == 'init' ]]; then
-	source $arkdep_dir/config
+	if [[ -z ${ARKDEP_CONFIG+x} ]]; then
+		# Ensure file exists
+		if [[ ! -f $arkdep_dir/config ]]; then
+			printf "\e[1;31m<#>\e[0m\e[1m $arkdep_dir/config configuration file does not exist\e[0m\n"
+			exit 1
+		fi
+		source $arkdep_dir/config
+	else
+		# Ensure file exists
+		if [[ ! -f $ARKDEP_CONFIG ]]; then
+			printf "\e[1;31m<#>\e[0m\e[1m $ARKDEP_CONFIG configuration file does not exist\e[0m\n"
+			exit 1
+		fi
+		source $ARKDEP_CONFIG
+	fi
 
 	# Set default variables if config variables are undefined
 	[[ -z ${enable_overlay+x} ]] && enable_overlay=1 && printf '\e[1;33m<!>\e[0m\e[1m enable_overlay not defined in config, using default\e[0m\n'
