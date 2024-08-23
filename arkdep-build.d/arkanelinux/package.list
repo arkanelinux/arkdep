@@ -11,15 +11,12 @@ dosfstools
 efibootmgr
 f2fs-tools
 fakeroot
-flatpak
-gdm
 git
 glibc-locales
 libva-mesa-driver
 man-db
 mesa
 mesa-vdpau
-nautilus
 neovim
 networkmanager
 openssh
@@ -45,6 +42,7 @@ zsh-syntax-highlighting
 
 # GNOME
 evolution-data-server # For gnome-calendar Flatpak
+gdm
 gnome-backgrounds
 gnome-console
 gnome-control-center
@@ -56,6 +54,7 @@ gnome-software
 gnome-system-monitor
 gnome-tour
 mutter
+nautilus
 
 # GNOME extra
 bluez
@@ -64,6 +63,7 @@ bluez-plugins
 bluez-utils
 cups
 cups-pdf
+flatpak
 fuse
 fwupd
 gst-plugin-pipewire
