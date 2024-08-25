@@ -369,6 +369,222 @@ if [[ $type == 'archlinux' ]]; then
 
 fi
 
+# Build debian type image
+if [[ $type == 'debian' ]]; then
+
+	# Get repo
+	declare -r deb_repo=$(cat $variantdir/repo 2> /dev/null)
+
+	# Get branch
+	declare -r deb_suite=$(cat $variantdir/suite 2> /dev/null)
+
+	echo $deb_repo $deb_suite
+
+	printf '\e[1;34m-->\e[0m\e[1m Started Debian image build\e[0m\n'
+
+	printf '\e[1;34m-->\e[0m\e[1m Creating disk image\e[0m\n'
+	fallocate -l $build_image_size $build_image || cleanup_and_quit "Failed to create disk image at $build_image"
+	mkfs.btrfs -f $build_image || cleanup_and_quit "Failed to partition $build_image"
+
+	printf "\e[1;34m-->\e[0m\e[1m Mounting $build_image at $workdir\e[0m\n"
+	# The data is compressed to minimize writes to the disk, the actual export does not maintain this compression
+	mount -m -t btrfs -o loop,compress=zstd $build_image $build_image_mountpoint || cleanup_and_quit "Failed to mount disk image to $workdir"
+
+	# Create temporary Btrfs subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $workdir\e[0m\n"
+	btrfs subvolume create $workdir/ || cleanup_and_quit "Failed to create btrfs subvolume $workdir)"
+	mount --bind $workdir $workdir || cleanup_and_exit "Failed to bind mount disk $workdir"
+	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc)"
+	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var)"
+
+	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
+	# TODO: Do not hard code arch
+	[[ ! -d /var/cache/arkdep-debootstrap ]] && mkdir -p /var/cache/apt/archives
+	DEBIAN_FRONTEND=noninteractive debootstrap \
+		--cache-dir=/var/cache/apt/archives \
+		$deb_suite \
+		$workdir \
+		$deb_repo ||
+		cleanup_and_quit 'Failed to bootstrap'
+
+	# If overlay directory exists in variant copy it's contents to the temporary subvolume
+	if [[ -d $variantdir/overlay/post_bootstrap ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Copying overlay/post_bootstrap to root\e[0m\n'
+		cp -rv $variantdir/overlay/post_bootstrap/* $workdir/
+	fi
+
+	# Run post_bootstrap script if exists
+	if [[ -f $variantdir/extensions/post_bootstrap.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post_bootstrap extension\e[0m\n'
+		(source $variantdir/extensions/post_bootstrap.sh)
+	fi
+
+	# Read package list and install secondary system components, skip if not used
+	if [[ -f $variantdir/package.list ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
+
+		# Mount deb package cache inside of new root
+		mount --bind /var/cache/apt/archives $workdir/var/cache/apt/archives
+
+		# Read package list and install
+		readarray packages < $variantdir/package.list
+		# Used to store packages list without escape characters and whitespaces
+		declare packages_clean=()
+
+		# Process package list, remove code comments
+		for package in "${packages[@]}"; do
+			# If line starts with escape character, ignore it
+			[[ $package == \#* ]] &&
+				continue
+
+			# If line is whitespace, ignore it
+			[[ ${package//[$'\t\r\n']} == '' ]] &&
+				continue
+
+			# Remove escape character at end of line and add to packages_clean
+			packages_clean+=(${package%%#*})
+		done
+
+		# Install packages to new root
+		# TODO: Keep using arch-chroot?`
+		DEBIAN_FRONTEND=noninteractive arch-chroot $workdir apt-get update ||
+			cleanup_and_quit 'Failed to apt update'
+
+		DEBIAN_FRONTEND=noninteractive arch-chroot $workdir apt-get install -y ${packages_clean[@]} ||
+			cleanup_and_quit 'Failed to install packages'
+
+		umount -l $workdir/var/cache/apt/archives
+
+	fi
+
+	# If postinstall overlay directory exists in variant copy it's contents to the temporary subvolume
+	if [[ -d $variantdir/overlay/post_install ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Copying overlay/post_install to root\e[0m\n'
+		cp -rv $variantdir/overlay/post_install/* $workdir/
+	fi
+
+	# Run post_install script if exists
+	if [[ -f $variantdir/extensions/post_install.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post_install extension\e[0m\n'
+		(source $variantdir/extensions/post_install.sh)
+	fi
+
+	# Remove subvolumes created by systemd
+	[[ -d $workdir/var/lib/portables ]] &&
+		printf '\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/portables\e[0m\n'
+		btrfs subvolume delete $workdir/var/lib/portables
+	[[ -d $workdir/var/lib/machines ]] &&
+		printf '\e[1;34m-->\e[0m\e[1m Removing systemd subvolume var/lib/machines\e[0m\n'
+		btrfs subvolume delete $workdir/var/lib/machines
+
+	# Make /usr/local symlink in var
+	printf '\e[1;34m-->\e[0m\e[1m Moving dirs to var and creating symlinks\e[0m\n'
+	mv $workdir/usr/local $workdir/var/usrlocal || cleanup_and_quit 'Failed to move usr/local to var/usrlocal'
+	ln -sv ../var/usrlocal $workdir/usr/local || cleanup_and_quit 'Failed to create usrlocal symlink'
+
+	# Opt symlink
+	mv $workdir/opt $workdir/var/ || cleanup_and_quit 'Failed to move opt to var/opt'
+	ln -sv var/opt $workdir/opt || cleanup_and_quit 'Failed to create opt symlink'
+
+	# srv symlink
+	mv $workdir/srv $workdir/var/srv || cleanup_and_quit 'Failed to move srv to var/srv'
+	ln -sv var/srv $workdir/srv || cleanup_and_quit 'Failed to create srv symlink'
+
+	# mnt symlink
+	mv $workdir/mnt $workdir/var/mnt || cleanup_and_quit 'Failed to move mnt to var/mnt'
+	ln -sv var/mnt $workdir/mnt || cleanup_and_quit 'Failed to create mnt symlink'
+
+	printf '\e[1;34m-->\e[0m\e[1m Creating mountpoints for shared subvolumes\e[0m\n'
+
+	# Remove the folders to ensure they are empty
+	rm -rf $workdir/root
+	rm -rf $workdir/var/lib/flatpak
+
+	# Ensure these folder exist
+	mkdir -pv $workdir/root
+	mkdir -pv $workdir/arkdep
+	mkdir -pv $workdir/var/lib/flatpak
+
+	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to usr/lib\e[0m\n'
+
+	# Create second passwd, group and shadow file in usr/lib and configure
+	for file in passwd group shadow; do
+		grep -v "^root:" $workdir/etc/$file > $workdir/usr/lib/$file
+	done
+
+	# Remove all users except for root, is typically overwritten by user overlay but
+	# may be used during os installation as a template
+	for file in passwd group shadow; do
+		grep "^root:" $workdir/etc/$file > $workdir/etc/$file-tmp
+		mv $workdir/etc/$file-tmp $workdir/etc/$file
+	done
+
+	# Ensure passwd/group/shadow permissions are set properly
+	chmod 600 $workdir/etc/shadow $workdir/usr/lib/shadow
+	chmod 644 $workdir/etc/{passwd,group} $workdir/usr/lib/{passwd,group}
+
+	#
+	# nss-switch.conf is added using the overlay
+	#
+
+	# Remove passwd/group/shadow backup files
+	rm $workdir/etc/{passwd-,shadow-,group-}
+
+	printf '\e[1;34m-->\e[0m\e[1m Moving kernel to usr/lib/modules/\e[0m\n'
+	# Move vmlinuz from boot to modules
+	# Get kernel version and vmlinuz location
+	declare vmlinuz_path=$(readlink -f $workdir/vmlinuz)
+	echo $vmlinuz_path
+	vmlinuz_path=${vmlinuz_path//$workdir}
+	echo $vmlinuz_path
+	declare vmlinuz_version=${vmlinuz_path//\/boot\/vmlinuz-}
+	echo $vmlinuz_version
+
+	mv $workdir/$vmlinuz_path $workdir/usr/lib/modules/$vmlinuz_version/vmlinuz || cleanup_and_quit 'Failed to move kernel to modules'
+
+	#printf '\e[1;34m-->\e[0m\e[1m Moving CPU microcode to usr/lib\e[0m\n'
+	# Move CPU firmware to /usr/lib if present
+	# TODO: Figure out how to properly handle this
+	#mv $workdir/boot/*-ucode.img $workdir/usr/lib/
+
+	# Make subvolume read-only
+	printf '\e[1;34m-->\e[0m\e[1m Adding read-only property to subvolumes\e[0m\n'
+	btrfs property set -ts $workdir ro true || cleanup_and_quit 'Failed to set root to read-only'
+	btrfs property set -ts $workdir/etc ro true || cleanup_and_quit 'Failed to set etc to read-only'
+	btrfs property set -ts $workdir/var ro true || cleanup_and_quit 'Failed to set var to read-only'
+
+	# Create dir for storing the images
+	mkdir -p $output_target/$image_name
+
+	# Add update script, utilized to perform minor system changes and updates
+	if [[ -f $variantdir/update.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Including update script\e[0m\n'
+		cp -v $variantdir/update.sh $output_target/$image_name/$image_name-update.sh ||
+			cleanup_and_quit 'Failed copying update script to image'
+	fi
+
+	# TODO: Generate package list
+
+	# Write subvolume to image
+	printf '\e[1;34m-->\e[0m\e[1m Creating images\e[0m\n'
+	btrfs send -f $output_target/$image_name/$image_name-rootfs.img $workdir
+	btrfs send -f $output_target/$image_name/$image_name-etc.img $workdir/etc
+	btrfs send -f $output_target/$image_name/$image_name-var.img $workdir/var
+
+	if [[ ! -v ARKDEP_NO_TAR ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Compressing images\e[0m\n'
+		tar -cv -I 'zstd -12 -T0 ' -f $output_target/$image_name.tar.zst -C $output_target/$image_name .
+	fi
+
+	if [[ -f $variantdir/extensions/post_build.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running post_build extension\e[0m\n'
+		(source $variantdir/extensions/post_build.sh)
+	fi
+
+	cleanup_and_quit
+
+fi
+
 # No valid variant was found
 printf 'No valid type set in configuration\n'
 exit 2
