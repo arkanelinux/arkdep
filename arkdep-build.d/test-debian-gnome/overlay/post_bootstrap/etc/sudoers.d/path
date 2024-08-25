@@ -1,0 +1,1 @@
+Defaults secure_path="/usr/abin:/usr/local/sbin:/usr/local/bin:/usr/bin"

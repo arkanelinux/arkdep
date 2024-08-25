@@ -1,0 +1,13 @@
+dracut
+flatpak
+gdm3
+gnome-backgrounds
+gnome-console
+gnome-control-center
+gnome-menus
+gnome-shell
+gnome-software
+gnome-software-plugin-flatpak
+gnome-system-monitor
+linux-image-amd64
+nautilus
