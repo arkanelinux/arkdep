@@ -372,13 +372,16 @@ fi
 # Build debian type image
 if [[ $type == 'debian' ]]; then
 
-	# Get repo
-	declare -r deb_repo=$(cat $variantdir/repo 2> /dev/null)
-
-	# Get branch
-	declare -r deb_suite=$(cat $variantdir/suite 2> /dev/null)
-
-	echo $deb_repo $deb_suite
+	# Get repo configuration
+	if [[ ! -s $variant_dir/apt.conf ]]; then
+		cleanup_and_quite 'apt.conf expected but is empty or not found'
+	else
+		declare -r apt_conf=($(cat $variantdir/apt.conf 2> /dev/null))
+		# 0. Repo URL (http://deb.debian.org/debian)
+		# 1. Suite (focal, sid, unstable etc..)
+		declare -r deb_repo=${apt_conf[0]}
+		declare -r deb_suite=${apt_conf[1]}
+	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Started Debian image build\e[0m\n'
 
