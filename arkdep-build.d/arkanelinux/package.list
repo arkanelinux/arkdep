@@ -2,6 +2,7 @@ apparmor
 arch-install-scripts
 archiso
 bind
+binutils
 btrfs-progs
 dbus-broker-units
 debugedit
