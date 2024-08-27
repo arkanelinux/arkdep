@@ -1146,9 +1146,6 @@ deploy () {
 		printf '\e[1;33m<!>\e[0m\e[1m Not running bootctl set-default because overwritten with ARKDEP_NO_BOOTCTL\e[0m\n'
 	fi
 
-	# Image deployment finished, allow for interupts again
-	trap 'echo "User interupt received, canceling cleanup step"; unlock_and_quit 4' INT TERM
-
 	# Check if there is an update script available
 	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null && [[ ! -n $ARKDEP_ROOT ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running update script\e[0m\n'
@@ -1158,6 +1155,9 @@ deploy () {
 		printf '\e[1;34m-->\e[0m\e[1m Removing update script\e[0m\n'
 		rm $arkdep_dir/cache/${data[0]}-update.sh
 	fi
+
+	# Image deployment finished, allow for interupts again
+	trap 'echo "User interupt received, canceling cleanup step"; unlock_and_quit 4' INT TERM
 
 	# Get list of all tarballs in cache
 	declare -r tarball_hits=($(ls $arkdep_dir/cache/ | grep -E '.*.tar..*'))
