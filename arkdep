@@ -260,8 +260,7 @@ if [[ ! $1 =~ ^(get-available|diff|healthcheck)$ ]]; then
 fi
 
 # Check if all dependencies are installed, quit if not
-for prog in btrfs wget dracut bootctl curl gpg gpgv cmp; do
-
+for prog in btrfs wget dracut bootctl curl gpgv; do
 	# If ARKDEP_NO_BOOTCTL defined do not enforce bootctl requirement
 	if [[ $prog == 'bootctl' ]] && [[ $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
 		break
@@ -1024,8 +1023,15 @@ deploy () {
 			printf '\e[1;34m-->\e[0m\e[1m Copying user account files to overlay if changed\e[0m\n'
 
 			for file in passwd shadow group; do
-				if ! cmp --silent $arkdep_dir/overlay/etc/$file /etc/$file; then
-					cp -v /etc/$file $arkdep_dir/overlay/etc/$file
+				# Hash old and new file to compare
+				# No need to handle file not exist scenario, we can assume /etc/$file to always exist
+				declare checksum_old=($(sha256sum $arkdep_dir/overlay/etc/$file))
+				declare checksum_current=($(sha256sum /etc/$file))
+
+				if [[ ! ${checksum_old[0]} == ${checksum_current[0]} ]]; then
+					printf "Copying $file\n"
+					cp /etc/$file $arkdep_dir/overlay/etc/$file ||
+						printf "Failed to copy $file\n"
 				fi
 			done
 
@@ -1082,11 +1088,15 @@ deploy () {
 		printf '\e[1;34m-->\e[0m\e[1m Checking for CPU microcode updates\e[0m\n'
 
 		for ucode in $(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/ | grep ucode); do
-			# If CPU firmware present in both image and install
-			if ! cmp --silent $arkdep_boot/$ucode $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode; then
+			# Hash current and new file to compare
+			# No need to handle file not exist scenario, we can assume /etc/$file to always exist
+			declare checksum_new=($(sha256sum $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode))
+			declare checksum_current=($(sha256sum $arkdep_boot/$ucode))
+
+			if [[ ! ${checksum_new[0]} == ${checksum_current[0]} ]]; then
 				printf "Copying $ucode\n"
 				cp $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/$ucode $arkdep_boot/$ucode ||
-					cleanup_and_quit 'Failed to copy microcode'
+					printf "Failed to copy $ucode\n"
 			fi
 		done
 	fi
