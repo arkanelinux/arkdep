@@ -8,7 +8,7 @@ arkdep - Manage arkdep deployments
 .SH DESCRIPTION
 Arkdep is a utility which downloads, deploys and manages Btrfs subvolume exports.
 
-It is able to perform atomic and immutable system updates, migrate local data to new deployments, update the systemd-boot bootloader configuration and switch the by default booted root subvolume through EFI variables.
+It is able to perform atomic and immutable system updates, migrate local data to new deployments and update the systemd-boot bootloader configuration with entries for said new deployments.
 .SH OPTIONS
 .SS deploy
 Deploy a new or update an existing deployment.
@@ -31,8 +31,6 @@ Remove specified deployments.
 Prepend path to arkdep target directory, implies ARKDEP_CONFIRM.
 .SS ARKDEP_BOOT
 Set custom /boot location, overwrites ARKDEP_ROOT on relevant tasks if set, implies ARKDEP_NO_BOOTCTL.
-.SS ARKDEP_NO_BOOTCTL
-Do not run bootctl commands, this includes installing systemd-boot and setting the new deployment as the default boot entry.
 .SS ARKDEP_CONFIRM
 Skip interactive prompts.
 .SS ARKDEP_CONFIG
