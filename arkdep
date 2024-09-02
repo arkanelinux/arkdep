@@ -24,9 +24,6 @@ else
 	declare -r arkdep_boot="$(readlink -m $ARKDEP_ROOT/boot)"
 fi
 
-# if ARKDEP_BOOT is set also set ARKDEP_NO_BOOTCTL
-[[ -n $ARKDEP_BOOT ]] && declare -r ARKDEP_NO_BOOTCTL=1
-
 # If ARKDEP_ROOT is defined we imply confirm
 [[ -n $ARKDEP_ROOT ]] && declare -r ARKDEP_CONFIRM=1
 
@@ -102,7 +99,7 @@ cleanup_and_quit () {
 		rm -rfv $arkdep_dir/deployments/${data[0]} \
 			$arkdep_boot/arkdep/${data[0]}
 		rm -v $arkdep_dir/cache/${data[0]}-*.img \
-			$arkdep_boot/loader/entries/${data[0]}.conf
+			$arkdep_boot/loader/entries/*${data[0]}*.conf
 	fi
 
 	unlock_and_quit 1
@@ -212,9 +209,9 @@ cleanup () {
 			fi
 
 			# Remove bootloader entry
-			[[ -f $arkdep_boot/loader/entries/$target.conf ]] &&
-				printf "Removing $arkdep_boot/loader/entries/$target.conf\n" &&
-				rm -rf $arkdep_boot/loader/entries/$target.conf
+			[[ -f $arkdep_boot/loader/entries/*$target*.conf ]] &&
+				printf "Removing $target bootloader entry\n" &&
+				rm -rf $arkdep_boot/loader/entries/*$target*.conf
 			[[ -f $arkdep_boot/arkdep/$target ]] &&
 				printf "Removing $arkdep_boot/arkdep/$target\n" &&
 				rm -rf $arkdep_boot/arkdep/$target
@@ -260,12 +257,7 @@ if [[ ! $1 =~ ^(get-available|diff|healthcheck)$ ]]; then
 fi
 
 # Check if all dependencies are installed, quit if not
-for prog in btrfs wget dracut bootctl curl gpgv; do
-	# If ARKDEP_NO_BOOTCTL defined do not enforce bootctl requirement
-	if [[ $prog == 'bootctl' ]] && [[ $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
-		break
-	fi
-
+for prog in btrfs wget dracut curl gpgv; do
 	if ! command -v $prog > /dev/null; then
 		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
 		# Do not immediately exit to log all missing programs
@@ -299,14 +291,6 @@ fi
 #
 # Initialize the system for arkdep
 init () {
-
-	# Ensure systemd-boot is installed before continuing, for it is the only thing we support
-	# Do not run if ARKDEP_NO_BOOTCTL defined
-	if [[ ! $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
-		bootctl -q is-installed || cleanup_and_quit 'systemd-boot seems to not be installed'
-	else
-		printf '\e[1;33m<!>\e[0m\e[1m Not running bootctl is-installed because overwritten with ARKDEP_NO_BOOTCTL\e[0m\n'
-	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
 
@@ -519,7 +503,7 @@ remove_deployment () {
 		fi
 
 		# Remove bootloader entry
-		rm -rfv $arkdep_boot/loader/entries/$target.conf
+		rm -rfv $arkdep_boot/loader/entries/*$target*.conf
 		rm -rfv $arkdep_boot/arkdep/$target
 
 		# Ensure the deployment and all sub-volumes are writable
@@ -841,13 +825,6 @@ deploy () {
 
 	# Lets ensure the requested image is not already deployed
 	if [[ -e $arkdep_dir/deployments/${data[0]} ]]; then
-
-		# Lets ensure the latest deployment is active, even if it is already deployed
-		if [[ latest_image_always_default -eq 1 ]] && [[ ! $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
-			# Allow it to error, it is no big deal if it does
-			bootctl set-default ${data[0]}.conf || printf '\e[1;33m<!>\e[0m\e[1m Failed to set default bootloader entry, this might be a firmware bug\e[0m\n'
-		fi
-
 		printf "\e[1;33m<!>\e[0m\e[1m ${data[0]} is already deployed, canceling deployment\e[0m\n"
 		unlock_and_quit 0
 	fi
@@ -1143,18 +1120,9 @@ deploy () {
 
 	# Write bootloader entry
 	for line in "${systemd_boot_template[@]}"; do
-		echo ${line/\%target\%/${data[0]}} >> $arkdep_boot/loader/entries/${data[0]}.conf ||
+		echo ${line/\%target\%/${data[0]}} >> $arkdep_boot/loader/entries/$(date +%Y%m%d-%H%M%S)-${data[0]}+3.conf ||
 			cleanup_and_quit 'Failed to write systemd-boot entry'
 	done
-
-	# Set new deployment as default bootloader entry
-	printf '\e[1;34m-->\e[0m\e[1m Setting new bootloader entry as default\e[0m\n'
-	# Do not set default boot entry if ARKDEP_NO_BOOTCTL is set
-	if [[ ! $ARKDEP_NO_BOOTCTL -eq 1 ]]; then
-		bootctl set-default ${data[0]}.conf || printf '\e[1;33m<!>\e[0m\e[1m Failed to set default bootloader entry, this might be a firmware bug\e[0m\n'
-	else
-		printf '\e[1;33m<!>\e[0m\e[1m Not running bootctl set-default because overwritten with ARKDEP_NO_BOOTCTL\e[0m\n'
-	fi
 
 	# Check if there is an update script available
 	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null && [[ ! -n $ARKDEP_ROOT ]]; then
