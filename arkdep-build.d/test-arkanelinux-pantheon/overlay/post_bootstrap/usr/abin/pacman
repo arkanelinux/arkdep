@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-# Elevate permissions to root
-[[ $EUID -eq 0 ]] || exec sudo bash $0 $@
-
 if [[ $@ =~ (-r|--root) ]] || [[ $@ == "-Q"* ]] || [[ $@ == "-F"* ]] || [[ $LD_LIBRARY_PATH =~ (libfakeroot) ]]; then
 	no_check=1
 fi
 
 if [[ ! $no_check ]]; then
+	# Elevate permissions to root
+	[[ $EUID -eq 0 ]] || exec sudo bash $0 $@
+
 	# Check if the disk is ro'ed using subvolume properties
 	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
 		cat <<- END
