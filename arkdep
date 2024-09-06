@@ -586,25 +586,32 @@ diff () {
 
 	# Set default variant version if not provided, otherwise override of provided
 	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
+		# Param was provided, set target to param
 		# Get ID of (partially) defined entry
-		declare database_hit=$(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR')
+		declare curl_data=($(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR'))
 
-		if [[ $index == 'ERROR' ]]; then
+		if [[ $curl_data == 'ERROR' ]]; then
 			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
 			exit 1
 		fi
 
-		database_hit=$(printf $database_hit | grep -E "^$2" | head -1)
+		for db_entry in ${curl_data[@]}; do
+			if [[ $db_entry == $2* ]]; then
+				declare -r database_hit=$db_entry
+			fi
+		done
+
 	else
+		# No param was provided, set first db entry as target
 		# Get ID of latest entry
-		declare database_hit=$(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR')
+		declare curl_data=($(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR'))
 
-		if [[ $index == 'ERROR' ]]; then
+		if [[ $curl_data == 'ERROR' ]]; then
 			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
 			exit 1
 		fi
 
-		database_hit=$(printf $database_hit | head -n 1)
+		database_hit=${curl_data[0]}
 	fi
 
 	# Ensure data properly received
@@ -758,11 +765,11 @@ deploy () {
 		# If latest is requested grab database and get first line
 		printf '\e[1;34m-->\e[0m\e[1m Downloading database\e[0m\n'
 		if [[ $deploy_version == 'latest' ]]; then
-			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR')
+			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR'))
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
-			declare -r database_hit=$(printf $curl_data | head -n 1)
+			declare -r database_hit=${curl_data[0]}
 		elif [[ $deploy_target != 'cache' ]]; then
 			# Only return first hit
 			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR'))
