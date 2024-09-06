@@ -762,19 +762,25 @@ deploy () {
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
-			curl_data=$(printf $curl_data | head -n 1)
+			declare -r database_hit=$(printf $curl_data | head -n 1)
 		elif [[ $deploy_target != 'cache' ]]; then
 			# Only return first hit
-			declare curl_data=$(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR')
+			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR'))
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
-			curl_data=$(printf $curl_data | grep -E "^$2" | head -1)
+			# Find matching database entry
+			for db_entry in ${curl_data[@]}; do
+				if [[ $db_entry == $2* ]]; then
+					declare -r database_hit=$db_entry
+				fi
+			done
+
 		else
-			declare curl_data='cache'
+			declare database_hit='cache'
 		fi
 
-		readarray -d : -t data <<< "$curl_data"
+		readarray -d : -t data <<< "$database_hit"
 
 	# If target is cache
 	else
