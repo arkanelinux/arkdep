@@ -9,7 +9,7 @@ set -o pipefail
 
 ## Distributor configurables
 #
-# These are the default settings utilized as both a fallbacks in case a
+# These are the default settings utilized as both a fallback in case a
 # setting is not configured and as the default settings a new system will
 # be initialized with.
 declare -r dist_enable_overlay=1
@@ -342,12 +342,17 @@ fi
 
 ## Core functions
 #
-# Initialize the system for arkdep
-init () {
+# Initialize the system for arkdep, either on a new Linux install
+# when using ARKDEP_BOOT and ARKDEP_ROOT, or the current system
+# if called without said variables defined
+init_new_system () {
 
 	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
 
-	[[ -d $arkdep_dir ]] && cleanup_and_quit "$arkdep_dir already exists"
+	# Ensure Arkdep is not already installed, unless we are installing
+	# to a new system
+	[[ -d $arkdep_dir ]] && [[ -z ${ARKDEP_ROOT+x} ]] &&
+		cleanup_and_quit "$arkdep_dir already exists"
 
 	# Create the /arkdep subvolume
 	printf "\e[1;34m-->\e[0m\e[1m Creating $arkdep_dir subvolume\e[0m\n"
@@ -1229,7 +1234,7 @@ deploy () {
 
 }
 
-[[ $1 == 'init' ]] && init $2
+[[ $1 == 'init' ]] && init_new_system $2
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
 [[ $1 == 'diff' ]] && diff $2 $3
