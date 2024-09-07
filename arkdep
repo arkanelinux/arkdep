@@ -7,6 +7,28 @@
 
 set -o pipefail
 
+## Distributor configurables
+#
+# These are the default settings utilized as both a fallbacks in case a
+# setting is not configured and as the default settings a new system will
+# be initialized with.
+declare -r dist_enable_overlay=1
+declare -r dist_repo_url='https://arkanelinux.org/arkdep'
+declare -r dist_repo_default_image='arkanelinux'
+declare -r dist_deploy_keep=3
+declare -r dist_clean_cache_on_remove=1
+declare -r dist_always_healthcheck=1
+declare -r dist_gpg_signature_check=1
+declare -r dist_minimum_available_boot_storage=153600
+declare -r dist_minimum_available_root_storage=12582912
+declare -r dist_update_cpu_microcode=1
+declare -r dist_backup_user_accounts=1
+declare -r dist_migrate_files="'var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'var/lib/power-profiles-daemon' 'var/db' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections' 'etc/ssh'"
+declare -r dist_load_extensions=0
+declare -r dist_remove_tar_after_deployment=1
+declare -r dist_update_diff_style='list'
+declare -r dist_interactive_mode=1
+
 ## Check if program is locked, if yes do not run
 if [[ -f /tmp/arkdep.lock ]]; then
 	printf '\e[1;31m<#>\e[0m\e[1m /tmp/arkdep.lock exists, another instance of the program might be running\e[0m\n'
@@ -52,23 +74,54 @@ if [[ ! $1 == 'init' ]]; then
 	fi
 
 	# Set default variables if config variables are undefined
-	[[ -z ${enable_overlay+x} ]] && enable_overlay=1 && printf '\e[1;33m<!>\e[0m\e[1m enable_overlay not defined in config, using default\e[0m\n'
-	[[ -z ${repo_url+x} ]] && repo_url='https://repo.arkanelinux.org/arkdep' && printf '\e[1;33m<!>\e[0m\e[1m repo_url not defined in config, using default\e[0m\n'
-	[[ -z ${repo_default_image+x} ]] && repo_default_image='arkanelinux' && printf '\e[1;33m<!>\e[0m\e[1m repo_default_image not defined in config, using default\e[0m\n'
-	[[ -z ${deploy_keep+x} ]] && deploy_keep=3 && printf '\e[1;33m<!>\e[0m\e[1m deploy_keep not defined in config, using default\e[0m\n'
-	[[ -z ${clean_cache_on_remove+x} ]] && clean_cache_on_remove=1 && printf '\e[1;33m<!>\e[0m\e[1m clean_cache_on_remove not defined in config, using default\e[0m\n'
-	[[ -z ${always_healthcheck+x} ]] && always_healthcheck=1 && printf '\e[1;33m<!>\e[0m\e[1m always_healthcheck not defined in config, using default\e[0m\n'
-	[[ -z ${gpg_signature_check+x} ]] && gpg_signature_check=1 && printf '\e[1;33m<!>\e[0m\e[1m gpg_signature_check not defined in config, using default\e[0m\n'
-	[[ -z ${minimum_available_boot_storage+x} ]] && minimum_available_boot_storage=153600 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_boot_storage not defined in config, using default\e[0m\n'
-	[[ -z ${minimum_available_root_storage+x} ]] && minimum_available_root_storage=12582912 && printf '\e[1;33m<!>\e[0m\e[1m minimum_available_root_storage not defined in config, using default\e[0m\n'
-	[[ -z ${update_cpu_microcode+x} ]] && update_cpu_microcode=1 && printf '\e[1;33m<!>\e[0m\e[1m update_cpu_microcode not defined in config, using default\e[0m\n'
-	[[ -z ${backup_user_accounts+x} ]] && backup_user_accounts=1 && printf '\e[1;33m<!>\e[0m\e[1m backup_user_accounts not defined in config, using default\e[0m\n'
-	[[ -z ${latest_image_always_default+x} ]] && latest_image_always_default=0 && printf '\e[1;33m<!>\e[0m\e[1m latest_image_always_default not defined in config, using default\e[0m\n'
-	[[ -z ${migrate_files+x} ]] && migrate_files=('var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'var/lib/power-profiles-daemon' 'var/db' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections' 'etc/ssh') && printf '\e[1;33m<!>\e[0m\e[1m migrate_files not defined in config, using default\e[0m\n'
-	[[ -z ${load_extensions+x} ]] && load_extensions=0 && printf '\e[1;33m<!>\e[0m\e[1m load_extensions not defined in config, using default\e[0m\n'
-	[[ -z ${remove_tar_after_deployment+x} ]] && remove_tar_after_deployment=1 && printf '\e[1;33m<!>\e[0m\e[1m remove_tar_after_deployment not defined in config, using default\e[0m\n'
-	[[ -z ${update_diff_style+x} ]] && update_diff_style='list' && printf '\e[1;33m<!>\e[0m\e[1m update_diff_style not defined in config, using default\e[0m\n'
-	[[ -z ${interactive_mode+x} ]] && interactive_mode=1 && printf '\e[1;33m<!>\e[0m\e[1m interactive_mode not defined in config, using default\e[0m\n'
+	[[ -z ${enable_overlay+x} ]] &&
+		enable_overlay=$dist_enable_overlay &&
+		printf '\e[1;33m<!>\e[0m\e[1m enable_overlay not defined in config, using default\e[0m\n'
+	[[ -z ${repo_url+x} ]] &&
+		repo_url=$dist_repo_url &&
+		printf '\e[1;33m<!>\e[0m\e[1m repo_url not defined in config, using default\e[0m\n'
+	[[ -z ${repo_default_image+x} ]] &&
+		repo_default_image=$dist_repo_default_image &&
+		printf '\e[1;33m<!>\e[0m\e[1m repo_default_image not defined in config, using default\e[0m\n'
+	[[ -z ${deploy_keep+x} ]] &&
+		deploy_keep=$dist_deploy_keep &&
+		printf '\e[1;33m<!>\e[0m\e[1m deploy_keep not defined in config, using default\e[0m\n'
+	[[ -z ${clean_cache_on_remove+x} ]] &&
+		clean_cache_on_remove=$dist_clean_cache_on_remove &&
+		printf '\e[1;33m<!>\e[0m\e[1m clean_cache_on_remove not defined in config, using default\e[0m\n'
+	[[ -z ${always_healthcheck+x} ]] &&
+		always_healthcheck=$dist_always_healthcheck &&
+		printf '\e[1;33m<!>\e[0m\e[1m always_healthcheck not defined in config, using default\e[0m\n'
+	[[ -z ${gpg_signature_check+x} ]] &&
+		gpg_signature_check=$dist_gpg_signature_check &&
+		printf '\e[1;33m<!>\e[0m\e[1m gpg_signature_check not defined in config, using default\e[0m\n'
+	[[ -z ${minimum_available_boot_storage+x} ]] &&
+		minimum_available_boot_storage=$dist_minimum_available_boot_storage &&
+		printf '\e[1;33m<!>\e[0m\e[1m minimum_available_boot_storage not defined in config, using default\e[0m\n'
+	[[ -z ${minimum_available_root_storage+x} ]] &&
+		minimum_available_root_storage=$dist_minimum_available_root_storage &&
+		printf '\e[1;33m<!>\e[0m\e[1m minimum_available_root_storage not defined in config, using default\e[0m\n'
+	[[ -z ${update_cpu_microcode+x} ]] &&
+		update_cpu_microcode=$dist_update_cpu_microcode &&
+		printf '\e[1;33m<!>\e[0m\e[1m update_cpu_microcode not defined in config, using default\e[0m\n'
+	[[ -z ${backup_user_accounts+x} ]] &&
+		backup_user_accounts=$dist_backup_user_accounts &&
+		printf '\e[1;33m<!>\e[0m\e[1m backup_user_accounts not defined in config, using default\e[0m\n'
+	[[ -z ${migrate_files+x} ]] &&
+		migrate_files=($(printf "$dist_migrate_files")) &&
+		printf '\e[1;33m<!>\e[0m\e[1m migrate_files not defined in config, using default\e[0m\n'
+	[[ -z ${load_extensions+x} ]] &&
+		load_extensions=$dist_load_extensions &&
+		printf '\e[1;33m<!>\e[0m\e[1m load_extensions not defined in config, using default\e[0m\n'
+	[[ -z ${remove_tar_after_deployment+x} ]] &&
+		remove_tar_after_deployment=$dist_remove_tar_after_deployment &&
+		printf '\e[1;33m<!>\e[0m\e[1m remove_tar_after_deployment not defined in config, using default\e[0m\n'
+	[[ -z ${update_diff_style+x} ]] &&
+		update_diff_style=$dist_update_diff_style &&
+		printf '\e[1;33m<!>\e[0m\e[1m update_diff_style not defined in config, using default\e[0m\n'
+	[[ -z ${interactive_mode+x} ]] &&
+		interactive_mode=$dist_interactive_mode &&
+		printf '\e[1;33m<!>\e[0m\e[1m interactive_mode not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -331,56 +384,53 @@ init () {
 	printf '\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n'
 	cat <<- END > $arkdep_dir/config
 	# Write /arkdep/overlay overlay to new deployments
-	enable_overlay=1
+	enable_overlay=$dist_enable_overlay
 
 	# URL to image repository, do not add trailing slash
-	repo_url='https://repo.arkanelinux.org/arkdep'
+	repo_url='$dist_repo_url'
 
 	# Default image pulled from repo if nothing defined
-	repo_default_image='arkanelinux'
+	repo_default_image='$dist_repo_default_image'
 
 	# Keep the latest N deployments, remove anything older
-	deploy_keep=3
+	deploy_keep=$dist_deploy_keep
 
 	# Remove images from the cache when their deployments are removed
-	clean_cache_on_remove=1
+	clean_cache_on_remove=$dist_clean_cache_on_remove
 
 	# Check for untracked deployments and other issues on run
-	always_healthcheck=1
+	always_healthcheck=$dist_always_healthcheck
 
 	# Perform a GPG signature check on remote sources
 	# 1 = enabled but optional, 2 = required
-	gpg_signature_check=1
+	gpg_signature_check=$dist_gpg_signature_check
 
 	# Minimum amount of storage which needs to be available on /boot in Kib
-	minimum_available_boot_storage=153600
+	minimum_available_boot_storage=$dist_minimum_available_boot_storage
 
 	# Minimum amount of storage which needs to be available on / in Kib
-	minimum_available_root_storage=12582912
+	minimum_available_root_storage=$dist_minimum_available_root_storage
 
 	# Update CPU firmware if newer version available
-	update_cpu_microcode=1
+	update_cpu_microcode=$dist_update_cpu_microcode
 
 	# Automatically make a copy of passwd, shadow and group files if they differ from overlay
-	backup_user_accounts=1
-
-	# Ensure latest image as defined in the external database is always the default systemd-boot boot entry
-	latest_image_always_default=0
+	backup_user_accounts=$dist_backup_user_accounts
 
 	# List of files and folders to be recursively copied over from root tree to new root filesystem
-	migrate_files=('var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'var/lib/power-profiles-daemon' 'var/db' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections' 'etc/ssh')
+	migrate_files=($(printf "$dist_migrate_files"))
 
 	# Load script extensions from /arkdep/extensions
-	load_extensions=0
+	load_extensions=$dist_load_extensions
 
 	# Remove tarball from cache once deployment is finished
-	remove_tar_after_deployment=1
+	remove_tar_after_deployment=$dist_remove_tar_after_deployment
 
 	# Update diff styling, available styles: 'list'
-	update_diff_style='list'
+	update_diff_style='$dist_update_diff_style'
 
 	# Before making changes to the system show diff and ask for confirmation
-	interactive_mode=1
+	interactive_mode=$dist_interactive_mode
 	END
 
 	# Add default bootloader config file
