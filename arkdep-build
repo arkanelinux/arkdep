@@ -83,7 +83,13 @@ gen_random_string () {
 
 }
 
-declare -r image_name=$(gen_random_string)
+# Generate image name
+# If name template exists, use it, otherwise generate random string
+if [[ -f $variantdir/name ]]; then
+	declare -r image_name=$(source $variantdir/name)
+else
+	declare -r image_name=$(gen_random_string)
+fi
 
 ## Error checking
 #
