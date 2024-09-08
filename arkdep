@@ -13,7 +13,7 @@ set -o pipefail
 # setting is not configured and as the default settings a new system will
 # be initialized with.
 declare -r dist_enable_overlay=1
-declare -r dist_repo_url='https://arkanelinux.org/arkdep'
+declare -r dist_repo_url='https://repo.arkanelinux.org/arkdep'
 declare -r dist_repo_default_image='arkanelinux'
 declare -r dist_deploy_keep=3
 declare -r dist_clean_cache_on_remove=1
