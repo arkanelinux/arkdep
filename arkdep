@@ -29,7 +29,12 @@ declare -r dist_remove_tar_after_deployment=1
 declare -r dist_update_diff_style='list'
 declare -r dist_interactive_mode=1
 
+# Distro name
+declare -r boot_entry_title='Arkane Linux - Arkdep'
+declare -r kernel_params='root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw'
+
 ## Check if program is locked, if yes do not run
+#
 if [[ -f /tmp/arkdep.lock ]]; then
 	printf '\e[1;31m<#>\e[0m\e[1m /tmp/arkdep.lock exists, another instance of the program might be running\e[0m\n'
 	exit 5
@@ -440,12 +445,12 @@ init_new_system () {
 
 	# Add default bootloader config file
 	cat <<- END > $arkdep_dir/templates/systemd-boot
-	title Arkane GNU/Linux - Arkdep
+	title $boot_entry_title
 	linux /arkdep/%target%/vmlinuz
 	initrd /amd-ucode.img
 	initrd /intel-ucode.img
 	initrd /arkdep/%target%/initramfs-linux.img
-	options root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw
+	options $kernel_params
 	END
 
 	unlock_and_quit 0
