@@ -1198,13 +1198,15 @@ deploy () {
 	done
 
 	# Check if there is an update script available
-	if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null && [[ ! -n $ARKDEP_ROOT ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running update script\e[0m\n'
-		# Run the migration script if provided
-		(source $arkdep_dir/cache/${data[0]}-update.sh)
+	if [[ ! -n $ARKDEP_ROOT ]]; then
+		if tar -xf $arkdep_dir/cache/${data[0]}.tar.${data[1]} -C $arkdep_dir/cache/ ./${data[0]}-update.sh 2> /dev/null; then
+			printf '\e[1;34m-->\e[0m\e[1m Running update script\e[0m\n'
+			# Run the migration script if provided
+			(source $arkdep_dir/cache/${data[0]}-update.sh)
 
-		printf '\e[1;34m-->\e[0m\e[1m Removing update script\e[0m\n'
-		rm $arkdep_dir/cache/${data[0]}-update.sh
+			printf '\e[1;34m-->\e[0m\e[1m Removing update script\e[0m\n'
+			rm $arkdep_dir/cache/${data[0]}-update.sh
+		fi
 	fi
 
 	# Image deployment finished, allow for interupts again
