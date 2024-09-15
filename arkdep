@@ -54,6 +54,13 @@ fi
 # If ARKDEP_ROOT is defined we imply confirm
 [[ -n $ARKDEP_ROOT ]] && declare -r ARKDEP_CONFIRM=1
 
+# Override database name if ARKDEP_DATABASE is defined
+if [[ -n $ARKDEP_DATABASE ]]; then
+	declare -r database_name=$ARKDEP_DATABASE
+else
+	declare -r database_name='database'
+fi
+
 if [[ ! -d $arkdep_dir ]] && [[ ! $1 == 'init' ]]; then
 	printf "\e[1;31m<#>\e[0m\e[1m Arkdep does not seem to be managing this system or the provided file path is incorrect for $arkdep_dir was not found\e[0m\n"
 	exit 1
@@ -648,7 +655,7 @@ diff () {
 	if [[ -n $2 ]] && [[ $2 != '-' ]]; then
 		# Param was provided, set target to param
 		# Get ID of (partially) defined entry
-		declare curl_data=($(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR'))
+		declare curl_data=($(curl -sf "$repo_url/$diff_target/$database_name" || printf 'ERROR'))
 
 		if [[ $curl_data == 'ERROR' ]]; then
 			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
@@ -664,7 +671,7 @@ diff () {
 	else
 		# No param was provided, set first db entry as target
 		# Get ID of latest entry
-		declare curl_data=($(curl -sf "$repo_url/$diff_target/database" || printf 'ERROR'))
+		declare curl_data=($(curl -sf "$repo_url/$diff_target/$database_name" || printf 'ERROR'))
 
 		if [[ $curl_data == 'ERROR' ]]; then
 			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
@@ -825,14 +832,14 @@ deploy () {
 		# If latest is requested grab database and get first line
 		printf '\e[1;34m-->\e[0m\e[1m Downloading database\e[0m\n'
 		if [[ $deploy_version == 'latest' ]]; then
-			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR'))
+			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/$database_name" || printf 'ERROR'))
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
 			declare -r database_hit=${curl_data[0]}
 		elif [[ $deploy_target != 'cache' ]]; then
 			# Only return first hit
-			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/database" || printf 'ERROR'))
+			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/$database_name" || printf 'ERROR'))
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
