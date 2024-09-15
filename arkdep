@@ -832,14 +832,14 @@ deploy () {
 		# If latest is requested grab database and get first line
 		printf '\e[1;34m-->\e[0m\e[1m Downloading database\e[0m\n'
 		if [[ $deploy_version == 'latest' ]]; then
-			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/$database_name" || printf 'ERROR'))
+			declare curl_data=($(curl -sf "$repo_url/$deploy_target/$database_name" || printf 'ERROR'))
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
 			declare -r database_hit=${curl_data[0]}
 		elif [[ $deploy_target != 'cache' ]]; then
 			# Only return first hit
-			declare curl_data=($(curl -sf "${repo_url}/${deploy_target}/$database_name" || printf 'ERROR'))
+			declare curl_data=($(curl -sf "$repo_url/$deploy_target/$database_name" || printf 'ERROR'))
 
 			[[ $curl_data == 'ERROR' ]] && cleanup_and_quit 'Failed to download database file'
 
@@ -1179,7 +1179,7 @@ deploy () {
 	fi
 
 	# Add to database
-	printf '\e[1;34m-->\e[0m\e[1m Updating database\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m Updating deployment tracker\e[0m\n'
 	printf "${data[0]}\n$(cat $(readlink -m $arkdep_dir/tracker))" |
 		tee $arkdep_dir/tracker_tmp
 	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
