@@ -1082,8 +1082,8 @@ deploy () {
 			for file in passwd shadow group; do
 				# Hash old and new file to compare
 				# No need to handle file not exist scenario, we can assume /etc/$file to always exist
-				declare checksum_old=($(sha256sum $arkdep_dir/overlay/etc/$file))
-				declare checksum_current=($(sha256sum /etc/$file))
+				declare checksum_old=($(sha256sum $arkdep_dir/overlay/etc/$file 2> /dev/null))
+				declare checksum_current=($(sha256sum /etc/$file 2> /dev/null))
 
 				if [[ ! ${checksum_old[0]} == ${checksum_current[0]} ]]; then
 					printf "Copying $file\n"
