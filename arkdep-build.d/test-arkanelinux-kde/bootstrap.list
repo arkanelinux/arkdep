@@ -5,3 +5,4 @@ amd-ucode
 intel-ucode
 arkane-keyring
 dracut
+dbus-broker-units

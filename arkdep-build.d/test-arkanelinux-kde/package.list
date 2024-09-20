@@ -6,7 +6,6 @@ binutils
 btrfs-progs
 cups
 cups-pdf
-dbus-broker-units
 debugedit
 distrobox
 dosfstools
