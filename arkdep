@@ -659,7 +659,7 @@ diff () {
 
 		if [[ $curl_data == 'ERROR' ]]; then
 			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
-			exit 1
+			unlock_and_quit 1
 		fi
 
 		for db_entry in ${curl_data[@]}; do
@@ -675,7 +675,7 @@ diff () {
 
 		if [[ $curl_data == 'ERROR' ]]; then
 			printf '\e[1;31m<#>\e[0m Failed to download database\e[0m\n'
-			exit 1
+			unlock_and_quit 1
 		fi
 
 		database_hit=${curl_data[0]}
