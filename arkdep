@@ -1079,7 +1079,7 @@ deploy () {
 
 			printf '\e[1;34m-->\e[0m\e[1m Copying user account files to overlay if changed\e[0m\n'
 
-			for file in passwd shadow group; do
+			for file in passwd shadow group subuid subgid; do
 				# Hash old and new file to compare
 				# No need to handle file not exist scenario, we can assume /etc/$file to always exist
 				declare checksum_old=($(sha256sum $arkdep_dir/overlay/etc/$file 2> /dev/null))
