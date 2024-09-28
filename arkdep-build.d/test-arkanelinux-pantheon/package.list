@@ -12,7 +12,6 @@ bluez-plugins
 bluez-utils
 btrfs-progs
 capnet-assist
-cerbere
 cups
 cups-pdf
 dconf
@@ -109,13 +108,11 @@ sound-theme-elementary
 spice-vdagent
 sudo
 switchboard
-switchboard-plug-a11y
 switchboard-plug-about
 switchboard-plug-applications
 switchboard-plug-bluetooth
 switchboard-plug-datetime
 switchboard-plug-desktop
-switchboard-plug-display
 switchboard-plug-display
 switchboard-plug-keyboard
 switchboard-plug-locale
@@ -127,7 +124,6 @@ switchboard-plug-parental-controls
 switchboard-plug-power
 switchboard-plug-printers
 switchboard-plug-security-privacy
-switchboard-plug-sharing
 switchboard-plug-sharing
 switchboard-plug-sound
 switchboard-plug-user-accounts
