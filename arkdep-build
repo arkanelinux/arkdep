@@ -564,7 +564,7 @@ if [[ $type == 'debian' ]]; then
 			done
 		fi
 
-		# Process package list, remove code comments
+		# Process package lists, remove code comments
 		for package in "${packages[@]}" "${packages_depends}"; do
 			# If line starts with escape character, ignore it
 			[[ $package == \#* ]] &&
