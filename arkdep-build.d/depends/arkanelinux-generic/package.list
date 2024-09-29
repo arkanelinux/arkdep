@@ -1,6 +1,7 @@
 apparmor
 arch-install-scripts
 archiso
+arkdep
 bind
 binutils
 btrfs-progs
@@ -12,6 +13,7 @@ f2fs-tools
 fakeroot
 git
 glibc-locales
+libnss-extrausers
 libva-mesa-driver
 man-db
 mesa
@@ -22,10 +24,13 @@ openssh
 pacman-contrib
 plymouth
 podman
+podman-compose
 pv
 qemu-guest-agent
+skel-arkane
 sof-firmware
 sudo
+terminus-font
 tpm2-tools
 tpm2-tss
 tpm2-tss-engine

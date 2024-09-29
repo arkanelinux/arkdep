@@ -51,7 +51,6 @@ pipewire-pulse
 power-profiles-daemon
 spice-vdagent
 switcheroo-control
-terminus-font
 webp-pixbuf-loader
 wireplumber
 xdg-desktop-portal-gnome
@@ -62,6 +61,4 @@ xdg-utils
 arkane-application-cleaner
 arkane-flatpak-init
 arkane-wallpapers
-arkdep
 libnss-extrausers
-skel-arkane
