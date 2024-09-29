@@ -188,11 +188,42 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
+
+	# Stores package lists from dependency variants
+	declare bootstrap_packages_depends=()
+
+	# Load dependency package lists if present
+	if [[ -e $variantdir/depends.list ]]; then
+		# We only have to set depends_variants once, it is later not set again in other
+		# tasks utilizing dependencies
+		readarray depends_variants < $variantdir/depends.list
+		# Depends list without code comments
+		declare depends_variants_clean=()
+		for depend in ${depends_variants[@]}; do
+			# If line starts with escape character, ignore it
+			[[ $depend == \#* ]] &&
+				continue
+
+			# If line is whitespace, ignore it
+			[[ ${depend//[$'\t\r\n']} == '' ]] &&
+				continue
+
+			# Append to depends clean, so we can use it again later
+			depends_variants_clean+=(${depend%%#*})
+
+			# Only run if bootstrap.list exists
+			[[ ! -f $configsdir/${depend%%#*}/bootstrap.list ]] &&
+				continue
+
+			readarray -O${#bootstrap_packages_depends[@]} bootstrap_packages_depends < $configsdir/${depend%%#*}/bootstrap.list
+		done
+	fi
+
 	# Used to store bootstrap packages list without escape characters and whitespaces
 	declare bootstrap_packages_clean=()
 
-	# Process package list, remove code comments
-	for bootstrap_package in "${bootstrap_packages[@]}"; do
+	# Process bootstrap package lists, remove code comments
+	for bootstrap_package in "${bootstrap_packages[@]}" "${bootstrap_packages_depends[@]}"; do
 		# If line starts with escape character, ignore it
 		[[ $bootstrap_package == \#* ]] &&
 			continue
@@ -220,6 +251,18 @@ if [[ $type == 'archlinux' ]]; then
 		cp -rv $variantdir/overlay/post_bootstrap/* $workdir/
 	fi
 
+	# If we have a depends list, copy overlays from these dependencies, also handle code comments
+	if [[ -e $variantdir/depends.list ]]; then
+		for depend in ${depends_variants_clean[@]}; do
+			# Only run if post_bootstrap exists
+			[[ ! -d $configsdir/$depend/overlay/post_bootstrap ]] &&
+				continue
+
+			printf "\e[1;34m-->\e[0m\e[1m Copying $depend/overlay/post_bootstrap to root\e[0m\n"
+			cp -rv $configsdir/$depend/overlay/post_bootstrap/* $workdir/
+		done
+	fi
+
 	# Run post_bootstrap script if exists
 	if [[ -f $variantdir/extensions/post_bootstrap.sh ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running post_bootstrap extension\e[0m\n'
@@ -237,9 +280,25 @@ if [[ $type == 'archlinux' ]]; then
 		readarray packages < $variantdir/package.list
 		# Used to store packages list without escape characters and whitespaces
 		declare packages_clean=()
+		# Stores package lists from dependency variants
+		declare packages_depends=()
 
-		# Process package list, remove code comments
-		for package in "${packages[@]}"; do
+		# Load dependency package lists if present, also handle code comments
+		if [[ -e $variantdir/depends.list ]]; then
+			for depend in ${depends_variants_clean[@]}; do
+				# Only run if package.list exists
+				[[ ! -f $configsdir/$depend/package.list ]] &&
+					continue
+
+				readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
+			done
+		fi
+
+		# Used to store bootstrap packages list without escape characters and whitespaces
+		declare packages_clean=()
+
+		# Process package lists, remove code comments
+		for package in "${packages[@]}" "${packages_depends[@]}"; do
 			# If line starts with escape character, ignore it
 			[[ $package == \#* ]] &&
 				continue
@@ -263,6 +322,18 @@ if [[ $type == 'archlinux' ]]; then
 	if [[ -d $variantdir/overlay/post_install ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay/post_install to root\e[0m\n'
 		cp -rv $variantdir/overlay/post_install/* $workdir/
+	fi
+
+	# If we have a depends list, copy overlays from these dependencies
+	if [[ -e $variantdir/depends.list ]]; then
+		for depend in ${depends_variants_clean[@]}; do
+			# Only run if post_install exists
+			[[ ! -d $configsdir/$depend/overlay/post_install ]] &&
+				continue
+
+			printf "\e[1;34m-->\e[0m\e[1m Copying $depend/overlay/post_install to root\e[0m\n"
+			cp -rv $configsdir/$depend/overlay/post_install/* $workdir/
+		done
 	fi
 
 	# Run post_install script if exists
@@ -422,6 +493,35 @@ if [[ $type == 'debian' ]]; then
 		cp -rv $variantdir/overlay/post_bootstrap/* $workdir/
 	fi
 
+	# Load dependency package lists if present
+	if [[ -e $variantdir/depends.list ]]; then
+		# We only have to set depends_variants once, it is later not set again in other
+		# tasks utilizing dependencies
+		readarray depends_variants < $variantdir/depends.list
+		# Depends list without code comments
+		declare depends_variants_clean=()
+		# If we have a depends list, copy overlays from these dependencies
+		for depend in ${depends_variants[@]}; do
+			# If line starts with escape character, ignore it
+			[[ $bootstrap_package == \#* ]] &&
+				continue
+
+			# If line is whitespace, ignore it
+			[[ ${bootstrap_package//[$'\t\r\n']} == '' ]] &&
+				continue
+
+			# Append to depends clean, so we can use it again later
+			depends_variants_clean+=(${depend%%#*})
+
+			# Only run if bootstrap.list exists
+			[[ ! -d $configsdir/${depend%%#*}/post_bootstrap ]] &&
+				continue
+
+			printf "\e[1;34m-->\e[0m\e[1m Copying ${depend%%#*}/overlay/post_bootstrap to root\e[0m\n"
+			cp -rv $configsdir/${depend%%#*}/overlay/post_bootstrap/* $workdir/
+		done
+	fi
+
 	# Run post_bootstrap script if exists
 	if [[ -f $variantdir/extensions/post_bootstrap.sh ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running post_bootstrap extension\e[0m\n'
@@ -440,8 +540,32 @@ if [[ $type == 'debian' ]]; then
 		# Used to store packages list without escape characters and whitespaces
 		declare packages_clean=()
 
+		# Stores package lists from dependency variants
+		declare packages_depends=()
+
+		# Load dependency package lists if present
+		if [[ -e $variantdir/depends.list ]]; then
+			# We only have to set depends_variants once, it is later not set again in other
+			# tasks utilizing dependencies
+			readarray depends_variants < $variantdir/depends.list
+			for depend in ${depends_variants_clean[@]}; do
+				[[ ! -f $configsdir/$depend/package.list ]] &&
+					continue
+
+				# If line starts with escape character, ignore it
+				[[ $depend == \#* ]] &&
+					continue
+
+				# If line is whitespace, ignore it
+				[[ ${depend//[$'\t\r\n']} == '' ]] &&
+					continue
+
+				readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
+			done
+		fi
+
 		# Process package list, remove code comments
-		for package in "${packages[@]}"; do
+		for package in "${packages[@]}" "${packages_depends}"; do
 			# If line starts with escape character, ignore it
 			[[ $package == \#* ]] &&
 				continue
@@ -470,6 +594,15 @@ if [[ $type == 'debian' ]]; then
 	if [[ -d $variantdir/overlay/post_install ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay/post_install to root\e[0m\n'
 		cp -rv $variantdir/overlay/post_install/* $workdir/
+	fi
+
+	# If we have a depends list, copy overlays from these dependencies
+	if [[ -e $variantdir/depends.list ]]; then
+		for depend in ${depends_variants_clean[@]}; do
+			[[ ! -d $configsdir/$depend/overlay/post_install ]] && continue
+			printf "\e[1;34m-->\e[0m\e[1m Copying $depend/overlay/post_install to root\e[0m\n"
+			cp -rv $variantdir/overlay/post_install/* $workdir/
+		done
 	fi
 
 	# Run post_install script if exists
