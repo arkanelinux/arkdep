@@ -1,4 +1,5 @@
 # Plasma
+bluedevil
 colord-kde
 discover
 dolphin
@@ -33,11 +34,11 @@ skanlite
 spectacle
 
 # Plasma extra
-bluedevil
 bluez
 bluez-cups
 bluez-plugins
 bluez-utils
+flatpak
 fuse
 phonon-qt5-gstreamer
 power-profiles-daemon
