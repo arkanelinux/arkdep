@@ -724,11 +724,13 @@ diff () {
 	declare removed=()
 	declare new=()
 
-	# Process new_pkgs list to generate update diff
+	# Find updated packages
 	for pkg in "${new_pkgs[@]}"; do
 		# Split package name and package versions in to list
 		declare spaced=($pkg)
 
+		# Find new packages, if a package from the new image is not in the
+		# package list of the current version it is new
 		if [[ ! "${old_pkgs[@]}" =~ "${spaced[0]}" ]]; then
 			new+=("${spaced[0]}")
 			continue
@@ -740,13 +742,12 @@ diff () {
 			declare old_spaced=($old_pkg)
 
 			# Find matchings packages, compare versions
+			# If versions do not match they have been updated/changed/downgraded
 			if [[ ${spaced[0]} == ${old_spaced[0]} ]]; then
 				if [[ ${spaced[1]} != ${old_spaced[1]} ]]; then
-					#printf "DIFF ${spaced[1]} >> ${old_spaced[1]}\n"
 					changed+=("${spaced[0]}")
 					old_ver+=("${old_spaced[1]}")
 					new_ver+=("${spaced[1]}")
-
 					break
 				fi
 			fi
@@ -757,6 +758,8 @@ diff () {
 	for old_pkg in "${old_pkgs[@]}"; do
 		declare old_spaced=($old_pkg)
 
+		# Compare all packages from new image to current package version,
+		# current package is not in the new_pkgs list it has been removed
 		if [[ ! "${new_pkgs[@]}" =~ "${old_spaced[0]}" ]]; then
 			removed+=("${old_spaced[0]}")
 		fi
