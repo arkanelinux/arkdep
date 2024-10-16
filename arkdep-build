@@ -192,7 +192,7 @@ if [[ $type == 'archlinux' ]]; then
 	# Stores package lists from dependency variants
 	declare bootstrap_packages_depends=()
 
-	# Load dependency package lists if present
+	# Load depends lists if present
 	if [[ -e $variantdir/depends.list ]]; then
 		# We only have to set depends_variants once, it is later not set again in other
 		# tasks utilizing dependencies
@@ -210,7 +210,23 @@ if [[ $type == 'archlinux' ]]; then
 
 			# Append to depends clean, so we can use it again later
 			depends_variants_clean+=(${depend%%#*})
+		done
 
+		# Validate if all depends actually exist
+		for depend in ${depends_variants_clean[@]}; do
+			if [[ ! -d $configsdir/$depend ]]; then
+				printf "\e[1;31m<#>\e[0m\e[1m $depend is defined as a dependency in depends.list but it could not be found\n\e[0m"
+				[[ ! depends_error -eq 1 ]] && declare -r depends_error=1
+			fi
+		done
+
+		# If one of the defined depends is missing, error and quit
+		if [[ $depends_error -eq 1 ]]; then
+			cleanup_and_quit 'One or more variant dependencies could not be found in arkdep-build.d'
+		fi
+
+		# Loop dependency list and generate package list
+		for depend in ${depends_variants_clean[@]}; do
 			# Only run if bootstrap.list exists
 			[[ ! -f $configsdir/${depend%%#*}/bootstrap.list ]] &&
 				continue
