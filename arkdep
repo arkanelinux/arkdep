@@ -1137,6 +1137,12 @@ deploy () {
 	printf '\e[1;34m-->\e[0m\e[1m Installing kernel image to boot\e[0m\n'
 	# Get list of all available kernels
 	kernels_installed=($(ls $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/))
+
+	# Error if no kernels installed
+	if [[ ${#kernels_installed[@]} -eq 0 ]]; then
+		cleanup_and_quit 'Provided image has no kernel installed'
+	fi
+
 	mkdir -p $arkdep_boot/arkdep/${data[0]}
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
 	printf "Copying ${kernels_installed[0]}/vmlinuz\n"
