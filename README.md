@@ -1,5 +1,15 @@
-# Arkdep
-Toolkit for building, deploying and maintaining an immutable, atomic, btrfs-based system.
+<div align="center">
+	<a href="https://arkanelinux.org" align="center">
+		<center align="center">
+			<picture>
+			 	<img src="https://raw.githubusercontent.com/arkanelinux/artwork/main/originals/arkdep-logo-small.png" alt="Arkdep Logo" align="center" height="200">
+			</picture>
+		</center>
+	</a>
+	<br>
+	<h1 align="center"><center>Arkdep</center></h1>
+</div>
+<br>
 
 Arkdep is the set of tools providing immutability to Arkane Linux. It attempts to differentiate itself from other similar tools by being "stupidly simple", hackable, flexible and easy to adopt for personal projects.
 
