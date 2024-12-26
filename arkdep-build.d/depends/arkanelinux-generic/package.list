@@ -6,6 +6,7 @@ bind
 binutils
 btrfs-progs
 debugedit
+diffutils
 distrobox
 dosfstools
 efibootmgr
