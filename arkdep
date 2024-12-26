@@ -155,16 +155,16 @@ cleanup_and_quit () {
 	# Remove the subvolume we were working on
 	# TODO: Make this a generic function and share with the removal of old images?
 	if [[ -n ${data[0]} ]]; then
-		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/etc ro false
-		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false
-		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false
-		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs/etc
-		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs/var
-		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs
+		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/etc ro false 2> /dev/null
+		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false 2> /dev/null
+		btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false 2> /dev/null
+		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs/etc 2> /dev/null
+		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs/var 2> /dev/null
+		btrfs subvolume delete $arkdep_dir/deployments/${data[0]}/rootfs 2> /dev/null
 		rm -rfv $arkdep_dir/deployments/${data[0]} \
-			$arkdep_boot/arkdep/${data[0]}
+			$arkdep_boot/arkdep/${data[0]} 2> /dev/null
 		rm -v $arkdep_dir/cache/${data[0]}-*.img \
-			$arkdep_boot/loader/entries/*${data[0]}*.conf
+			$arkdep_boot/loader/entries/*${data[0]}*.conf 2> /dev/null
 	fi
 
 	unlock_and_quit 1
