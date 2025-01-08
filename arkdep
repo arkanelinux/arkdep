@@ -318,7 +318,7 @@ cleanup () {
 ## Error checking
 #
 # Quit if not root, only run if required
-if [[ ! $1 =~ ^(get-available|diff|healthcheck)$ ]]; then
+if [[ ! $1 =~ ^(get-available|diff|healthcheck|layer-ls)$ ]]; then
 	if [[ ! $EUID -eq 0 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
 		unlock_and_quit 1
@@ -1335,6 +1335,11 @@ layer () {
 
 	unlock_and_quit 0
 
+}
+
+layer-ls () {
+	cat $arkdep_dir/layer | column
+	unlock_and_quit 0
 }
 
 [[ $1 == 'init' ]] && init_new_system $2
