@@ -184,6 +184,9 @@ unlock_and_quit () {
 
 touch /tmp/arkdep.lock
 
+# Script-wide trap interupt
+trap 'echo "User interupt received"; unlock_and_quit 4' INT TERM
+
 ## Healthcheck
 #
 # Set common variables for healthcheck and cleanup,
@@ -808,9 +811,6 @@ diff () {
 # Deploy a new or update an existing deployment
 deploy () {
 
-	# Allow for a clean shutdown, later this is blocked once deployment starts
-	trap 'echo "User interupt received, interupting download"; unlock_and_quit 4' INT TERM
-
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkdep/config and latest
 	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
@@ -1230,7 +1230,7 @@ deploy () {
 	fi
 
 	# Image deployment finished, allow for interupts again
-	trap 'echo "User interupt received, canceling cleanup step"; unlock_and_quit 4' INT TERM
+	trap 'echo "User interupt received"; unlock_and_quit 4' INT TERM
 
 	# Get list of all tarballs in cache
 	declare -r tarball_hits=($(ls $arkdep_dir/cache/ | grep -E '.*.tar..*'))
