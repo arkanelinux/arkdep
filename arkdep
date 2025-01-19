@@ -1079,10 +1079,6 @@ deploy () {
 	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs/var ro false ||
 		cleanup_and_quit 'Failed to unlock var'
 
-	# Lock the root volume again
-	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true ||
-		cleanup_and_quit 'Failed to lock root'
-
 	# Add overlay if enabled
 	if [[ $enable_overlay -eq 1 ]]; then
 		# If backup_user_accounts is enabled automatically perform a backup, do not run if custom root is defined
@@ -1107,29 +1103,25 @@ deploy () {
 			chmod 600 $arkdep_dir/overlay/etc/shadow
 
 		fi
-
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to deployment\e[0m\n'
-		declare -r overlay_files=($(ls $arkdep_dir/overlay/))
-
-		# Check if only /etc is present, if it is we do not have to unlock the root volume
-		for file in ${overlay_files[*]}; do
-			if [[ $file != 'etc' ]]; then
-				printf "\e[1;33m<!>\e[0m\e[1m Non /etc file or directory detected, root will be temporarily unlocked\e[0m\n"
-				overlay_unlock_root=1
-			fi
-		done
-
-		# Unlock root if required
-		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro false
-		fi
-
 		cp -rv $arkdep_dir/overlay/* $arkdep_dir/deployments/${data[0]}/rootfs/
+	fi
 
-		# Lock root again if required
-		if [[ $overlay_unlock_root -eq 1 ]]; then
-			btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true
-		fi
+	# Layer addition packages if defined
+	declare -r layer_list=($(cat $arkdep_dir/layer))
+
+	if [[ ${#layer_list[@]} -ne 0 ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Layering additional packages\e[0m\n'
+
+		# Bind mind, otherwise arch-chroot complains
+		mount --bind $arkdep_dir/deployments/${data[0]}/rootfs $arkdep_dir/deployments/${data[0]}/rootfs
+
+		# Install the layer packages
+		arch-chroot $arkdep_dir/deployments/${data[0]}/rootfs pacman -S --noconfirm ${layer_list[@]} ||
+			printf "\e[1;33m<!>\e[0m\e[1m Error during package installation, validate your package layer configuration\e[0m\n"
+
+		# Unmount the installation target again
+		unmount $arkdep_dir/deployments/${data[0]}/rootfs
 	fi
 
 	# Migrate specified files and directories
@@ -1141,6 +1133,11 @@ deploy () {
 			cp -r /$file $arkdep_dir/deployments/${data[0]}/rootfs/${file%/*}
 		done
 	fi
+
+	printf '\e[1;34m-->\e[0m\e[1m Locking new root partition\e[0m\n'
+	# Lock the root volume again
+	btrfs property set -f -ts $arkdep_dir/deployments/${data[0]}/rootfs ro true ||
+		cleanup_and_quit 'Failed to lock root'
 
 	printf '\e[1;34m-->\e[0m\e[1m Installing kernel image to boot\e[0m\n'
 	# Get list of all available kernels
