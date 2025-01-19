@@ -29,6 +29,7 @@ declare -r dist_remove_tar_after_deployment=1
 declare -r dist_update_diff_style='list'
 declare -r dist_interactive_mode=1
 declare -r dist_package_layer_command='pacman -Syy --needed --noconfirm'
+declare -r dist_package_unlayer_command='pacman -Rsn --noconfirm'
 
 # systemd-boot configuration
 declare -r boot_entry_title='Arkane Linux - Arkdep'
@@ -138,6 +139,9 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${package_layer_command+x} ]] &&
 		package_layer_command=$dist_package_layer_command &&
 		printf '\e[1;33m<!>\e[0m\e[1m package_layer_command not defined in config, using default\e[0m\n'
+	[[ -z ${package_unlayer_command+x} ]] &&
+		package_unlayer_command=$dist_package_unlayer_command &&
+		printf '\e[1;33m<!>\e[0m\e[1m package_unlayer_command not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -1331,7 +1335,7 @@ layer () {
 		cleanup_and_quit 'Failed to install requested packages'
 
 	# If installation was successful add to layer tracker file
-	printf ${progs_clean[@]} >> $arkdep_dir/layer
+	printf "%s\n" "${progs_clean[@]}" >> $arkdep_dir/layer
 
 	unlock_and_quit 0
 
@@ -1339,6 +1343,83 @@ layer () {
 
 layer-ls () {
 	cat $arkdep_dir/layer | column
+	unlock_and_quit 0
+}
+
+unlayer () {
+	# Index layer tracker list
+	declare -r layered=($(cat $arkdep_dir/layer))
+
+	# Program list with duplicates removed
+	declare progs_matched=()
+	declare progs_nomatch=()
+
+	# Check if prog is already in list, if they are add to progs_matched
+	if [[ ${#layered[@]} -gt 0 ]]; then
+		for prog in ${@:2}; do
+			for layer in ${layered[@]}; do
+				# If prog matched add to matched list
+				if [[ $layer == $prog ]]; then
+					progs_matched+=($prog)
+					declare layer_matched=1
+					break
+				fi
+			done
+
+			# Add program to nomatch if no match was found
+			if [[ $layer_matched -ne 1 ]]; then
+				progs_nomatch+=($prog)
+			fi
+
+			unset layer_matched
+		done
+	else
+		printf "\e[1;33m<!>\e[0m\e[1m No packages are layered, thus there are none to remove from the layer\e[0m\n"
+		unlock_and_quit 0
+	fi
+
+	# Notify user if provided target progs are not layered
+	if [[ ${#progs_nomatch[@]} -ne 0 ]]; then
+		printf "\e[1;33m<!>\e[0m\e[1m The following packages were provided by are not currently layered\e[0m\n"
+		echo "${progs_nomatch[@]}" | column
+	fi
+
+	# Confirm if user wishes to remove packages from layer
+	printf '\e[1;34m-->\e[0m\e[1m The following packages will be removed from the layered\e[0m\n'
+	echo "${progs_matched[@]}" | column
+	if [[ $interactive_mode -eq 1 ]]; then
+		read -p 'Proceed with removal? [Y/n] ' remove_confirm
+
+		if [[ ! $remove_confirm =~ ^(y|Y|yes|YES|)$ ]]; then
+			unlock_and_quit 1
+		fi
+	fi
+
+	# Check if root should be locked again after running
+	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
+		declare -r lock_when_done=1
+	fi
+
+	# Unlock root
+	if [[ $lock_when_done -eq 1 ]]; then
+		btrfs property set -f -ts / ro false ||
+			cleanup_and_quit 'Failed to unlock root partition'
+	fi
+
+	$package_unlayer_command ${progs_matched[@]} ||
+		cleanup_and_quit 'failed to remove packages from layer'
+
+	# Lock root if it was previously locked
+	if [[ $lock_when_done -eq 1 ]]; then
+		btrfs property set -f -ts / ro false ||
+			cleanup_and_quit 'Failed to unlock root partition'
+	fi
+
+	# Remove package from layer tracker
+	declare -r grep_string=$(printf %s\| ${progs_matched[@]})
+	declare -r new_layer_tracker=$(grep -Ev "${grep_string::-1}" $arkdep_dir/layer)
+	printf "%s\n" "$new_layer_tracker" > $arkdep_dir/layer
+
 	unlock_and_quit 0
 }
 
@@ -1352,7 +1433,7 @@ layer-ls () {
 [[ $1 == 'cleanup' ]] && cleanup
 [[ $1 == 'layer' ]] && layer $@
 [[ $1 == 'layer-ls' ]] && layer-ls
-[[ $1 == 'layer-rm' ]] && layer-rm $@
+[[ $1 == 'unlayer' ]] && unlayer $@
 
 # No valid params were provided
 printf '\e[1;31m<#>\e[0m\e[1m No valid parameters provided\e[0m\n'
