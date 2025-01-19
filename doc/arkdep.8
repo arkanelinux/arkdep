@@ -26,6 +26,12 @@ Get and print available variants in repo.
 Generate and print diff between current deployment and an image from the repos.
 .SS remove
 Remove specified deployments.
+.SS layer
+Install a package to the current deployment and any future deployments.
+.SS unlayer
+Remove a layered package from the current deployment and no longer layer it on future deployments.
+.SS layer-ls
+List all packages to be layered.
 .SH ENVIRONMENT
 .SS ARKDEP_ROOT
 Prepend path to arkdep target directory, implies ARKDEP_CONFIRM.
