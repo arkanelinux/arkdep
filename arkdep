@@ -1408,7 +1408,7 @@ unlayer () {
 
 	# Lock root if it was previously locked
 	if [[ $lock_when_done -eq 1 ]]; then
-		btrfs property set -f -ts / ro false ||
+		btrfs property set -f -ts / ro true ||
 			cleanup_and_quit 'Failed to unlock root partition'
 	fi
 
