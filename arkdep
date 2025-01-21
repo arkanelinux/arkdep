@@ -1121,7 +1121,7 @@ deploy () {
 			printf "\e[1;33m<!>\e[0m\e[1m Error during package installation, validate your package layer configuration\e[0m\n"
 
 		# Unmount the installation target again
-		unmount $arkdep_dir/deployments/${data[0]}/rootfs
+		umount $arkdep_dir/deployments/${data[0]}/rootfs
 	fi
 
 	# Migrate specified files and directories
