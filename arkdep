@@ -1323,13 +1323,26 @@ layer () {
 		fi
 	fi
 
-	# Unlock the partition
-	btrfs property set -f -ts / ro false ||
-		cleanup_and_quit 'Failed to unlock root partition'
+	# Check if root should be locked again after running
+	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
+		declare -r lock_when_done=1
+	fi
+
+	# Unlock root
+	if [[ $lock_when_done -eq 1 ]]; then
+		btrfs property set -f -ts / ro false ||
+			cleanup_and_quit 'Failed to unlock root partition'
+	fi
 
 	# Install the packages
 	$package_layer_command ${progs_clean[@]} ||
 		cleanup_and_quit 'Failed to install requested packages'
+
+	# Lock root if it was previously locked
+	if [[ $lock_when_done -eq 1 ]]; then
+		btrfs property set -f -ts / ro true ||
+			cleanup_and_quit 'Failed to unlock root partition'
+	fi
 
 	# If installation was successful add to layer tracker file
 	printf "%s\n" "${progs_clean[@]}" >> $arkdep_dir/layer
