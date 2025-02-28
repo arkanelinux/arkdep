@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-if [[ $@ =~ (-r|--root) ]] || [[ $@ == "-Q"* ]] || [[ $@ == "-F"* ]] || [[ $LD_LIBRARY_PATH =~ (libfakeroot) ]]; then
+if [[ $@ =~ (-r|--root) ]] ||
+   [[ $@ == "-Q"* ]] ||
+   [[ $@ == "-F"* ]] ||
+   [[ $@ == "-Ss"* ]] ||
+   [[ $@ == "-Sl"* ]] ||
+   [[ $LD_LIBRARY_PATH =~ (libfakeroot) ]]; then
 	no_check=1
 fi
 
