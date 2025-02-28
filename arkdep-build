@@ -192,6 +192,7 @@ if [[ $type == 'archlinux' ]]; then
 	# Stores package lists from dependency variants
 	declare bootstrap_packages_depends=()
 
+	printf '\e[1;34m-->\e[0m\e[1m Installing bootstrap packages\e[0m\n'
 	# Load depends lists if present
 	if [[ -e $variantdir/depends.list ]]; then
 		# We only have to set depends_variants once, it is later not set again in other
@@ -231,6 +232,8 @@ if [[ $type == 'archlinux' ]]; then
 			[[ ! -f $configsdir/${depend%%#*}/bootstrap.list ]] &&
 				continue
 
+			printf "\e[1;34m-->\e[0m\e[1m Appending $depend to bootstrap package list\e[0m\n"
+
 			readarray -O${#bootstrap_packages_depends[@]} bootstrap_packages_depends < $configsdir/${depend%%#*}/bootstrap.list
 		done
 	fi
@@ -252,7 +255,6 @@ if [[ $type == 'archlinux' ]]; then
 		bootstrap_packages_clean+=(${bootstrap_package%%#*})
 	done
 
-	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
 	# If pacman.conf is available in overlay, use it
 	if [[ -f $variantdir/pacman.conf ]]; then
 		pacstrap -c -C $variantdir/pacman.conf $workdir ${bootstrap_packages_clean[@]} || cleanup_and_quit 'Failed to install secondary package list'
@@ -287,7 +289,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e $variantdir/package.list ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Installing secondary stage packages\e[0m\n'
 
 		# Mount the pacman cache
 		mount --bind /var/cache/pacman/pkg $workdir/var/cache/pacman/pkg
@@ -305,6 +307,8 @@ if [[ $type == 'archlinux' ]]; then
 				# Only run if package.list exists
 				[[ ! -f $configsdir/$depend/package.list ]] &&
 					continue
+
+				printf "\e[1;34m-->\e[0m\e[1m Appending $depend to secondary stage package list\e[0m\n"
 
 				readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
 			done
@@ -546,7 +550,7 @@ if [[ $type == 'debian' ]]; then
 
 	# Read package list and install secondary system components, skip if not used
 	if [[ -f $variantdir/package.list ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Installing secondary packages\e[0m\n'
+		printf '\e[1;34m-->\e[0m\e[1m Installing secondary stage packages\e[0m\n'
 
 		# Mount deb package cache inside of new root
 		mount --bind /var/cache/apt/archives $workdir/var/cache/apt/archives
