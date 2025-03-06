@@ -31,6 +31,8 @@ declare -r dist_interactive_mode=1
 declare -r dist_package_layer_command='pacman -Syy --needed --noconfirm'
 declare -r dist_package_unlayer_command='pacman -Rsn --noconfirm'
 
+
+# Default configuration file settings used for init
 # systemd-boot configuration
 declare -r boot_entry_title='Arkane Linux - Arkdep'
 declare -r kernel_params='root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw'
