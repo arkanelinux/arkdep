@@ -16,6 +16,7 @@ git
 glibc-locales
 libnss-extrausers
 libva-mesa-driver
+linux-headers
 man-db
 mesa
 mesa-vdpau
