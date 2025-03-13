@@ -114,3 +114,8 @@ wireplumber
 xdg-user-dirs
 xdg-user-dirs-gtk
 xdg-utils
+
+# Community requested
+v4l-utils
+v4l2loopback-dkms
+v4l2loopback-utils

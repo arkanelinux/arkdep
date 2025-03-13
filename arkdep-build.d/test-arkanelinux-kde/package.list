@@ -52,3 +52,8 @@ arkane-application-cleaner
 arkane-wallpapers
 libnss-extrausers
 skel-arkane
+
+# Community requested
+v4l-utils
+v4l2loopback-dkms
+v4l2loopback-utils

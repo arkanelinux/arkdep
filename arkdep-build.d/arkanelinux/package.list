@@ -62,3 +62,8 @@ arkane-application-cleaner
 arkane-flatpak-init
 arkane-wallpapers
 libnss-extrausers
+
+# Community requested
+v4l-utils
+v4l2loopback-dkms
+v4l2loopback-utils
