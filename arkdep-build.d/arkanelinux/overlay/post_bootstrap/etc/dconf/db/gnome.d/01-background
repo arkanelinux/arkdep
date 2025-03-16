@@ -1,7 +1,7 @@
 [org/gnome/desktop/background]
 color-shading-type='solid'
 picture-options='zoom'
-picture-uri-dark='file:///usr/share/backgrounds/arkane/starstruck-d.webp'
-picture-uri='file:///usr/share/backgrounds/arkane/starstruck-l.webp'
-primary-color='#001a3f'
-secondary-color='#0087d6'
+picture-uri-dark='file:///usr/share/backgrounds/arkane/crystalline_gravity-d.png'
+picture-uri='file:///usr/share/backgrounds/arkane/crystalline_gravity-l.png'
+primary-color='#222e3d'
+secondary-color='#000000'
