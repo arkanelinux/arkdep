@@ -1181,26 +1181,40 @@ deploy () {
 	# Install kernel and generate initramfs
 	printf '\e[1;34m-->\e[0m\e[1m Generating initramfs\e[0m\n'
 
-	# Bind mind, otherwise arch-chroot complains
-	mount --bind $arkdep_dir/deployments/${data[0]}/rootfs $arkdep_dir/deployments/${data[0]}/rootfs
+	# If ARKDEP_BOOT is defined we will revert back to legacy behaviour and build
+	# the initramfs against the host
+	if [[ -n $ARKDEP_BOOT ]] || [[ $ARKDEP_LEGACY_INITRAMFS -eq 1 ]]; then
 
-	# Temporarily mount /boot in to new root
-	mount --bind $arkdep_boot $arkdep_dir/deployments/${data[0]}/rootfs/${arkdep_boot//"$ARKDEP_ROOT"}
+		dracut -q -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
+			-c $arkdep_dir/deployments/${data[0]}/rootfs/etc/dracut.conf \
+			--confdir $arkdep_dir/deployments/${data[0]}/rootfs/etc/dracut.conf.d \
+			--kernel-image $arkdep_boot/arkdep/${data[0]}/vmlinuz \
+			--kver ${kernels_installed[0]} \
+			--force \
+			$arkdep_boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
 
-	# Generate new initramfs
-	# TODO: Make sure this implementation is not iffy
-	arch-chroot $arkdep_dir/deployments/${data[0]}/rootfs \
-		dracut -q -k /usr/lib/modules/${kernels_installed[0]} \
-		-c /etc/dracut.conf \
-		--confdir /etc/dracut.conf.d \
-		--kernel-image ${arkdep_boot//"$ARKDEP_ROOT"}/arkdep/${data[0]}/vmlinuz \
-		--kver ${kernels_installed[0]} \
-		--force \
-		${arkdep_boot//"$ARKDEP_ROOT"}/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
+	else
+		# Bind mind, otherwise arch-chroot complains
+		mount --bind $arkdep_dir/deployments/${data[0]}/rootfs $arkdep_dir/deployments/${data[0]}/rootfs
 
-	# Unmount the initramfs target again
-	umount $arkdep_dir/deployments/${data[0]}/rootfs/boot
-	umount $arkdep_dir/deployments/${data[0]}/rootfs
+		# Temporarily mount /boot in to new root
+		mount --bind $arkdep_boot $arkdep_dir/deployments/${data[0]}/rootfs/${arkdep_boot//"$ARKDEP_ROOT"}
+
+		# Generate new initramfs
+		# TODO: Make sure this implementation is not iffy
+		arch-chroot $arkdep_dir/deployments/${data[0]}/rootfs \
+			dracut -q -k /usr/lib/modules/${kernels_installed[0]} \
+			-c /etc/dracut.conf \
+			--confdir /etc/dracut.conf.d \
+			--kernel-image ${arkdep_boot//"$ARKDEP_ROOT"}/arkdep/${data[0]}/vmlinuz \
+			--kver ${kernels_installed[0]} \
+			--force \
+			${arkdep_boot//"$ARKDEP_ROOT"}/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
+
+		# Unmount the initramfs target again
+		umount $arkdep_dir/deployments/${data[0]}/rootfs/boot
+		umount $arkdep_dir/deployments/${data[0]}/rootfs
+	fi
 
 	if [[ $load_extensions -eq 1 ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running extensions\e[0m\n'
