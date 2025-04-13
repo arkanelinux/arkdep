@@ -461,6 +461,12 @@ init_new_system () {
 
 	# Before making changes to the system show diff and ask for confirmation
 	interactive_mode=$dist_interactive_mode
+
+	# What command should be executed to install packages
+	package_layer_command="$dist_package_layer_command"
+
+	# What command should be executed to uninstall packages
+	package_unlayer_command="$dist_package_unlayer_command"
 	END
 
 	# Add default bootloader config file
