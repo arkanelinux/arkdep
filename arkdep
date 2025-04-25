@@ -1106,7 +1106,7 @@ deploy () {
 
 				if [[ ! ${checksum_old[0]} == ${checksum_current[0]} ]]; then
 					printf "Copying $file\n"
-					cp /etc/$file $arkdep_dir/overlay/etc/$file ||
+					cp -p /etc/$file $arkdep_dir/overlay/etc/$file ||
 						printf "Failed to copy $file\n"
 				fi
 			done
@@ -1116,7 +1116,7 @@ deploy () {
 
 		fi
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to deployment\e[0m\n'
-		cp -rv $arkdep_dir/overlay/* $arkdep_dir/deployments/${data[0]}/rootfs/
+		cp -rvp $arkdep_dir/overlay/* $arkdep_dir/deployments/${data[0]}/rootfs/
 	fi
 
 	# Layer addition packages if defined
@@ -1142,7 +1142,7 @@ deploy () {
 		for file in ${migrate_files[@]}; do
 			[[ ! -e /$file ]] && continue
 			printf "Copying $file\n"
-			cp -r /$file $arkdep_dir/deployments/${data[0]}/rootfs/${file%/*}
+			cp -rp /$file $arkdep_dir/deployments/${data[0]}/rootfs/${file%/*}
 		done
 	fi
 
