@@ -10,6 +10,7 @@ diffutils
 distrobox
 dosfstools
 efibootmgr
+espeak-ng
 f2fs-tools
 fakeroot
 git
@@ -23,6 +24,7 @@ mesa-vdpau
 neovim
 networkmanager
 openssh
+orca
 pacman-contrib
 plymouth
 podman
