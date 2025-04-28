@@ -186,6 +186,12 @@ if [[ $type == 'archlinux' ]]; then
 	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc"
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var"
 
+	# Run pre_build script if exists
+	if [[ -f $variantdir/extensions/pre_build.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running pre_build extension\e[0m\n'
+		(source $variantdir/extensions/pre_build.sh)
+	fi
+
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
 
@@ -496,6 +502,12 @@ if [[ $type == 'debian' ]]; then
 	mount --bind $workdir $workdir || cleanup_and_exit "Failed to bind mount disk $workdir"
 	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc)"
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var)"
+
+	# Run pre_build script if exists
+	if [[ -f $variantdir/extensions/pre_build.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running pre_build extension\e[0m\n'
+		(source $variantdir/extensions/pre_build.sh)
+	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Installing base packages\e[0m\n'
 	# TODO: Do not hard code arch
