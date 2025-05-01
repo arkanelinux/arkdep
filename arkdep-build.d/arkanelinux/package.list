@@ -22,14 +22,13 @@ bluez-utils
 cups
 cups-pdf
 flatpak
-fuse
+fuse3
 fwupd
 gst-plugin-pipewire
 gst-plugins-base
 gst-plugins-good
 gvfs
 gvfs-afc
-gvfs-dnssd
 gvfs-dnssd
 gvfs-goa
 gvfs-gphoto2
@@ -61,7 +60,6 @@ xdg-utils
 arkane-application-cleaner
 arkane-flatpak-init
 arkane-wallpapers
-libnss-extrausers
 
 # Community requested
 v4l-utils
