@@ -11,6 +11,7 @@ distrobox
 dosfstools
 efibootmgr
 espeak-ng
+exfatprogs
 f2fs-tools
 fakeroot
 git
@@ -41,6 +42,7 @@ vulkan-mesa-layers
 vulkan-nouveau
 vulkan-radeon
 wget
+xfsprogs
 zsh
 zsh-autosuggestions
 zsh-completions
