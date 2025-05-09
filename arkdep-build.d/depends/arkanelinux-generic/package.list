@@ -33,6 +33,7 @@ qemu-guest-agent
 skel-arkane
 sof-firmware
 sudo
+system-config-printer
 terminus-font
 tpm2-tools
 tpm2-tss
