@@ -319,96 +319,7 @@ cleanup () {
 
 }
 
-# Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
-[[ $always_healthcheck -eq 1 ]] &&
-	[[ ! $1 =~ ^(healthcheck|cleanup)$ ]] &&
-	healthcheck
-
-## Error checking
-#
-# Quit if not root, only run if required
-if [[ ! $1 =~ ^(get-available|diff|healthcheck|layer-ls)$ ]]; then
-	if [[ ! $EUID -eq 0 ]]; then
-		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
-		unlock_and_quit 1
-	fi
-fi
-
-# Check if all dependencies are installed, quit if not
-for prog in btrfs wget dracut curl gpgv; do
-	if ! command -v $prog > /dev/null; then
-		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
-		# Do not immediately exit to log all missing programs
-		err=1
-	fi
-
-	[[ $err ]] && unlock_and_quit 1
-done
-
-# Ensure minimum required storage is available, only run if new deployment will be made
-if [[ $1 == 'deploy'  ]]; then
-	declare boot_storage_available=($(df --output=avail $arkdep_boot))
-	boot_storage_available=${boot_storage_available[1]}
-	declare root_storage_available=($(df --output=avail $ARKDEP_ROOT/))
-	root_storage_available=${root_storage_available[1]}
-
-	# Check amount of available boot storage, do not run if set to 0
-	if [[ $boot_storage_available -lt $minimum_available_boot_storage ]] && [[ $minimum_available_boot_storage -ne 0 ]]; then
-		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_boot_storage}Kib available on boot partition\e[0m\n"
-		unlock_and_quit 1
-	fi
-
-	# Check amount of available root storage, do not run if set to 0
-	if [[ $root_storage_available -lt $minimum_available_root_storage ]] && [[ $minimum_available_root_storage -ne 0 ]] ; then
-		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_root_storage}Kib available on root partition\e[0m\n"
-		unlock_and_quit 1
-	fi
-fi
-
-## Core functions
-#
-# Initialize the system for arkdep, either on a new Linux install
-# when using ARKDEP_BOOT and ARKDEP_ROOT, or the current system
-# if called without said variables defined
-init_new_system () {
-
-	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
-
-	# Ensure Arkdep is not already installed, unless we are installing
-	# to a new system
-	[[ -d $arkdep_dir ]] && [[ -z ${ARKDEP_ROOT+x} ]] &&
-		cleanup_and_quit "$arkdep_dir already exists"
-
-	# Create the /arkdep subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating $arkdep_dir subvolume\e[0m\n"
-	btrfs subvolume create $arkdep_dir || cleanup_and_quit "Failed to create btrfs subvolume"
-
-	# Create directory structure
-	printf '\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n'
-	mkdir -pv $arkdep_dir/deployments \
-		$arkdep_dir/deployments \
-		$arkdep_dir/cache \
-		$arkdep_dir/templates \
-		$arkdep_dir/overlay \
-		$arkdep_dir/keys \
-		$arkdep_dir/extensions \
-		$arkdep_dir/shared ||
-		cleanup_and_quit "Failed to create $arkdep_dir and related directories"
-
-	# Create empty database files
-	touch $arkdep_dir/tracker
-	touch $arkdep_dir/keys/trusted-keys
-
-	# Add home shared subvolume and make writable
-	btrfs subvolume create $arkdep_dir/shared/home || cleanup_and_quit "Failed to create home subvolume"
-	btrfs subvolume create $arkdep_dir/shared/root || cleanup_and_quit "Failed to create root subvolume"
-	btrfs subvolume create $arkdep_dir/shared/flatpak || cleanup_and_quit "Failed to create flatpak subvolume"
-	btrfs property set -f -ts $arkdep_dir/shared/home ro false
-	btrfs property set -f -ts $arkdep_dir/shared/root ro false
-	btrfs property set -f -ts $arkdep_dir/shared/flatpak ro false
-
-	# Ensure permissions on root home directory are set properly
-	chmod 700 $arkdep_dir/shared/root
+write_config_file () {
 
 	# Write default config file
 	printf '\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n'
@@ -469,6 +380,103 @@ init_new_system () {
 	package_unlayer_command="$dist_package_unlayer_command"
 	END
 
+}
+
+# Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
+[[ $always_healthcheck -eq 1 ]] &&
+	[[ ! $1 =~ ^(healthcheck|cleanup)$ ]] &&
+	healthcheck
+
+## Error checking
+#
+# Quit if not root, only run if required
+if [[ ! $1 =~ ^(get-available|diff|healthcheck|layer-ls)$ ]]; then
+	if [[ ! $EUID -eq 0 ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m This program has to be run as root\n\e[0m' &&
+		unlock_and_quit 1
+	fi
+fi
+
+# Check if all dependencies are installed, quit if not
+for prog in btrfs wget dracut curl gpgv; do
+	if ! command -v $prog > /dev/null; then
+		printf "\e[1;31m<#>\e[0m\e[1m Failed to locate $prog, ensure it is installed\e[0m\n"
+		# Do not immediately exit to log all missing programs
+		err=1
+	fi
+
+	[[ $err ]] && unlock_and_quit 1
+done
+
+# Ensure minimum required storage is available, only run if new deployment will be made
+if [[ $1 == 'deploy'  ]]; then
+	declare boot_storage_available=($(df --output=avail $arkdep_boot))
+	boot_storage_available=${boot_storage_available[1]}
+	declare root_storage_available=($(df --output=avail $ARKDEP_ROOT/))
+	root_storage_available=${root_storage_available[1]}
+
+	# Check amount of available boot storage, do not run if set to 0
+	if [[ $boot_storage_available -lt $minimum_available_boot_storage ]] && [[ $minimum_available_boot_storage -ne 0 ]]; then
+		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_boot_storage}Kib available on boot partition\e[0m\n"
+		unlock_and_quit 1
+	fi
+
+	# Check amount of available root storage, do not run if set to 0
+	if [[ $root_storage_available -lt $minimum_available_root_storage ]] && [[ $minimum_available_root_storage -ne 0 ]] ; then
+		printf "\e[1;31m<#>\e[0m\e[1m Less than ${minimum_available_root_storage}Kib available on root partition\e[0m\n"
+		unlock_and_quit 1
+	fi
+fi
+
+
+## Core functions
+#
+# Initialize the system for arkdep, either on a new Linux install
+# when using ARKDEP_BOOT and ARKDEP_ROOT, or the current system
+# if called without said variables defined
+init_new_system () {
+
+	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
+
+	# Ensure Arkdep is not already installed, unless we are installing
+	# to a new system
+	[[ -d $arkdep_dir ]] && [[ -z ${ARKDEP_ROOT+x} ]] &&
+		cleanup_and_quit "$arkdep_dir already exists"
+
+	# Create the /arkdep subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating $arkdep_dir subvolume\e[0m\n"
+	btrfs subvolume create $arkdep_dir || cleanup_and_quit "Failed to create btrfs subvolume"
+
+	# Create directory structure
+	printf '\e[1;34m-->\e[0m\e[1m Creating directory structure\e[0m\n'
+	mkdir -pv $arkdep_dir/deployments \
+		$arkdep_dir/deployments \
+		$arkdep_dir/cache \
+		$arkdep_dir/templates \
+		$arkdep_dir/overlay \
+		$arkdep_dir/keys \
+		$arkdep_dir/extensions \
+		$arkdep_dir/shared ||
+		cleanup_and_quit "Failed to create $arkdep_dir and related directories"
+
+	# Create empty database files
+	touch $arkdep_dir/tracker
+	touch $arkdep_dir/keys/trusted-keys
+
+	# Add home shared subvolume and make writable
+	btrfs subvolume create $arkdep_dir/shared/home || cleanup_and_quit "Failed to create home subvolume"
+	btrfs subvolume create $arkdep_dir/shared/root || cleanup_and_quit "Failed to create root subvolume"
+	btrfs subvolume create $arkdep_dir/shared/flatpak || cleanup_and_quit "Failed to create flatpak subvolume"
+	btrfs property set -f -ts $arkdep_dir/shared/home ro false
+	btrfs property set -f -ts $arkdep_dir/shared/root ro false
+	btrfs property set -f -ts $arkdep_dir/shared/flatpak ro false
+
+	# Ensure permissions on root home directory are set properly
+	chmod 700 $arkdep_dir/shared/root
+
+	# Creathe default config file
+	write_config_file
+
 	# Add default bootloader config file
 	cat <<- END > $arkdep_dir/templates/systemd-boot
 	title $boot_entry_title
@@ -478,6 +486,25 @@ init_new_system () {
 	initrd /arkdep/%target%/initramfs-linux.img
 	options $kernel_params
 	END
+
+	unlock_and_quit 0
+
+}
+
+reset_config_to_default () {
+
+	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
+		printf "You are about to reset the $arkdep_dir/config file back to its default configuration.\nA backup of the current config file will be made to $arkdep_dir/config.old.\n\n"
+		read -p 'Proceed with configuration reset? [y/N] ' reset_confirm
+
+		if [[ ! $reset_confirm =~ ^(y|Y|yes|YES)$ ]]; then
+			unlock_and_quit 1
+		fi
+	fi
+
+	cp $arkdep_dir/config $arkdep_dir/config.old
+
+	write_config_file
 
 	unlock_and_quit 0
 
@@ -1484,6 +1511,7 @@ unlayer () {
 [[ $1 == 'layer' ]] && layer $@
 [[ $1 == 'layer-ls' ]] && layer-ls
 [[ $1 == 'unlayer' ]] && unlayer $@
+[[ $1 == 'reset-config' ]] && reset_config_to_default
 
 # No valid params were provided
 printf '\e[1;31m<#>\e[0m\e[1m No valid parameters provided\e[0m\n'
