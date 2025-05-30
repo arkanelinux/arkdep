@@ -382,6 +382,59 @@ write_config_file () {
 
 }
 
+# Migrate user accounts from /etc to /usr/lib that were added by package installation
+migrate_package_users() {
+    printf '\e[1;34m-->\e[0m\e[1m Checking for new system user accounts to migrate\e[0m\n'
+    
+    # Get list of current users in /etc and /usr/lib
+    declare -r etc_users=($(grep -v "^root:" /etc/passwd | cut -d: -f1))
+    declare -r lib_users=($(grep -v "^root:" /usr/lib/passwd 2>/dev/null | cut -d: -f1))
+    
+    # Find users that exist in /etc but not in /usr/lib - these are newly added
+    for user in "${etc_users[@]}"; do
+        if ! printf '%s\n' "${lib_users[@]}" | grep -q "^$user$" 2>/dev/null; then
+            printf "Migrating user account: $user\n"
+            
+            # Add user entries to /usr/lib files
+			if ! grep "^$user:" /etc/passwd >> /usr/lib/passwd; then
+				printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/passwd\e[0m\n" >&2
+				continue
+			fi
+			if ! grep "^$user:" /etc/shadow >> /usr/lib/shadow; then
+				printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/shadow\e[0m\n" >&2
+				continue
+			fi
+			if ! grep "^$user:" /etc/group >> /usr/lib/group; then
+				group_entry=$(grep "^$user:" /etc/group)
+				if [[ -n $group_entry ]]; then
+					echo "$group_entry" >> /usr/lib/group || printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
+				else
+					printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
+				fi
+				continue
+			fi
+            
+            # Remove user entries from /etc files
+			if ! sed -i "/^$user:/d" /etc/passwd; then
+				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/passwd\e[0m\n" >&2
+				continue
+			fi
+			if ! sed -i "/^$user:/d" /etc/shadow; then
+				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/shadow\e[0m\n" >&2
+				continue
+			fi
+			if ! sed -i "/^$user:/d" /etc/group; then
+				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/group\e[0m\n" >&2
+				continue
+			fi
+        fi
+    done
+    
+    # Ensure proper permissions
+    chmod 600 /usr/lib/shadow
+    chmod 644 /usr/lib/{passwd,group}
+}
+
 # Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
 [[ $always_healthcheck -eq 1 ]] &&
 	[[ ! $1 =~ ^(healthcheck|cleanup)$ ]] &&
@@ -1506,59 +1559,6 @@ unlayer () {
 	printf "%s\n" "$new_layer_tracker" > $arkdep_dir/layer
 
 	unlock_and_quit 0
-}
-
-# Migrate user accounts from /etc to /usr/lib that were added by package installation
-migrate_package_users() {
-    printf '\e[1;34m-->\e[0m\e[1m Checking for new system user accounts to migrate\e[0m\n'
-    
-    # Get list of current users in /etc and /usr/lib
-    declare -r etc_users=($(grep -v "^root:" /etc/passwd | cut -d: -f1))
-    declare -r lib_users=($(grep -v "^root:" /usr/lib/passwd 2>/dev/null | cut -d: -f1))
-    
-    # Find users that exist in /etc but not in /usr/lib - these are newly added
-    for user in "${etc_users[@]}"; do
-        if ! printf '%s\n' "${lib_users[@]}" | grep -q "^$user$" 2>/dev/null; then
-            printf "Migrating user account: $user\n"
-            
-            # Add user entries to /usr/lib files
-			if ! grep "^$user:" /etc/passwd >> /usr/lib/passwd; then
-				printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/passwd\e[0m\n" >&2
-				continue
-			fi
-			if ! grep "^$user:" /etc/shadow >> /usr/lib/shadow; then
-				printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/shadow\e[0m\n" >&2
-				continue
-			fi
-			if ! grep "^$user:" /etc/group >> /usr/lib/group; then
-				group_entry=$(grep "^$user:" /etc/group)
-				if [[ -n $group_entry ]]; then
-					echo "$group_entry" >> /usr/lib/group || printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
-				else
-					printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
-				fi
-				continue
-			fi
-            
-            # Remove user entries from /etc files
-			if ! sed -i "/^$user:/d" /etc/passwd; then
-				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/passwd\e[0m\n" >&2
-				continue
-			fi
-			if ! sed -i "/^$user:/d" /etc/shadow; then
-				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/shadow\e[0m\n" >&2
-				continue
-			fi
-			if ! sed -i "/^$user:/d" /etc/group; then
-				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/group\e[0m\n" >&2
-				continue
-			fi
-        fi
-    done
-    
-    # Ensure proper permissions
-    chmod 600 /usr/lib/shadow
-    chmod 644 /usr/lib/{passwd,group}
 }
 
 [[ $1 == 'init' ]] && init_new_system $2

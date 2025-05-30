@@ -1,61 +1,99 @@
 #!/usr/bin/env bash
 
+# Filter and process arguments
+declare -a filtered_args=()
+declare -a package_args=()
+declare sync_mode=false
+declare force_refresh=false
+
+# Process all arguments
+for arg in "$@"; do
+    if [[ "$arg" == -* ]]; then
+        # If this is -S or starts with -S, set sync mode
+        if [[ "$arg" == "-S"* ]]; then
+            sync_mode=true
+            # Handle compound flags like -Syy
+            if [[ "$arg" == *"y"* ]]; then
+                force_refresh=true
+            fi
+        fi
+        filtered_args+=("$arg")
+    else
+        package_args+=("$arg")
+    fi
+done
+
 # Handle AUR operations through yay if available
-if [[ "$1" == "-S" ]] && command -v yay >/dev/null 2>&1; then
+if $sync_mode && command -v yay >/dev/null 2>&1; then
+    # Force database refresh if needed
+    if $force_refresh; then
+        yay -Syy
+    fi
+
     # Check if any package is from AUR
-    shift # Remove -S argument
-	aur_pkgs=()
-	pacman_pkgs=()
-	for pkg in "$@"; do
-		if ! pacman -Si "$pkg" >/dev/null 2>&1; then
-			aur_pkgs+=("$pkg")
-		else
-			pacman_pkgs+=("$pkg")
-		fi
-	done
+    aur_pkgs=()
+    pacman_pkgs=()
+    for pkg in "${package_args[@]}"; do
+        if ! pacman -Si "$pkg" >/dev/null 2>&1; then
+            aur_pkgs+=("$pkg")
+        else
+            pacman_pkgs+=("$pkg")
+        fi
+    done
 
-	if [[ ${#aur_pkgs[@]} -gt 0 ]]; then
-		yay -S --noconfirm "${aur_pkgs[@]}"
-	fi
+    if [[ ${#aur_pkgs[@]} -gt 0 ]]; then
+        yay -S --noconfirm "${aur_pkgs[@]}"
+    fi
 
-	if [[ ${#pacman_pkgs[@]} -gt 0 ]]; then
-		pacman -S --noconfirm "${pacman_pkgs[@]}"
-	fi
+    if [[ ${#pacman_pkgs[@]} -gt 0 ]]; then
+        if ! $force_refresh; then
+            pacman -Sy  # Refresh database if not already done
+        fi
+        pacman -S --noconfirm "${pacman_pkgs[@]}"
+    fi
 
-	exit 0
+    exit 0
 fi
 
-if [[ $@ =~ (-r|--root) ]] ||
-   [[ $@ == "-Q"* ]] ||
-   [[ $@ == "-F"* ]] ||
-   [[ $@ == "-Ss"* ]] ||
-   [[ $@ == "-Sl"* ]] ||
+if [[ "${filtered_args[*]}" =~ (-r|--root) ]] ||
+   [[ "${filtered_args[*]}" == *"-Q"* ]] ||
+   [[ "${filtered_args[*]}" == *"-F"* ]] ||
+   [[ "${filtered_args[*]}" == *"-Ss"* ]] ||
+   [[ "${filtered_args[*]}" == *"-Sl"* ]] ||
    [[ $LD_LIBRARY_PATH =~ (libfakeroot) ]]; then
-	no_check=1
+    no_check=1
 fi
 
 if [[ ! $no_check ]]; then
-	# Elevate permissions to root
-	[[ $EUID -eq 0 ]] || exec sudo bash $0 $@
+    # Elevate permissions to root
+    [[ $EUID -eq 0 ]] || exec sudo bash "$0" "$@"
 
-	# Check if the disk is ro'ed using subvolume properties
-	if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
-		cat <<- END
-			The root partition is currently in read-only mode, to run pacman it will have to be switched over to read-write mode.
+    # Check if the disk is ro'ed using subvolume properties
+    if btrfs property get / 2> /dev/null | grep -q 'ro=true'; then
+        cat <<- END
+            The root partition is currently in read-only mode, to run pacman it will have to be switched over to read-write mode.
 
-			Note that any changes made to the system will not carry over to future OS image updates.
+            Note that any changes made to the system will not carry over to future OS image updates.
+        END
+        read -p 'Do you want to unlock the root partition? (y/N) ' ans
 
-		END
-		read -p 'Do you want to unlock the root partition? (y/N) ' ans
+        if [[ $ans =~ ^(y|Y|yes|YES)$ ]]; then
+            btrfs property set / ro false
+        else
+            printf 'Quitting... no changes have been made to the system.\n'
+            exit 1
+        fi
+    fi
+fi
 
-		if [[ $ans =~ ^(y|Y|yes|YES)$ ]]; then
-			btrfs property set / ro false
-		else
-			printf 'Quitting... no changes have been made to the system.\n'
-			exit 1
-		fi
-	fi
+# For sync operations, always refresh database before proceeding
+if $sync_mode && ! $force_refresh; then
+    /usr/bin/pacman -Sy
 fi
 
 # No exit statement here, we return pacman's exit code
-/usr/bin/pacman $@
+if [[ ${#package_args[@]} -gt 0 ]]; then
+    /usr/bin/pacman "${filtered_args[@]}" "${package_args[@]}"
+else
+    /usr/bin/pacman "${filtered_args[@]}"
+fi
