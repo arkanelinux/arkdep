@@ -1531,7 +1531,12 @@ migrate_package_users() {
 				continue
 			fi
 			if ! grep "^$user:" /etc/group >> /usr/lib/group; then
-				printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
+				group_entry=$(grep "^$user:" /etc/group)
+				if [[ -n $group_entry ]]; then
+					echo "$group_entry" >> /usr/lib/group || printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
+				else
+					printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
+				fi
 				continue
 			fi
             

@@ -4,12 +4,25 @@
 if [[ "$1" == "-S" ]] && command -v yay >/dev/null 2>&1; then
     # Check if any package is from AUR
     shift # Remove -S argument
-    for pkg in "$@"; do
-        if ! pacman -Si "$pkg" >/dev/null 2>&1; then
-            # Package not in official repos, use yay
-            exec yay -S --noconfirm "$@"
-        fi
-    done
+	aur_pkgs=()
+	pacman_pkgs=()
+	for pkg in "$@"; do
+		if ! pacman -Si "$pkg" >/dev/null 2>&1; then
+			aur_pkgs+=("$pkg")
+		else
+			pacman_pkgs+=("$pkg")
+		fi
+	done
+
+	if [[ ${#aur_pkgs[@]} -gt 0 ]]; then
+		yay -S --noconfirm "${aur_pkgs[@]}"
+	fi
+
+	if [[ ${#pacman_pkgs[@]} -gt 0 ]]; then
+		pacman -S --noconfirm "${pacman_pkgs[@]}"
+	fi
+
+	exit 0
 fi
 
 if [[ $@ =~ (-r|--root) ]] ||
