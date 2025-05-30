@@ -28,8 +28,8 @@ declare -r dist_load_extensions=0
 declare -r dist_remove_tar_after_deployment=1
 declare -r dist_update_diff_style='list'
 declare -r dist_interactive_mode=1
-declare -r dist_package_layer_command='pacman -Syy --needed --noconfirm'
-declare -r dist_package_unlayer_command='pacman -Rsn --noconfirm'
+declare -r dist_package_layer_command='if command -v yay >/dev/null 2>&1; then sudo -u aur_builder yay -Syy --needed --noconfirm; else pacman -Syy --needed --noconfirm; fi'
+declare -r dist_package_unlayer_command='if command -v yay >/dev/null 2>&1; then sudo -u aur_builder yay -Rsn --noconfirm; else pacman -Rsn --noconfirm; fi'
 
 
 # Default configuration file settings used for init
@@ -1531,7 +1531,12 @@ migrate_package_users() {
 				continue
 			fi
 			if ! grep "^$user:" /etc/group >> /usr/lib/group; then
-				printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
+				group_entry=$(grep "^$user:" /etc/group)
+				if [[ -n $group_entry ]]; then
+					echo "$group_entry" >> /usr/lib/group || printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
+				else
+					printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
+				fi
 				continue
 			fi
             
