@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 
+# Handle AUR operations through yay if available
+if [[ "$1" == "-S" ]] && command -v yay >/dev/null 2>&1; then
+    # Check if any package is from AUR
+    shift # Remove -S argument
+    for pkg in "$@"; do
+        if ! pacman -Si "$pkg" >/dev/null 2>&1; then
+            # Package not in official repos, use yay
+            exec yay -S --noconfirm "$@"
+        fi
+    done
+fi
+
 if [[ $@ =~ (-r|--root) ]] ||
    [[ $@ == "-Q"* ]] ||
    [[ $@ == "-F"* ]] ||
