@@ -414,19 +414,33 @@ migrate_package_users() {
 				continue
 			fi
             
-            # Remove user entries from /etc files
-			if ! sed -i "/^$user:/d" /etc/passwd; then
-				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/passwd\e[0m\n" >&2
-				continue
-			fi
-			if ! sed -i "/^$user:/d" /etc/shadow; then
-				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/shadow\e[0m\n" >&2
-				continue
-			fi
-			if ! sed -i "/^$user:/d" /etc/group; then
-				printf "\e[1;31m<#>\e[0m Failed to remove $user from /etc/group\e[0m\n" >&2
-				continue
-			fi
+            # Remove user entries from /etc files using grep instead of sed
+            # First copy files to tmp for safety
+            cp /etc/{passwd,shadow,group} /tmp || {
+                printf "\e[1;31m<#>\e[0m Failed to copy files to /tmp\e[0m\n" >&2
+                continue
+            }
+
+            grep -v "^$user:" /tmp/passwd > /tmp/passwd.new || 
+                printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/passwd\e[0m\n" >&2
+            mv /tmp/passwd.new /tmp/passwd ||
+                printf "\e[1;31m<#>\e[0m Failed moving passwd.new to passwd in tmp\e[0m\n" >&2
+
+            grep -v "^$user:" /tmp/shadow > /tmp/shadow.new ||
+                printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/shadow\e[0m\n" >&2
+            mv /tmp/shadow.new /tmp/shadow ||
+                printf "\e[1;31m<#>\e[0m Failed moving shadow.new to shadow in tmp\e[0m\n" >&2
+
+            grep -v "^$user:" /tmp/group > /tmp/group.new ||
+                printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
+            mv /tmp/group.new /tmp/group ||
+                printf "\e[1;31m<#>\e[0m Failed moving group.new to group in tmp\e[0m\n" >&2
+
+            # Move the modified files back to /etc
+            mv /tmp/{passwd,shadow,group} /etc || {
+                printf "\e[1;31m<#>\e[0m Failed moving passwd, shadow and group files to /etc\e[0m\n" >&2
+                continue
+            }
         fi
     done
     
