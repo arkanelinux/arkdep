@@ -414,19 +414,9 @@ migrate_package_users() {
 					continue
 				fi
 
-				if ! grep "^$user:" /etc/group >> /usr/lib/group; then
-					group_entry=$(grep "^$user:" /etc/group)
-					if [[ -n $group_entry ]]; then
-						echo "$group_entry" >> /usr/lib/group || printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/group\e[0m\n" >&2
-					else
-						printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
-					fi
-					continue
-				fi
-
 				# Remove user entries from /etc files using grep instead of sed
 				# First copy files to tmp for safety
-				cp /etc/{passwd,shadow,group} /tmp || {
+				cp /etc/{passwd,shadow} /tmp || {
 						printf "\e[1;31m<#>\e[0m Failed to copy files to /tmp\e[0m\n" >&2
 						continue
 				}
@@ -441,14 +431,9 @@ migrate_package_users() {
 				mv /tmp/shadow.new /tmp/shadow ||
 						printf "\e[1;31m<#>\e[0m Failed moving shadow.new to shadow in tmp\e[0m\n" >&2
 
-				grep -v "^$user:" /tmp/group > /tmp/group.new ||
-						printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/group\e[0m\n" >&2
-				mv /tmp/group.new /tmp/group ||
-						printf "\e[1;31m<#>\e[0m Failed moving group.new to group in tmp\e[0m\n" >&2
-
 				# Move the modified files back to /etc
-				mv /tmp/{passwd,shadow,group} /etc || {
-						printf "\e[1;31m<#>\e[0m Failed moving passwd, shadow and group files to /etc\e[0m\n" >&2
+				mv /tmp/{passwd,shadow} /etc || {
+						printf "\e[1;31m<#>\e[0m Failed moving passwd and shadow group files to /etc\e[0m\n" >&2
 						continue
 				}
 			fi
@@ -456,7 +441,7 @@ migrate_package_users() {
 
     # Ensure proper permissions
     chmod 600 /usr/lib/shadow
-    chmod 644 /usr/lib/{passwd,group}
+    chmod 644 /usr/lib/passwd
 }
 
 # Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
@@ -1486,10 +1471,10 @@ layer () {
 	# Install the packages
 	$package_layer_command ${progs_clean[@]} ||
 		cleanup_and_quit 'Failed to install requested packages'
-		
+
 	# Migrate any new system user accounts
 	migrate_package_users
-	
+
 	# Lock root if it was previously locked
 	if [[ $lock_when_done -eq 1 ]]; then
 		btrfs property set -f -ts / ro true ||
