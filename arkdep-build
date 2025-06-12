@@ -679,6 +679,18 @@ if [[ $type == 'debian' ]]; then
 	mkdir -pv $workdir/arkdep
 	mkdir -pv $workdir/var/lib/flatpak
 
+	printf '\e[1;34m-->\e[0m\e[1m Removing machine specific configuration\e[0m\n'
+
+	for file in $(ls $workdir/etc/ssh | grep ssh_host_*); do
+		printf "Removing system ssh key, $file.\n"
+		rm $workdir/etc/ssh/$file
+	done
+
+	if -f $workdir/etc/machine-id; then
+		printf "Removing machine id.\n"
+		rm $workdir/etc/machine-id
+	fi
+
 	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to usr/lib\e[0m\n'
 
 	# Create second passwd, group and shadow file in usr/lib and configure
