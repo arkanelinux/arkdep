@@ -28,8 +28,8 @@ declare -r dist_load_extensions=0
 declare -r dist_remove_tar_after_deployment=1
 declare -r dist_update_diff_style='list'
 declare -r dist_interactive_mode=1
-declare -r dist_package_layer_command='pacman -Syy --needed --noconfirm'
-declare -r dist_package_unlayer_command='pacman -Rsn --noconfirm'
+declare -r dist_package_layer_command='if command -v yay >/dev/null 2>&1; then sudo -u aur_builder yay -Syy --needed --noconfirm; else pacman -Syy --needed --noconfirm; fi'
+declare -r dist_package_unlayer_command='if command -v yay >/dev/null 2>&1; then sudo -u aur_builder yay -Rsn --noconfirm; else pacman -Rsn --noconfirm; fi'
 
 
 # Default configuration file settings used for init
@@ -380,6 +380,68 @@ write_config_file () {
 	package_unlayer_command="$dist_package_unlayer_command"
 	END
 
+}
+
+# Migrate user accounts from /etc to /usr/lib that were added by package installation
+migrate_package_users() {
+    printf '\e[1;34m-->\e[0m\e[1m Checking for new system user accounts to migrate\e[0m\n'
+
+    # Get list of current users in /etc and /usr/lib
+    declare -r etc_users=($(grep -v "^root:" /etc/passwd | cut -d : -f1))
+    declare -r lib_users=($(grep -v "^root:" /usr/lib/passwd 2>/dev/null | cut -d : -f1))
+
+    # Find users that exist in /etc but not in /usr/lib - these are newly added
+    for user in "${etc_users[@]}"; do
+
+			echo Checking $user
+
+			# Skip if non-system account
+			if [[ $(grep "^$user:" /etc/passwd | cut -d : -f3) -ge 1000 ]]; then
+				continue
+			fi
+
+			if ! printf '%s\n' "${lib_users[@]}" | grep -q "^$user$" 2>/dev/null; then
+				printf "Migrating user account: $user\n"
+
+				# Add user entries to /usr/lib files
+				if ! grep "^$user:" /etc/passwd >> /usr/lib/passwd; then
+					printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/passwd\e[0m\n" >&2
+					continue
+				fi
+
+				if ! grep "^$user:" /etc/shadow >> /usr/lib/shadow; then
+					printf "\e[1;31m<#>\e[0m Failed to append $user to /usr/lib/shadow\e[0m\n" >&2
+					continue
+				fi
+
+				# Remove user entries from /etc files using grep instead of sed
+				# First copy files to tmp for safety
+				cp /etc/{passwd,shadow} /tmp || {
+						printf "\e[1;31m<#>\e[0m Failed to copy files to /tmp\e[0m\n" >&2
+						continue
+				}
+
+				grep -v "^$user:" /tmp/passwd > /tmp/passwd.new ||
+						printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/passwd\e[0m\n" >&2
+				mv /tmp/passwd.new /tmp/passwd ||
+						printf "\e[1;31m<#>\e[0m Failed moving passwd.new to passwd in tmp\e[0m\n" >&2
+
+				grep -v "^$user:" /tmp/shadow > /tmp/shadow.new ||
+						printf "\e[1;31m<#>\e[0m No matching entry found for $user in /etc/shadow\e[0m\n" >&2
+				mv /tmp/shadow.new /tmp/shadow ||
+						printf "\e[1;31m<#>\e[0m Failed moving shadow.new to shadow in tmp\e[0m\n" >&2
+
+				# Move the modified files back to /etc
+				mv /tmp/{passwd,shadow} /etc || {
+						printf "\e[1;31m<#>\e[0m Failed moving passwd and shadow group files to /etc\e[0m\n" >&2
+						continue
+				}
+			fi
+    done
+
+    # Ensure proper permissions
+    chmod 600 /usr/lib/shadow
+    chmod 644 /usr/lib/passwd
 }
 
 # Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
@@ -1409,6 +1471,9 @@ layer () {
 	# Install the packages
 	$package_layer_command ${progs_clean[@]} ||
 		cleanup_and_quit 'Failed to install requested packages'
+
+	# Migrate any new system user accounts
+	migrate_package_users
 
 	# Lock root if it was previously locked
 	if [[ $lock_when_done -eq 1 ]]; then
