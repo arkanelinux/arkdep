@@ -1,0 +1,67 @@
+# GNOME
+evolution-data-server # For gnome-calendar Flatpak
+gdm
+gnome-backgrounds
+gnome-console
+gnome-control-center
+gnome-disk-utility
+gnome-initial-setup
+gnome-menus
+gnome-shell
+gnome-software
+gnome-system-monitor
+gnome-tour
+mutter
+nautilus
+
+# GNOME extra
+bluez
+bluez-cups
+bluez-plugins
+bluez-utils
+cups
+cups-pdf
+flatpak
+fuse3
+fwupd
+gst-plugin-pipewire
+gst-plugins-base
+gst-plugins-good
+gvfs
+gvfs-afc
+gvfs-dnssd
+gvfs-goa
+gvfs-gphoto2
+gvfs-mtp
+gvfs-nfs
+gvfs-smb
+gvfs-wsdd
+ibus-typing-booster
+networkmanager-openconnect
+networkmanager-openvpn
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+pipewire
+pipewire-alsa
+pipewire-audio
+pipewire-jack
+pipewire-pulse
+power-profiles-daemon
+spice-vdagent
+switcheroo-control
+webp-pixbuf-loader
+wireplumber
+xdg-desktop-portal-gnome
+xdg-user-dirs
+xdg-utils
+
+# Arkane Linux
+arkane-application-cleaner
+arkane-flatpak-init
+arkane-wallpapers
+
+# Community requested
+v4l-utils
+v4l2loopback-dkms
+v4l2loopback-utils

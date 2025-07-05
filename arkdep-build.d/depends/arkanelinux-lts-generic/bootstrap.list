@@ -1,0 +1,5 @@
+base
+linux-lts
+linux-firmware
+arkane-keyring
+dracut
