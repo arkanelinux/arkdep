@@ -852,6 +852,65 @@ diff () {
 
 }
 
+# Copy overlay to root. Is not used as generic function, only when called with `arkdep overlay restore`
+copy_overlay_to_root () {
+
+	# Refuse to run if overlay is disabled
+	if [[ $enable_overlay -ne 1 ]]; then
+		cleanup_and_quit 'Overlay is disabled in configuration file'
+	fi
+
+	# Make sure volumes are unlocked
+	if btrfs property get / | grep -q 'ro=true'; then
+		btrfs property set / ro false
+		declare -r root_was_unlocked=1
+	fi
+
+	printf '\e[1;34m-->\e[0m\e[1m Copying overlay to root\e[0m\n'
+	cp -rvp $arkdep_dir/overlay/* /
+
+	# Lock the root partition again if needed
+	if [[ $root_was_unlocked -eq 1 ]]; then
+		btrfs property set / ro true
+	fi
+
+	unlock_and_quit 0
+
+}
+
+# Copy the passwd, group, shadow etc.. files to the overlay. Also used as generic.
+copy_user_account_files_to_overlay () {
+
+	# Refuse to run if overlay is disabled
+	if [[ $enable_overlay -ne 1 ]]; then
+		cleanup_and_quit 'Overlay is disabled in configuration file'
+	fi
+
+	printf '\e[1;34m-->\e[0m\e[1m Copying user account files to overlay if changed\e[0m\n'
+
+	for file in passwd shadow group subuid subgid; do
+		# Hash old and new file to compare
+		# No need to handle file not exist scenario, we can assume /etc/$file to always exist
+		declare checksum_old=($(sha256sum $arkdep_dir/overlay/etc/$file 2> /dev/null))
+		declare checksum_current=($(sha256sum /etc/$file 2> /dev/null))
+
+		if [[ ! ${checksum_old[0]} == ${checksum_current[0]} ]]; then
+			printf "Copying $file\n"
+			cp -p /etc/$file $arkdep_dir/overlay/etc/$file ||
+				printf "Failed to copy $file\n"
+		else
+			printf "$file has not changed\n"
+		fi
+	done
+
+	# Ensure shadow file permissions are set properly
+	chmod 600 $arkdep_dir/overlay/etc/shadow
+
+	# Quit if function was called via argument
+	[[ $1 == 'overlay-backup-users'  ]] && unlock_and_quit 0
+
+}
+
 # Deploy a new or update an existing deployment
 deploy () {
 
@@ -1127,26 +1186,9 @@ deploy () {
 	if [[ $enable_overlay -eq 1 ]]; then
 		# If backup_user_accounts is enabled automatically perform a backup, do not run if custom root is defined
 		if [[ $backup_user_accounts -eq 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
-
-			printf '\e[1;34m-->\e[0m\e[1m Copying user account files to overlay if changed\e[0m\n'
-
-			for file in passwd shadow group subuid subgid; do
-				# Hash old and new file to compare
-				# No need to handle file not exist scenario, we can assume /etc/$file to always exist
-				declare checksum_old=($(sha256sum $arkdep_dir/overlay/etc/$file 2> /dev/null))
-				declare checksum_current=($(sha256sum /etc/$file 2> /dev/null))
-
-				if [[ ! ${checksum_old[0]} == ${checksum_current[0]} ]]; then
-					printf "Copying $file\n"
-					cp -p /etc/$file $arkdep_dir/overlay/etc/$file ||
-						printf "Failed to copy $file\n"
-				fi
-			done
-
-			# Ensure shadow file permissions are set properly
-			chmod 600 $arkdep_dir/overlay/etc/shadow
-
+			copy_user_account_files_to_overlay
 		fi
+
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to deployment\e[0m\n'
 		cp -rvp $arkdep_dir/overlay/* $arkdep_dir/deployments/${data[0]}/rootfs/
 	fi
@@ -1517,6 +1559,8 @@ unlayer () {
 [[ $1 == 'layer-ls' ]] && layer-ls
 [[ $1 == 'unlayer' ]] && unlayer $@
 [[ $1 == 'reset-config' ]] && reset_config_to_default
+[[ $1 == 'overlay-restore' ]] && copy_overlay_to_root $@
+[[ $1 == 'overlay-backup-users' ]] && copy_user_account_files_to_overlay $@
 
 # No valid params were provided
 printf '\e[1;31m<#>\e[0m\e[1m No valid parameters provided\e[0m\n'
