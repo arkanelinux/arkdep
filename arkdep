@@ -1509,7 +1509,7 @@ unlayer () {
 	fi
 
 	# Confirm if user wishes to remove packages from layer
-	printf '\e[1;34m-->\e[0m\e[1m The following packages will be removed from the layered\e[0m\n'
+	printf '\e[1;34m-->\e[0m\e[1m The following packages will be removed and will no longer be layered\e[0m\n'
 	echo "${progs_matched[@]}" | column
 	if [[ $interactive_mode -eq 1 ]]; then
 		read -p 'Proceed with removal? [Y/n] ' remove_confirm
