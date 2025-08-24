@@ -188,6 +188,7 @@ unlock_and_quit () {
 	exit $1
 }
 
+# Create lock file, prevents another instances from Arkdep from being called
 touch /tmp/arkdep.lock
 
 # Script-wide trap interupt
@@ -690,8 +691,9 @@ get_available () {
 	unlock_and_quit 0
 }
 
-# Process .pkgs files in provided by server and generate update diff between current and another deployment version
-diff () {
+# Process .pkgs files if provided by the server and generate update diff between current and another deployment version
+# prints a list of added, removed, and changed packages.
+calculate_image_update_diff () {
 
 	# TODO: Very basic implementation, expand later
 
@@ -911,7 +913,7 @@ copy_user_account_files_to_overlay () {
 
 }
 
-# Deploy a new or update an existing deployment
+# Download and deploy a new image to the disk. Can be either from a server or the Arkdep cache
 deploy () {
 
 	# target and version are optional, if not defined default to primary as defined in
@@ -935,8 +937,8 @@ deploy () {
 
 	printf "\e[1;34m-->\e[0m\e[1m Deploying $deploy_target $deploy_version\e[0m\n"
 
-	# Split latest_version at the delimiter, creating an array with data.0=package ver, data.1=compression method, data.2=sha1 hash
-	# only run if request target is not cache
+	# Split latest_version at the delimiter, creating an array with data.0=package_version, data.1=compression_method, data.2=sha1_hash
+	# unique behavior will trigger and run deployment entirely locally if target is cache.
 	if [[ $1 != 'cache' ]]; then
 
 		# If latest is requested grab database and get first line
@@ -1550,7 +1552,7 @@ unlayer () {
 [[ $1 == 'init' ]] && init_new_system $2
 [[ $1 == 'teardown' ]] && teardown
 [[ $1 == 'get-available' ]] && get_available
-[[ $1 == 'diff' ]] && diff $2 $3
+[[ $1 == 'diff' ]] && calculate_image_update_diff $2 $3
 [[ $1 == 'deploy' ]] && deploy $2 $3
 [[ $1 == 'remove' ]] && remove_deployment $@
 [[ $1 == 'healthcheck' ]] && healthcheck $1
