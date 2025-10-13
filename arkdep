@@ -22,8 +22,8 @@ declare -r dist_gpg_signature_check=1
 declare -r dist_minimum_available_boot_storage=153600
 declare -r dist_minimum_available_root_storage=12582912
 declare -r dist_update_cpu_microcode=1
-declare -r dist_backup_user_accounts=1
-declare -r dist_migrate_files="'var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'var/lib/power-profiles-daemon' 'var/db' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections' 'etc/ssh' 'etc/fstab' 'etc/crypttab' 'etc/luks-keys'"
+declare -r dist_backup_user_accounts=0
+declare -r dist_migrate_files="'var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService' 'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane' 'var/lib/power-profiles-daemon' 'var/db' 'etc/localtime' 'etc/locale.gen' 'etc/locale.conf' 'etc/NetworkManager/system-connections' 'etc/ssh' 'etc/fstab' 'etc/crypttab' 'etc/luks-keys' 'etc/passwd' 'etc/shadow' 'etc/group' 'etc/subuid' 'etc/subgid'"
 declare -r dist_load_extensions=0
 declare -r dist_remove_tar_after_deployment=1
 declare -r dist_update_diff_style='list'
@@ -1189,6 +1189,15 @@ deploy () {
 		# If backup_user_accounts is enabled automatically perform a backup, do not run if custom root is defined
 		if [[ $backup_user_accounts -eq 1 ]] && [[ ! -n $ARKDEP_ROOT ]]; then
 			copy_user_account_files_to_overlay
+		else
+
+			# If user account backup is disabled, check if user account files are present in overlay, warn user if they are
+			for file in passwd shadow group subuid subgid; do
+				if [[ -f /arkdep/overlay/etc/$file  ]]; then
+					printf "\e[1;33m<!>\e[0m\e[1m $file is present in $arkdep_dir/overlay/etc but backup_user_accounts is disabled\e[0m\n"
+				fi
+			done
+
 		fi
 
 		printf '\e[1;34m-->\e[0m\e[1m Copying overlay to deployment\e[0m\n'
