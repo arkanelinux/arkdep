@@ -68,3 +68,4 @@ v4l2loopback-utils
 
 # Fancy stuff
 sudo-rs
+realtime-privileges
