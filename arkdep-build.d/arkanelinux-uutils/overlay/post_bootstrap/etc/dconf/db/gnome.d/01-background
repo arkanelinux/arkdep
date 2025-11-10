@@ -1,0 +1,7 @@
+[org/gnome/desktop/background]
+color-shading-type='solid'
+picture-options='zoom'
+picture-uri-dark='file:///usr/share/backgrounds/arkane/crystalline_gravity-d.png'
+picture-uri='file:///usr/share/backgrounds/arkane/crystalline_gravity-l.png'
+primary-color='#222e3d'
+secondary-color='#000000'
