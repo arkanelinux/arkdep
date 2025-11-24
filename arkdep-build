@@ -480,6 +480,13 @@ if [[ $type == 'archlinux' ]]; then
 		(source $variantdir/extensions/post_build.sh)
 	fi
 
+	printf '\e[1;34m-->\e[0m\e[1m Generating database entry\e[0m\n'
+	checksum=($(sha256sum $output_target/$image_name.tar.zst))
+	file=$(basename $(ls $output_target/$image_name.tar.zst))
+	compress=${file##*.}
+	id=${file%%.*}
+	printf "$id:$compress:${checksum[0]}\n"
+
 	cleanup_and_quit
 
 fi
@@ -778,6 +785,13 @@ if [[ $type == 'debian' ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Running post_build extension\e[0m\n'
 		(source $variantdir/extensions/post_build.sh)
 	fi
+
+	printf '\e[1;34m-->\e[0m\e[1m Generating database entry\e[0m\n'
+	checksum=($(sha256sum $output_target/$image_name.tar.zst))
+	file=$(basename $(ls $output_target/$image_name.tar.zst))
+	compress=${file##*.}
+	id=${file%%.*}
+	printf "$id:$compress:${checksum[0]}\n"
 
 	cleanup_and_quit
 
