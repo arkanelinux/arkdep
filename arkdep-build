@@ -413,7 +413,7 @@ if [[ $type == 'archlinux' ]]; then
 
 	if [[ -f $workdir/etc/machine-id ]]; then
 		printf "Removing machine id.\n"
-		rm $workdir/etc/machine-id
+		rm -f $workdir/etc/machine-id
 	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to usr/lib\e[0m\n'
@@ -700,7 +700,7 @@ if [[ $type == 'debian' ]]; then
 
 	if [[ -f $workdir/etc/machine-id ]]; then
 		printf "Removing machine id.\n"
-		rm $workdir/etc/machine-id
+		rm -f $workdir/etc/machine-id
 	fi
 
 	printf '\e[1;34m-->\e[0m\e[1m Moving passwd, shadow and group files to usr/lib\e[0m\n'
