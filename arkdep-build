@@ -295,47 +295,49 @@ if [[ $type == 'archlinux' ]]; then
 
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e $variantdir/package.list ]]; then
+		# Read package list and install
+		readarray packages < $variantdir/package.list
+	fi
+
+	# Stores package lists from dependencies
+	declare packages_depends=()
+
+	# Load dependency package lists if present, also handle code comments
+	if [[ -e $variantdir/depends.list ]]; then
+		for depend in ${depends_variants_clean[@]}; do
+			# Only run if package.list exists
+			[[ ! -f $configsdir/$depend/package.list ]] &&
+				continue
+
+			printf "\e[1;34m-->\e[0m\e[1m Appending $depend to secondary stage package list\e[0m\n"
+
+			readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
+		done
+	fi
+
+	# Clean package list, remove code comments and white spaces
+	declare packages_clean=()
+
+	# Process package lists, remove code comments
+	for package in "${packages[@]}" "${packages_depends[@]}"; do
+		# If line starts with escape character, ignore it
+		[[ $package == \#* ]] &&
+			continue
+
+		# If line is whitespace, ignore it
+		[[ ${package//[$'\t\r\n']} == '' ]] &&
+			continue
+
+		# Remove escape character at end of line and add to packages_clean
+		packages_clean+=(${package%%#*})
+	done
+
+	# If any secondary packages were defined, install them
+	if [[ -n ${packages_clean[@]} ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary stage packages\e[0m\n'
 
 		# Mount the pacman cache
 		mount --bind /var/cache/pacman/pkg $workdir/var/cache/pacman/pkg
-
-		# Read package list and install
-		readarray packages < $variantdir/package.list
-		# Used to store packages list without escape characters and whitespaces
-		declare packages_clean=()
-		# Stores package lists from dependency variants
-		declare packages_depends=()
-
-		# Load dependency package lists if present, also handle code comments
-		if [[ -e $variantdir/depends.list ]]; then
-			for depend in ${depends_variants_clean[@]}; do
-				# Only run if package.list exists
-				[[ ! -f $configsdir/$depend/package.list ]] &&
-					continue
-
-				printf "\e[1;34m-->\e[0m\e[1m Appending $depend to secondary stage package list\e[0m\n"
-
-				readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
-			done
-		fi
-
-		# Used to store bootstrap packages list without escape characters and whitespaces
-		declare packages_clean=()
-
-		# Process package lists, remove code comments
-		for package in "${packages[@]}" "${packages_depends[@]}"; do
-			# If line starts with escape character, ignore it
-			[[ $package == \#* ]] &&
-				continue
-
-			# If line is whitespace, ignore it
-			[[ ${package//[$'\t\r\n']} == '' ]] &&
-				continue
-
-			# Remove escape character at end of line and add to packages_clean
-			packages_clean+=(${package%%#*})
-		done
 
 		# Install packages to new root
 		arch-chroot $workdir pacman -S --noconfirm ${packages_clean[@]} || cleanup_and_quit 'Failed to install packages'
@@ -579,55 +581,109 @@ if [[ $type == 'debian' ]]; then
 		(source $variantdir/extensions/post_bootstrap.sh)
 	fi
 
+
+
+
 	# Read package list and install secondary system components, skip if not used
-	if [[ -f $variantdir/package.list ]]; then
+	if [[ -e $variantdir/package.list ]]; then
+		# Read package list and install
+		readarray packages < $variantdir/package.list
+	fi
+
+	# Stores package lists from dependencies
+	declare packages_depends=()
+
+	# Load dependency package lists if present, also handle code comments
+	if [[ -e $variantdir/depends.list ]]; then
+		for depend in ${depends_variants_clean[@]}; do
+			# Only run if package.list exists
+			[[ ! -f $configsdir/$depend/package.list ]] &&
+				continue
+
+			printf "\e[1;34m-->\e[0m\e[1m Appending $depend to secondary stage package list\e[0m\n"
+
+			readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
+		done
+	fi
+
+	# Clean package list, remove code comments and white spaces
+	declare packages_clean=()
+
+	# Process package lists, remove code comments
+	for package in "${packages[@]}" "${packages_depends[@]}"; do
+		# If line starts with escape character, ignore it
+		[[ $package == \#* ]] &&
+			continue
+
+		# If line is whitespace, ignore it
+		[[ ${package//[$'\t\r\n']} == '' ]] &&
+			continue
+
+		# Remove escape character at end of line and add to packages_clean
+		packages_clean+=(${package%%#*})
+	done
+
+	# If any secondary packages were defined, install them
+	if [[ -n ${packages_clean[@]} ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Installing secondary stage packages\e[0m\n'
+
+		# Mount the pacman cache
+		mount --bind /var/cache/pacman/pkg $workdir/var/cache/pacman/pkg
+
+		# Install packages to new root
+		arch-chroot $workdir pacman -S --noconfirm ${packages_clean[@]} || cleanup_and_quit 'Failed to install packages'
+
+		# Unmount pacman cache
+		umount -l $workdir/var/cache/pacman/pkg
+	fi
+
+
+
+	# Read package list and install secondary system components, skip if not used
+	if [[ -e $variantdir/package.list ]]; then
+		# Read package list and install
+		readarray packages < $variantdir/package.list
+	fi
+
+	# Stores package lists from dependencies
+	declare packages_depends=()
+
+	# Load dependency package lists if present, also handle code comments
+	if [[ -e $variantdir/depends.list ]]; then
+		for depend in ${depends_variants_clean[@]}; do
+			# Only run if package.list exists
+			[[ ! -f $configsdir/$depend/package.list ]] &&
+				continue
+
+			printf "\e[1;34m-->\e[0m\e[1m Appending $depend to secondary stage package list\e[0m\n"
+
+			readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
+		done
+	fi
+
+	# Clean package list, remove code comments and white spaces
+	declare packages_clean=()
+
+	# Process package lists, remove code comments
+	for package in "${packages[@]}" "${packages_depends[@]}"; do
+		# If line starts with escape character, ignore it
+		[[ $package == \#* ]] &&
+			continue
+
+		# If line is whitespace, ignore it
+		[[ ${package//[$'\t\r\n']} == '' ]] &&
+			continue
+
+		# Remove escape character at end of line and add to packages_clean
+		packages_clean+=(${package%%#*})
+	done
+
+	# If any secondary packages were defined, install them
+	if [[ -n ${packages_clean[@]} ]]; then
 		printf '\e[1;34m-->\e[0m\e[1m Installing secondary stage packages\e[0m\n'
 
 		# Mount deb package cache inside of new root
 		mount --bind /var/cache/apt/archives $workdir/var/cache/apt/archives
-
-		# Read package list and install
-		readarray packages < $variantdir/package.list
-		# Used to store packages list without escape characters and whitespaces
-		declare packages_clean=()
-
-		# Stores package lists from dependency variants
-		declare packages_depends=()
-
-		# Load dependency package lists if present
-		if [[ -e $variantdir/depends.list ]]; then
-			# We only have to set depends_variants once, it is later not set again in other
-			# tasks utilizing dependencies
-			readarray depends_variants < $variantdir/depends.list
-			for depend in ${depends_variants_clean[@]}; do
-				[[ ! -f $configsdir/$depend/package.list ]] &&
-					continue
-
-				# If line starts with escape character, ignore it
-				[[ $depend == \#* ]] &&
-					continue
-
-				# If line is whitespace, ignore it
-				[[ ${depend//[$'\t\r\n']} == '' ]] &&
-					continue
-
-				readarray -O${#packages_depends[@]} packages_depends < $configsdir/$depend/package.list
-			done
-		fi
-
-		# Process package lists, remove code comments
-		for package in "${packages[@]}" "${packages_depends}"; do
-			# If line starts with escape character, ignore it
-			[[ $package == \#* ]] &&
-				continue
-
-			# If line is whitespace, ignore it
-			[[ ${package//[$'\t\r\n']} == '' ]] &&
-				continue
-
-			# Remove escape character at end of line and add to packages_clean
-			packages_clean+=(${package%%#*})
-		done
 
 		# Install packages to new root
 		# TODO: Keep using arch-chroot?`
@@ -638,7 +694,6 @@ if [[ $type == 'debian' ]]; then
 			cleanup_and_quit 'Failed to install packages'
 
 		umount -l $workdir/var/cache/apt/archives
-
 	fi
 
 	# If postinstall overlay directory exists in variant copy it's contents to the temporary subvolume
