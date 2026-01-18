@@ -48,3 +48,6 @@ zsh
 zsh-autosuggestions
 zsh-completions
 zsh-syntax-highlighting
+
+# Fancy stuff
+sudo-rs

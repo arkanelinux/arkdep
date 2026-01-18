@@ -3,3 +3,6 @@ linux
 linux-firmware
 arkane-keyring
 dracut
+amd-ucode
+intel-ucode
+dbus-broker-units
