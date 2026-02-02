@@ -7,7 +7,9 @@
 
 ## Common functions
 #
-# Cleanup and quit if error
+# Cleanup and quit, removes temporary files, will return an error code if an
+# error message is passed via parameter $1, will exit program without error
+# if no $1 provided.
 cleanup_and_quit () {
 	# If any paramters are passed we will assume it to be an error
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
@@ -17,10 +19,10 @@ cleanup_and_quit () {
 		exit 1
 	fi
 
-	umount -Rl $build_image_mountpoint
+	umount -Rl $build_image_mountpoint 2> /dev/null
 
-	rm $build_image
-	rm -rf $build_image_mountpoint
+	rm $build_image 2> /dev/null
+	rm -rf $build_image_mountpoint 2> /dev/null
 
 	# Quit program if argument provided to function
 	if [[ -n $1 ]]; then
