@@ -150,7 +150,6 @@ fi
 #
 # Cleanup and quit if error
 cleanup_and_quit () {
-
 	# If any parameters are passed we will assume it to be an error message
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
@@ -178,7 +177,6 @@ cleanup_and_quit () {
 	fi
 
 	unlock_and_quit 1
-
 }
 
 # Exit and release lock file
@@ -227,7 +225,6 @@ fi
 
 # Check for and report on any issues such as untracked deployments or hanging files in cache
 healthcheck () {
-
 	if [[ -n $untracked ]]; then
 		printf '\e[1;33m<!>\e[0m\e[1m The following deployments were found but are untracked\n\e[0m'
 		for t in ${untracked[@]}; do
@@ -249,11 +246,9 @@ healthcheck () {
 
 	# If $1 is healthcheck it was manually called by the user
 	[[ $1 == 'healthcheck' ]] && unlock_and_quit 1
-
 }
 
 cleanup () {
-
 	# Run healthcheck, if always_healthcheck is enabled it will have previously not run
 	healthcheck
 
@@ -317,11 +312,9 @@ cleanup () {
 	fi
 
 	unlock_and_quit 0
-
 }
 
 write_config_file () {
-
 	# Write default config file
 	printf '\e[1;34m-->\e[0m\e[1m Adding default config file\e[0m\n'
 	cat <<- END > $arkdep_dir/config
@@ -380,7 +373,6 @@ write_config_file () {
 	# What command should be executed to uninstall packages
 	package_unlayer_command="$dist_package_unlayer_command"
 	END
-
 }
 
 # Always healthcheck on run if requested in config, unless the user explicitely called it or the program is going to call it
@@ -436,7 +428,6 @@ fi
 # when using ARKDEP_BOOT and ARKDEP_ROOT, or the current system
 # if called without said variables defined
 init_new_system () {
-
 	printf '\e[1;34m-->\e[0m\e[1m Initializing arkdep\e[0m\n'
 
 	# Ensure Arkdep is not already installed, unless we are installing
@@ -489,11 +480,10 @@ init_new_system () {
 	END
 
 	unlock_and_quit 0
-
 }
 
+# Overwirte /arkdep/config and reset back to default configuration, as defined at the top of this script
 reset_config_to_default () {
-
 	if [[ $interactive_mode -eq 1 ]] && [[ $ARKDEP_CONFIRM -ne 1 ]]; then
 		printf "You are about to reset the $arkdep_dir/config file back to its default configuration.\nA backup of the current config file will be made to $arkdep_dir/config.old.\n\n"
 		read -p 'Proceed with configuration reset? [y/N] ' reset_confirm
@@ -511,13 +501,10 @@ reset_config_to_default () {
 	fi
 
 	write_config_file
-
 	unlock_and_quit 0
-
 }
 
 teardown () {
-
 	cat <<- END
 	WARNING: Removing arkdep may leave your system in an unbootable state and you
 	may have to manually reconfigure your bootloader etc.. Only proceed if you know
@@ -534,7 +521,6 @@ teardown () {
 	read -p 'Type "I KNOW WHAT I AM DOING" in uppercase to confirm that you know what you are doing: ' input_confirm
 
 	if [[ $input_confirm == 'I KNOW WHAT I AM DOING' ]]; then
-
 		printf '\e[1;34m-->\e[0m\e[1m Tearing down arkdep\e[0m\n'
 
 		# Quit with error if $arkdep_dir does not exist
@@ -554,17 +540,14 @@ teardown () {
 			btrfs property set -f -ts $(readlink -m /$volume) ro false
 			btrfs subvolume delete $volume
 		done
-
 	else
 		printf '\e[1;33m<!>\e[0m\e[1m Teardown canceled, no changes made to system\e[0m\n'
 	fi
 
 	unlock_and_quit 0
-
 }
 
 remove_deployment () {
-
 	# Ensure required vars are set
 	if [[ -z $1 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
@@ -663,7 +646,6 @@ remove_deployment () {
 	if [[ $remove_scriptmode -ne 1 ]]; then
 		unlock_and_quit 0
 	fi
-
 }
 
 # Scrape all variants from from the repo index page
@@ -694,7 +676,6 @@ get_available () {
 # Process .pkgs files if provided by the server and generate update diff between current and another deployment version
 # prints a list of added, removed, and changed packages.
 calculate_image_update_diff () {
-
 	# TODO: Very basic implementation, expand later
 
 	# Set default new variant as diff_target unless param provided
@@ -720,7 +701,6 @@ calculate_image_update_diff () {
 				declare -r database_hit=$db_entry
 			fi
 		done
-
 	else
 		# No param was provided, set first db entry as target
 		# Get ID of latest entry
@@ -820,7 +800,6 @@ calculate_image_update_diff () {
 
 	# Print changed packages and diff
 	if [[ $update_diff_style == 'list' ]]; then
-
 		if [[ ${#changed} -ne 0 ]]; then
 			declare num=0
 			printf 'Changed:\n'
@@ -851,12 +830,10 @@ calculate_image_update_diff () {
 	fi
 
 	unlock_and_quit 0
-
 }
 
 # Copy overlay to root. Is not used as generic function, only when called with `arkdep overlay restore`
 copy_overlay_to_root () {
-
 	# Refuse to run if overlay is disabled
 	if [[ $enable_overlay -ne 1 ]]; then
 		cleanup_and_quit 'Overlay is disabled in configuration file'
@@ -877,12 +854,10 @@ copy_overlay_to_root () {
 	fi
 
 	unlock_and_quit 0
-
 }
 
 # Copy the passwd, group, shadow etc.. files to the overlay. Also used as generic.
 copy_user_account_files_to_overlay () {
-
 	# Refuse to run if overlay is disabled
 	if [[ $enable_overlay -ne 1 ]]; then
 		cleanup_and_quit 'Overlay is disabled in configuration file'
@@ -910,12 +885,10 @@ copy_user_account_files_to_overlay () {
 
 	# Quit if function was called via argument
 	[[ $1 == 'overlay-backup-users'  ]] && unlock_and_quit 0
-
 }
 
 # Download and deploy a new image to the disk. Can be either from a server or the Arkdep cache
 deploy () {
-
 	# target and version are optional, if not defined default to primary as defined in
 	# /arkdep/config and latest
 	if [[ -n $1 ]] && [[ $1 != '-' ]]; then
@@ -940,7 +913,6 @@ deploy () {
 	# Split latest_version at the delimiter, creating an array with data.0=package_version, data.1=compression_method, data.2=sha1_hash
 	# unique behavior will trigger and run deployment entirely locally if target is cache.
 	if [[ $1 != 'cache' ]]; then
-
 		# If latest is requested grab database and get first line
 		printf '\e[1;34m-->\e[0m\e[1m Downloading database\e[0m\n'
 		if [[ $deploy_version == 'latest' ]]; then
@@ -967,10 +939,8 @@ deploy () {
 		fi
 
 		readarray -d : -t data <<< "$database_hit"
-
-	# If target is cache
+	# If target is cache we will do a local deployment from the arkdep cache and not download any images
 	else
-
 		# Find full name in cache, exclude sig files, if no hit quit with error
 		declare cache_hits=($(ls $arkdep_dir/cache | grep -E "^$deploy_version" | grep -v '.sig$'))
 
@@ -988,7 +958,6 @@ deploy () {
 		data[0]=${data_inter[0]}
 		data[1]=${data_inter[2]}
 		data[2]='-'
-
 	fi
 
 	# Ensure none of the vars contain whitespaces
@@ -1052,9 +1021,9 @@ deploy () {
 			wget -c -q --show-progress -P $arkdep_dir/cache/ "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}" ||
 			cleanup_and_quit 'Failed to download tarball'
 		fi
+
 		# Download GPG signature, only perform check if not disabled by user and keychain exists
 		if [[ ! $gpg_signature_check -eq 0 ]] && [[ -s $arkdep_dir/keys/trusted-keys ]]; then
-
 			# Download gpg signature if not yet in cache
 			if [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
 				wget -c -q --show-progress -P $arkdep_dir/cache/ "$repo_url/$deploy_target/${data[0]}.tar.${data[1]}.sig"
@@ -1068,12 +1037,10 @@ deploy () {
 				# gpg_signature_check = 2, error and quit the program on fail
 				cleanup_and_quit 'GPG signature check configured to quit on download failure'
 			fi
-
 		fi
 
 		# Remove the .run file
 		rm $arkdep_dir/cache/${data[0]}.tar.${data[1]}.run
-
 	fi
 
 	if [[ $gpg_signature_check -eq 2 ]] && [[ ! -s $arkdep_dir/cache/${data[0]}.tar.${data[1]}.sig ]]; then
@@ -1125,10 +1092,9 @@ deploy () {
 		else
 			cleanup_and_quit 'Failed to identify SHA checksum type'
 		fi
-
 	fi
 
-	# We will now start writing the images to disk, prevent the user from shutting down the script
+	# We will now start writing the images to disk, prevent the user from interupting the script
 	trap '' INT TERM
 
 	# Check if there is a migration script available
@@ -1275,7 +1241,6 @@ deploy () {
 	# If ARKDEP_BOOT is defined we will revert back to legacy behaviour and build
 	# the initramfs against the host
 	if [[ -n $ARKDEP_BOOT ]] || [[ $ARKDEP_LEGACY_INITRAMFS -eq 1 ]]; then
-
 		dracut -q -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
 			-c $arkdep_dir/deployments/${data[0]}/rootfs/etc/dracut.conf \
 			--confdir $arkdep_dir/deployments/${data[0]}/rootfs/etc/dracut.conf.d \
@@ -1283,7 +1248,6 @@ deploy () {
 			--kver ${kernels_installed[0]} \
 			--force \
 			$arkdep_boot/arkdep/${data[0]}/initramfs-linux.img || cleanup_and_quit 'Failed to generate initramfs'
-
 	else
 		# Bind mind, otherwise arch-chroot complains
 		mount --bind $arkdep_dir/deployments/${data[0]}/rootfs $arkdep_dir/deployments/${data[0]}/rootfs
@@ -1389,7 +1353,6 @@ deploy () {
 
 # Install a package and add it to the layer tracker
 layer () {
-
 	# If no installation candidates provided
 	if [[ $# -eq 1 ]]; then
 		cleanup_and_quit 'No layer candidates provided'
@@ -1473,7 +1436,6 @@ layer () {
 	printf "%s\n" "${progs_clean[@]}" >> $arkdep_dir/layer
 
 	unlock_and_quit 0
-
 }
 
 layer-ls () {
