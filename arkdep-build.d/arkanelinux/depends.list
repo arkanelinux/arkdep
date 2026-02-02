@@ -1,3 +1,4 @@
 depends/arkanelinux-generic
 depends/arkane-flatpak
 depends/arkane-desktop
+depends/kmscon
