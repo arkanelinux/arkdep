@@ -155,44 +155,15 @@ fi
 
 # Build archlinux type image
 if [[ $type == 'archlinux' ]]; then
-	# Ensure bootstrap.list exists, if not error and quit
-	# This is the mimimum requirement to perform a build and this checked first
-	if [[ ! -e $variantdir/bootstrap.list ]]; then
-		printf "\e[1;31m<#>\e[0m\e[1m The required file 'bootstrap.list' is not preset in $variantdir\e[0m\n"
-		exit 1
-	fi
-
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
-
-	printf '\e[1;34m-->\e[0m\e[1m Creating disk image\e[0m\n'
-	fallocate -l $build_image_size $build_image || cleanup_and_quit "Failed to create disk image at $build_image"
-	mkfs.btrfs -f $build_image || cleanup_and_quit "Failed to partition $build_image"
-
-	printf "\e[1;34m-->\e[0m\e[1m Mounting $build_image at $workdir\e[0m\n"
-	# The data is compressed to minimize writes to the disk, the actual export does not maintain this compression
-	mount -m -t btrfs -o loop,compress=zstd $build_image $build_image_mountpoint || cleanup_and_quit "Failed to mount disk image to $workdir"
-
-	# Create temporary Btrfs subvolume
-	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $workdir\e[0m\n"
-	btrfs subvolume create $workdir/ || cleanup_and_quit "Failed to create btrfs subvolume $workdir"
-	mount --bind $workdir $workdir || cleanup_and_exit "Failed to bind mount disk $workdir"
-	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc"
-	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var"
-
-	# Run pre_build script if exists
-	if [[ -f $variantdir/extensions/pre_build.sh ]]; then
-		printf '\e[1;34m-->\e[0m\e[1m Running pre_build extension\e[0m\n'
-		(source $variantdir/extensions/pre_build.sh)
-	fi
-
+	
 	# Read base package list and install base system
 	readarray bootstrap_packages < $variantdir/bootstrap.list
 
 	# Stores package lists from dependency variants
 	declare bootstrap_packages_depends=()
 
-	printf '\e[1;34m-->\e[0m\e[1m Installing bootstrap packages\e[0m\n'
-	# Load depends lists if present
+	# Load depends lists if present and process bootstrap packages
 	if [[ -e $variantdir/depends.list ]]; then
 		# We only have to set depends_variants once, it is later not set again in other
 		# tasks utilizing dependencies
@@ -253,6 +224,34 @@ if [[ $type == 'archlinux' ]]; then
 		# Remove escape character at end of line and add to bootstrap_packages_clean
 		bootstrap_packages_clean+=(${bootstrap_package%%#*})
 	done
+
+	if [[ -z ${bootstrap_packages_clean[@]} ]]; then
+		cleanup_and_quit 'No packages defined in bootstrap.list nor in any of its dependencies'
+	fi
+	
+	printf '\e[1;34m-->\e[0m\e[1m Installing bootstrap packages\e[0m\n'
+
+	printf '\e[1;34m-->\e[0m\e[1m Creating disk image\e[0m\n'
+	fallocate -l $build_image_size $build_image || cleanup_and_quit "Failed to create disk image at $build_image"
+	mkfs.btrfs -f $build_image || cleanup_and_quit "Failed to partition $build_image"
+
+	printf "\e[1;34m-->\e[0m\e[1m Mounting $build_image at $workdir\e[0m\n"
+	# The data is compressed to minimize writes to the disk, the actual export does not maintain this compression
+	mount -m -t btrfs -o loop,compress=zstd $build_image $build_image_mountpoint || cleanup_and_quit "Failed to mount disk image to $workdir"
+
+	# Create temporary Btrfs subvolume
+	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $workdir\e[0m\n"
+	btrfs subvolume create $workdir/ || cleanup_and_quit "Failed to create btrfs subvolume $workdir"
+	mount --bind $workdir $workdir || cleanup_and_exit "Failed to bind mount disk $workdir"
+	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc"
+	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var"
+
+	# Run pre_build script if exists
+	if [[ -f $variantdir/extensions/pre_build.sh ]]; then
+		printf '\e[1;34m-->\e[0m\e[1m Running pre_build extension\e[0m\n'
+		(source $variantdir/extensions/pre_build.sh)
+	fi
+
 
 	# If pacman.conf is available in overlay, use it
 	if [[ -f $variantdir/pacman.conf ]]; then
