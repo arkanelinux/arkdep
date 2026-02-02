@@ -9,7 +9,6 @@
 #
 # Cleanup and quit if error
 cleanup_and_quit () {
-
 	# If any paramters are passed we will assume it to be an error
 	[[ -n $1 ]] && printf "\e[1;31m<#>\e[0m $*\e[0m\n" >&2
 
@@ -30,7 +29,6 @@ cleanup_and_quit () {
 
 	# Otherwise just quit, there is no error
 	exit 0
-
 }
 
 ## Set common variables
@@ -72,7 +70,6 @@ fi
 # Generate a 42 character long random string, used for generating psuedo-random image names
 # Unless overwritten with $ARKDEP_CUSTOM_NAME
 gen_random_string () {
-
 	if [[ -v ARKDEP_CUSTOM_NAME ]]; then
 		random=$ARKDEP_CUSTOM_NAME
 	else
@@ -80,7 +77,6 @@ gen_random_string () {
 	fi
 
 	printf "${random}\n"
-
 }
 
 # Generate image name
@@ -136,7 +132,6 @@ fi
 #
 # Build migration type image
 if [[ $type == 'migration' ]]; then
-
 	printf '\e[1;34m-->\e[0m\e[1m Started migration image build\e[0m\n'
 
 	# Create output directory structure
@@ -156,12 +151,10 @@ if [[ $type == 'migration' ]]; then
 
 	# We can just exit, no need to do a cleanup
 	exit 0
-
 fi
 
 # Build archlinux type image
 if [[ $type == 'archlinux' ]]; then
-
 	# Ensure bootstrap.list exists, if not error and quit
 	# This is the mimimum requirement to perform a build and this checked first
 	if [[ ! -e $variantdir/bootstrap.list ]]; then
@@ -493,9 +486,9 @@ if [[ $type == 'archlinux' ]]; then
 
 fi
 
+# VERY EXPERIMENTAL
 # Build debian type image
 if [[ $type == 'debian' ]]; then
-
 	# Get repo configuration
 	if [[ ! -s $variant_dir/apt.conf ]]; then
 		cleanup_and_quite 'apt.conf expected but is empty or not found'
@@ -581,9 +574,6 @@ if [[ $type == 'debian' ]]; then
 		(source $variantdir/extensions/post_bootstrap.sh)
 	fi
 
-
-
-
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e $variantdir/package.list ]]; then
 		# Read package list and install
@@ -636,8 +626,6 @@ if [[ $type == 'debian' ]]; then
 		# Unmount pacman cache
 		umount -l $workdir/var/cache/pacman/pkg
 	fi
-
-
 
 	# Read package list and install secondary system components, skip if not used
 	if [[ -e $variantdir/package.list ]]; then
@@ -849,7 +837,6 @@ if [[ $type == 'debian' ]]; then
 	printf "$id:$compress:${checksum[0]}\n"
 
 	cleanup_and_quit
-
 fi
 
 # No valid variant was found
