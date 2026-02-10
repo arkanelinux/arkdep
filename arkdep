@@ -30,10 +30,10 @@ declare -r dist_update_diff_style='list'
 declare -r dist_interactive_mode=1
 declare -r dist_package_layer_command='pacman -Syy --needed --noconfirm'
 declare -r dist_package_unlayer_command='pacman -Rsn --noconfirm'
-
+declare -r dist_auto_update_templates=1
 
 # Default configuration file settings used for init
-# systemd-boot configuration
+# systemd-boot configuration, this is just the bare minimum needed for the system to function
 declare -r boot_entry_title='Arkane Linux'
 declare -r kernel_params='root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw'
 
@@ -144,6 +144,9 @@ if [[ ! $1 == 'init' ]]; then
 	[[ -z ${package_unlayer_command+x} ]] &&
 		package_unlayer_command=$dist_package_unlayer_command &&
 		printf '\e[1;33m<!>\e[0m\e[1m package_unlayer_command not defined in config, using default\e[0m\n'
+	[[ -z ${auto_update_templates+x} ]] &&
+		package_unlayer_command=$dist_auto_update_templates &&
+		printf '\e[1;33m<!>\e[0m\e[1m auto_update_templates not defined in config, using default\e[0m\n'
 fi
 
 ## Common functions
@@ -372,6 +375,9 @@ write_config_file () {
 
 	# What command should be executed to uninstall packages
 	package_unlayer_command="$dist_package_unlayer_command"
+
+	# Should Arkep automatically update the bootloader configuration templates in /arkdep/templates
+	auto_update_templates="$dist_auto_update_templates"
 	END
 }
 
@@ -1288,12 +1294,29 @@ deploy () {
 	mv $arkdep_dir/tracker_tmp $arkdep_dir/tracker
 
 	# Deploy bootloader configuration
-	# also insert newline
+
+	# Check for bootloader config updates if available
+	# Only run if updates are provided
+	if [[ $auto_update_templates -eq 1 ]] && [[ -d $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/arkdep/templates ]]; then
+		# If systemd-boot config exists and does not match the current one, update it
+		if [[ -f $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/arkdep/templates/systemd-boot ]]; then
+			printf '\n\e[1;34m-->\e[0m\e[1m Checking for systemd-boot bootloader template updates\e[0m\n'
+
+			declare -r checksum_systemd_boot_template_new=($(sha256sum $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/arkdep/templates/systemd-boot 2> /dev/null))
+			declare -r checksum_systemd_boot_template_current=($(sha256sum $arkdep_dir/templates/systemd-boot 2> /dev/null))
+
+			if [[ ! ${checksum_systemd_boot_template_new[0]} == ${checksum_systemd_boot_template_current[0]} ]]; then
+				cp -v $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/arkdep/templates/systemd-boot $arkdep_dir/templates/systemd-boot ||
+					cleanup_and_quit "Failed to update systemd-boot template"
+			fi
+		fi
+	fi
+
 	printf '\n\e[1;34m-->\e[0m\e[1m Adding bootloader entry\e[0m\n'
 
-	# Ensure bootloader entry is not already present, if it us replace it
+	# Ensure bootloader entry is not already present, if it is replace it
 	if [[ -f $arkdep_boot/loader/entries/${data[0]}.conf ]]; then
-		printf "\e[1;33m<!>\e[0m\e[1m A bootloader entry for ${data[0]} is already installed, bootloader entry will be regenerated\e[0m\n"
+		printf "\e[1;33m<!>\e[0m\e[1m A conflicting bootloader entry for ${data[0]} is already installed, bootloader entry will be regenerated\e[0m\n"
 		rm $arkdep_boot/loader/entries/${data[0]}.conf
 	fi
 
