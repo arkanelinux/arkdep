@@ -30,7 +30,6 @@ pipewire-audio
 pipewire-jack
 pipewire-pulse
 power-profiles-daemon
-spice-vdagent
 switcheroo-control
 webp-pixbuf-loader
 wireplumber
@@ -45,3 +44,7 @@ arkane-wallpapers
 v4l-utils
 v4l2loopback-dkms
 v4l2loopback-utils
+
+# Virtual machine support
+spice-vdagent
+virtualbox-guest-utils-nox
