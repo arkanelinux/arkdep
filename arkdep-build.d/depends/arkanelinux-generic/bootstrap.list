@@ -1,6 +1,14 @@
 base
 linux
-linux-firmware
+linux-firmware-amdgpu
+linux-firmware-broadcom
+linux-firmware-cirrus
+linux-firmware-intel
+linux-firmware-mediatek
+linux-firmware-nvidia
+linux-firmware-other
+linux-firmware-radeon
+linux-firmware-realtek
 arkane-keyring
 dracut
 amd-ucode
