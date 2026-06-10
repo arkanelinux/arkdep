@@ -1,3 +1,4 @@
+# Common desktop extras
 bluez
 bluez-cups
 bluez-plugins
@@ -48,3 +49,9 @@ v4l2loopback-utils
 # Virtual machine support
 spice-vdagent
 virtualbox-guest-utils-nox
+
+# Extra tools
+android-tools
+esptool
+minicom
+screen
