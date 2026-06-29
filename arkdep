@@ -145,7 +145,7 @@ if [[ ! $1 == 'init' ]]; then
 		package_unlayer_command=$dist_package_unlayer_command &&
 		printf '\e[1;33m<!>\e[0m\e[1m package_unlayer_command not defined in config, using default\e[0m\n'
 	[[ -z ${auto_update_templates+x} ]] &&
-		package_unlayer_command=$dist_auto_update_templates &&
+		auto_update_templates=$dist_auto_update_templates &&
 		printf '\e[1;33m<!>\e[0m\e[1m auto_update_templates not defined in config, using default\e[0m\n'
 fi
 
