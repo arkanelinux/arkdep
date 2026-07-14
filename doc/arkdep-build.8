@@ -18,6 +18,8 @@ Overwrite the location to which images will be written.
 Define a directory in which arkdep-build will search for variant configuration files.
 .SS ARKDEP_NO_CLEANUP
 Do not remove the temporary rootfs upon error or completion.
+.SS ARKDEP_BUILD_IMAGE_SIZE
+Everwrite the size of the temporary disk image to which Btrfs is partitioned and the system is installed. Accepts \fIfallocate\fR multiplicative suffixes (5GiB, 5GB, 5G).
 .SH EXAMPLES
 .SS arkdep-build arkanelinux
 Build the arkanelinux variant in \fB./arkdep-build.d/arkanelinux\fR.

@@ -39,7 +39,12 @@ declare -r build_image='/var/tmp/arkdep-build.img'
 declare -r build_image_mountpoint='/var/tmp/arkdep-build'
 declare -r workdir="$build_image_mountpoint/rootfs"
 declare -r variant="$1"
-declare -r build_image_size='15G'
+
+if [[ -n $ARKDEP_BUILD_IMAGE_SIZE  ]]; then
+	declare -r build_image_size="$ARKDEP_BUILD_IMAGE_SIZE"
+else
+	declare -r build_image_size='15G' # When changing this value also consider updating minimum_available_*_storage below
+fi
 
 # Minimum required storage in KiB
 declare -r minimum_available_root_storage='31457280' # 30G
