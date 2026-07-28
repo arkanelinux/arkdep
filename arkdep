@@ -1217,7 +1217,16 @@ deploy () {
 		cleanup_and_quit 'Provided image has no kernel installed'
 	fi
 
+	# Log if multiple kernels detected
+	if [[ ${#kernels_installed[@]} -gt 1 ]]; then
+		printf "More than one kernel was detected, will install ${kernels_installed[0]}\nDetected kernels are:\n"
+		for kernel in ${kernels_installed[@]}; do
+			printf "$kernel\n"
+		done
+	fi
+
 	mkdir -p $arkdep_boot/arkdep/${data[0]}
+
 	# Deploy kernel to /boot, deploy first hit of kernels_installed
 	printf "Copying ${kernels_installed[0]}/vmlinuz\n"
 	cp $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]}/vmlinuz $arkdep_boot/arkdep/${data[0]}/ ||
