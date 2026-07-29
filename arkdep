@@ -1256,7 +1256,8 @@ deploy () {
 	# If ARKDEP_BOOT is defined we will revert back to legacy behaviour and build
 	# the initramfs against the host
 	if [[ -n $ARKDEP_BOOT ]] || [[ $ARKDEP_LEGACY_INITRAMFS -eq 1 ]]; then
-		dracut -q -k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
+		dracut -q --no-hostonly \
+			-k $arkdep_dir/deployments/${data[0]}/rootfs/usr/lib/modules/${kernels_installed[0]} \
 			-c $arkdep_dir/deployments/${data[0]}/rootfs/etc/dracut.conf \
 			--confdir $arkdep_dir/deployments/${data[0]}/rootfs/etc/dracut.conf.d \
 			--kernel-image $arkdep_boot/arkdep/${data[0]}/vmlinuz \
@@ -1273,7 +1274,8 @@ deploy () {
 		# Generate new initramfs
 		# TODO: Make sure this implementation is not iffy
 		arch-chroot $arkdep_dir/deployments/${data[0]}/rootfs \
-			dracut -q -k /usr/lib/modules/${kernels_installed[0]} \
+			dracut -q --no-hostonly \
+			-k /usr/lib/modules/${kernels_installed[0]} \
 			-c /etc/dracut.conf \
 			--confdir /etc/dracut.conf.d \
 			--kernel-image ${arkdep_boot//"$ARKDEP_ROOT"}/arkdep/${data[0]}/vmlinuz \
