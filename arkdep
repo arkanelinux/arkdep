@@ -554,8 +554,8 @@ teardown () {
 }
 
 remove_deployment () {
-	# Ensure required vars are set
-	if [[ -z $1 ]]; then
+	# If no deployment target is provided
+	if [[ $# -eq 1 ]]; then
 		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
 		unlock_and_quit 1
 	fi
