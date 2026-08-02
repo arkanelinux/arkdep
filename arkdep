@@ -554,17 +554,18 @@ teardown () {
 }
 
 remove_deployment () {
-	# If no deployment target is provided
-	if [[ $# -eq 1 ]]; then
-		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
-		unlock_and_quit 1
-	fi
 
 	# Check if remove is called in scriptmode
 	if [[ $remove_scriptmode -eq 1 ]]; then
 		declare -r remove_targets=(${@:1})
 	else
 		declare -r remove_targets=(${@:2})
+	fi
+
+	# If no deployment target is provided when called manually, error and quit
+	if [[ ! ${#remove_targets[@]} -ge 1 ]] && [[ ! $remove_scriptmode -eq 1 ]]; then
+		printf '\e[1;31m<#>\e[0m\e[1m No deployment defined\n\e[0m'
+		unlock_and_quit 1
 	fi
 
 	for deployment in ${remove_targets[@]}; do
