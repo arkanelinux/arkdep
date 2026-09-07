@@ -54,4 +54,5 @@ virtualbox-guest-utils-nox
 android-tools
 esptool
 minicom
+nftables
 screen
