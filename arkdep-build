@@ -164,8 +164,10 @@ fi
 if [[ $type == 'archlinux' ]]; then
 	printf '\e[1;34m-->\e[0m\e[1m Started Arch linux image build\e[0m\n'
 	
-	# Read base package list and install base system
-	readarray bootstrap_packages < $variantdir/bootstrap.list
+	# Read base package list if it exists
+	if [[ -e $variantdir/bootstrap.list ]]; then
+		readarray bootstrap_packages < $variantdir/bootstrap.list
+	fi
 
 	# Stores package lists from dependency variants
 	declare bootstrap_packages_depends=()
