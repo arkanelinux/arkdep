@@ -16,7 +16,7 @@ f2fs-tools
 fakeroot
 git
 glibc-locales
-libnss-extrausers
+nss-altfiles
 linux-headers
 man-db
 mesa
