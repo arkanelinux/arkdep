@@ -1337,8 +1337,9 @@ deploy () {
 		cleanup_and_quit 'Failed to read systemd-boot template file'
 
 	# Write bootloader entry
+	declare -r systemd_boot_entry_timestamp=$($(date +%Y%m%d-%H%M%S))
 	for line in "${systemd_boot_template[@]}"; do
-		echo ${line/\%target\%/${data[0]}} >> $arkdep_boot/loader/entries/$(date +%Y%m%d-%H%M%S)-${data[0]}+3.conf ||
+		echo ${line/\%target\%/${data[0]}} >> $arkdep_boot/loader/entries/${systemd_boot_entry_timestamp}-${data[0]}+3.conf ||
 			cleanup_and_quit 'Failed to write systemd-boot entry'
 	done
 
