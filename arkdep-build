@@ -251,7 +251,7 @@ if [[ $type == 'archlinux' ]]; then
 	# Create temporary Btrfs subvolume
 	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $workdir\e[0m\n"
 	btrfs subvolume create $workdir/ || cleanup_and_quit "Failed to create btrfs subvolume $workdir"
-	mount --bind $workdir $workdir || cleanup_and_exit "Failed to bind mount disk $workdir"
+	mount --bind $workdir $workdir || cleanup_and_quit "Failed to bind mount disk $workdir"
 	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc"
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var"
 
@@ -499,7 +499,7 @@ fi
 if [[ $type == 'debian' ]]; then
 	# Get repo configuration
 	if [[ ! -s $variant_dir/apt.conf ]]; then
-		cleanup_and_quite 'apt.conf expected but is empty or not found'
+		cleanup_and_quit 'apt.conf expected but is empty or not found'
 	else
 		declare -r apt_conf=($(cat $variantdir/apt.conf 2> /dev/null))
 		# 0. Repo URL (http://deb.debian.org/debian)
@@ -521,7 +521,7 @@ if [[ $type == 'debian' ]]; then
 	# Create temporary Btrfs subvolume
 	printf "\e[1;34m-->\e[0m\e[1m Creating temporary Btrfs subvolumes at $workdir\e[0m\n"
 	btrfs subvolume create $workdir/ || cleanup_and_quit "Failed to create btrfs subvolume $workdir)"
-	mount --bind $workdir $workdir || cleanup_and_exit "Failed to bind mount disk $workdir"
+	mount --bind $workdir $workdir || cleanup_and_quit "Failed to bind mount disk $workdir"
 	btrfs subvolume create $workdir/etc || cleanup_and_quit "Failed to create btrfs subvolume $workdir/etc)"
 	btrfs subvolume create $workdir/var || cleanup_and_quit "Failed to create btrfs subvolume $workdir/var)"
 
