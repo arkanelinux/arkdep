@@ -286,12 +286,15 @@ cleanup () {
 			fi
 
 			# Remove bootloader entry
-			[[ -f $arkdep_boot/loader/entries/*$target*.conf ]] &&
-				printf "Removing $target bootloader entry\n" &&
-				rm -rf $arkdep_boot/loader/entries/*$target*.conf
-			[[ -f $arkdep_boot/arkdep/$target ]] &&
-				printf "Removing $arkdep_boot/arkdep/$target\n" &&
-				rm -rf $arkdep_boot/arkdep/$target
+			boot_entries=("$arkdep_boot"/loader/entries/*"$target"*.conf)
+			if [[ -f ${boot_entries[0]} ]]; then
+				printf "Removing $target bootloader entry\n"
+				rm -rfv "${boot_entries[@]}"
+			fi
+			if [[ -d "$arkdep_boot/arkdep/$target" ]]; then
+				printf "Removing $arkdep_boot/arkdep/$target\n"
+				rm -rfv "$arkdep_boot/arkdep/$target"
+			fi
 
 			# Ensure the deployment and all sub-volumes are writable
 			for volume in $(btrfs subvolume list / | grep -oE '[^ ]+$' | grep $target); do
